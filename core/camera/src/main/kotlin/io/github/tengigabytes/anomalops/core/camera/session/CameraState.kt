@@ -31,8 +31,5 @@ class StillCapture(
     val reported: ReportedSettings,
 )
 
-/** Settings read back from the still's `CaptureResult`; null when the HAL did not report a key. */
-data class ReportedSettings(val exposureTimeNs: Long?, val iso: Int?, val afMode: Int?, val awbMode: Int?)
-
 /** A Camera2 operation failed; the message is for logs and the UI status line. */
 class CameraFailure(message: String, cause: Throwable? = null) : IllegalStateException(message, cause)

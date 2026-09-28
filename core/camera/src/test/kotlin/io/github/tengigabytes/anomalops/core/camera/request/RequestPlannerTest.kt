@@ -73,7 +73,8 @@ class RequestPlannerTest {
 
     @Test
     fun adr0002_uncalibratedConditionsFallBackToApproximateAuto() {
-        assertEquals(ColorSpec.AutoApproximate, planner.preview(ScenePreset.SNAPSHOT, shallow).color)
+        val deep = shallow.copy(depthBand = DepthBand.DEEP)
+        assertEquals(ColorSpec.AutoApproximate, planner.preview(ScenePreset.SNAPSHOT, deep).color)
     }
 
     @Test(expected = IllegalArgumentException::class)

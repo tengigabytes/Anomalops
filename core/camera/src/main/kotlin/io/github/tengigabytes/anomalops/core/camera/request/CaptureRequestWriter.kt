@@ -6,7 +6,6 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.params.ColorSpaceTransform
 import android.hardware.camera2.params.RggbChannelVector
 import android.util.Rational
-import kotlin.math.roundToInt
 
 /**
  * Maps a [RequestSpec] onto Camera2 keys. The builder must come from
@@ -17,7 +16,6 @@ import kotlin.math.roundToInt
  * request and for the physical camera; mode keys exist only on the logical request.
  */
 internal object CaptureRequestWriter {
-    private const val RATIONAL_DENOMINATOR = 10_000
 
     // Order of ColorSpec.Manual.gains.
     private const val R = 0
@@ -84,7 +82,7 @@ internal object CaptureRequestWriter {
     }
 
     private fun transform(values: List<Double>): ColorSpaceTransform {
-        val elements = values.map { Rational((it * RATIONAL_DENOMINATOR).roundToInt(), RATIONAL_DENOMINATOR) }
+        val elements = values.map { Rational(FixedPoint.numerator(it), FixedPoint.DENOMINATOR) }
         return ColorSpaceTransform(elements.toTypedArray())
     }
 

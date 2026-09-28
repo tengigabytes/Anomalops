@@ -54,7 +54,14 @@ class CameraController(context: Context, profile: DeviceProfile) {
         serial { show(planner.preview(preset, conditions), surface = null) }
 
     /** One still with the ADR-0009 shutter-priority exposure derived from the latest preview frame. */
-    suspend fun capture(): StillCapture = serial { lenses.takeStill() }
+    suspend fun capture(): StillCapture = serial {
+        lenses.takeStill().also {
+            // A still came out, so the session works: clear an error left by an earlier failed call.
+            if (mutableState.value.status == CameraStatus.FAILED) {
+                mutableState.value = mutableState.value.copy(status = CameraStatus.PREVIEWING, error = null)
+            }
+        }
+    }
 
     /** Stops the preview and closes the camera; [start] opens it again. */
     suspend fun stop() = serial {

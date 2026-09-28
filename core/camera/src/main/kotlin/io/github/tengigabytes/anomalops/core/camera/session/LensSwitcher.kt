@@ -14,6 +14,8 @@ import io.github.tengigabytes.anomalops.core.camera.exposure.Exposure
 import io.github.tengigabytes.anomalops.core.camera.request.CaptureRequestWriter
 import io.github.tengigabytes.anomalops.core.camera.request.RequestPlanner
 import io.github.tengigabytes.anomalops.core.camera.request.RequestSpec
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.Executor
 
 /**
@@ -32,6 +34,7 @@ internal class LensSwitcher(
     private var surface: Surface? = null
     private var preview: RequestSpec? = null
     private var metered: Exposure? = null
+    private var firstMeter = CompletableDeferred<Unit>()
 
     /** Previews [spec] on [target], or on the current surface when null; rebuilds the session only if needed. */
     suspend fun show(spec: RequestSpec, target: Surface?) {
@@ -47,7 +50,9 @@ internal class LensSwitcher(
     /** One still with the ADR-0009 shutter-priority exposure derived from the latest preview frame. */
     suspend fun takeStill(): StillCapture {
         val lens = checkNotNull(stream) { "preview not started" }
-        val exposure = metered ?: throw CameraFailure("no metered preview frame yet")
+        // A shutter press right after start waits for the first metered preview frame instead of failing.
+        if (metered == null) withTimeoutOrNull(FIRST_METER_TIMEOUT_MS) { firstMeter.await() }
+        val exposure = metered ?: throw CameraFailure("no metered preview frame after $FIRST_METER_TIMEOUT_MS ms")
         val spec = planner.still(checkNotNull(preview), exposure, lens.format)
         val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
             addTarget(lens.reader.surface)
@@ -61,7 +66,7 @@ internal class LensSwitcher(
             spec = spec,
             sensorTimestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: 0L,
             flashFired = result.get(CaptureResult.FLASH_STATE) == CaptureResult.FLASH_STATE_FIRED,
-            reported = reported(result.physicalCameraTotalResults[spec.physicalId] ?: result, result),
+            reported = reportedSettings(result, spec.physicalId),
         )
     }
 
@@ -85,6 +90,7 @@ internal class LensSwitcher(
         stream?.close()
         stream = null
         metered = null
+        firstMeter = CompletableDeferred()
     }
 
     private suspend fun openStream(spec: RequestSpec, target: Surface): LensStream {
@@ -104,14 +110,6 @@ internal class LensSwitcher(
         return builder.build()
     }
 
-    /** Per-lens keys come from the physical result; mode keys exist only on the logical one. */
-    private fun reported(physical: CaptureResult, logical: CaptureResult) = ReportedSettings(
-        exposureTimeNs = physical.get(CaptureResult.SENSOR_EXPOSURE_TIME),
-        iso = physical.get(CaptureResult.SENSOR_SENSITIVITY),
-        afMode = logical.get(CaptureResult.CONTROL_AF_MODE),
-        awbMode = logical.get(CaptureResult.CONTROL_AWB_MODE),
-    )
-
     /** ADR-0009: the preview auto-exposure is the light meter; keep its latest exposure time and ISO. */
     private fun meter(physicalId: String) = object : CameraCaptureSession.CaptureCallback() {
         override fun onCaptureCompleted(s: CameraCaptureSession, r: CaptureRequest, result: TotalCaptureResult) {
@@ -119,11 +117,15 @@ internal class LensSwitcher(
             val source = result.physicalCameraTotalResults[physicalId] ?: result
             val time = source.get(CaptureResult.SENSOR_EXPOSURE_TIME)
             val iso = source.get(CaptureResult.SENSOR_SENSITIVITY)
-            if (time != null && iso != null) metered = Exposure(time, iso)
+            if (time != null && iso != null) {
+                metered = Exposure(time, iso)
+                firstMeter.complete(Unit)
+            }
         }
     }
 
     private companion object {
         const val SESSION_CLOSE_TIMEOUT_MS = 1_000L
+        const val FIRST_METER_TIMEOUT_MS = 1_000L
     }
 }
