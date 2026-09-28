@@ -57,9 +57,10 @@ internal class AppRig : AutoCloseable {
     ).apply { setOnImageAvailableListener({ it.acquireLatestImage()?.close() }, Handler(sinkThread.looper)) }
 
     /** The M1 screen's conditions; calibrated for lenses 2, 3 and 9 (docs/test/m1-pipeline-calibration.md). */
-    private val conditions = CalibrationKey(DepthBand.SHALLOW, LensFilter.NONE, diveLight = false)
+    val conditions = CalibrationKey(DepthBand.SHALLOW, LensFilter.NONE, diveLight = false)
 
-    suspend fun start(preset: ScenePreset = ScenePreset.SNAPSHOT) = controller.start(sink.surface, preset, conditions)
+    suspend fun start(preset: ScenePreset = ScenePreset.SNAPSHOT, key: CalibrationKey = conditions) =
+        controller.start(sink.surface, preset, key)
 
     /** Marks the files of [stem] (still, DNG, burst frames) for deletion on [close]. */
     fun track(stem: String?) {

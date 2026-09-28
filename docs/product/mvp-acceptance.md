@@ -35,7 +35,7 @@
 | FR-25 | 潛水燈模式下，距燈 0.5 m 的灰卡符合 FR-21 門檻；同一張照片中，背景水體的色相落在 160°–230°（提議） | G4 驗證潛水 | G4 |
 | FR-31 | 微距預設使用超廣角實體鏡頭；距解析度卡 5 cm 時，AF 在 2 s 內鎖定（提議）；輸出 ≥ 12 MP | `CaptureResult`；陸上無殼與隔著殼的鏡頭罩各測一次 | G1、G2 |
 | FR-35 | 對著 1 m 外的均勻低對比板，AF 從開始搜尋到鏡頭停止（`LENS_STATE` = STATIONARY）或退回固定距離 ≤ 0.5 s；退回的是該預設的固定對焦距離，雷射不參與 | `CaptureResult` 紀錄 | G1 |
-| FR-45 | 90 分鐘場次的 `sensors.csv` ≥ 5292 列（應有 5400 列的 98%，提議），時間戳單調遞增；`touches.csv`、`captures.csv`、`session.json` 都存在 | 腳本檢查 | G2、G4 |
+| FR-45 | 90 分鐘場次的 `sensors.csv` ≥ 5292 列（應有 5400 列的 98%，提議），時間戳單調遞增；`touches.csv`、`captures.csv`、`session.json` 都存在 | 腳本檢查（`scripts/check_dive_log.py --minutes 90`） | G2、G4 |
 | FR-51 | 四邊的邊緣滑動、返回手勢、主畫面手勢、下拉通知，每種各試 30 次，APP 離開前景 0 次；長按 3 s 解鎖 10 / 10；按壓不足 3 s 就解鎖 0 次；螢幕 90 分鐘不熄滅；泳池 30 分鐘內意外離開 0 次 | 人工 + `touches.csv` | G1、G3 |
 | FR-52 | 快門條寬度 ≥ 88 dp；殼內刻意按 100 次，拍下 ≥ 95 張；誤觸率（非刻意觸發 ÷ 全部觸發）< 5% | UI 測試；泳池人工紀錄對照 `touches.csv` | G1、G3 |
 | FR-55 | 所有可點元件與螢幕四邊的距離 ≥ 12 mm（以 xdpi / ydpi 換算）；在殼內量測實際可按的範圍後定稿 | UI 測試；泳池量測 | G1、G3 |
@@ -62,7 +62,7 @@
 | NFR-6 | 半徑 48 dp 內（提議）、200 ms 內的重複觸發只算一次；G3 / G4 報告被濾掉的事件數與位置分布 | 以合成的 `MotionEvent` 做單元測試；`touches.csv` | G1、G3、G4 |
 | NFR-7 | 300 張的 MediaStore 寫入（拍攝完成到 `IS_PENDING = 0`）p95 ≤ 500 ms；1 TB 型號的測試只在有該型號時進行 | 儀器測試 | G1 |
 | NFR-8 | 飛航模式下，範圍內所有功能正常；合併後的 manifest 不含 `INTERNET` 權限 | 人工 + 建置檢查 | G1 |
-| NFR-9 | 建置檢查確認新增型號時只有 `assets/device-profiles/` 有變動；有第二台 Pixel 時，以它的能力表執行 APP，校正值標示「未校正」 | CI 或本地腳本 | G1 |
+| NFR-9 | 建置檢查確認新增型號時只有 `assets/device-profiles/` 有變動；有第二台 Pixel 時，以它的能力表執行 APP，校正值標示「未校正」 | CI 與本地腳本（`scripts/check_device_neutral.py`） | G1 |
 | NFR-10 | 介面字串齊備臺灣正體中文與英文，lint 的 MissingTranslation 設為錯誤；字串審查不含簡體中文詞彙 | lint + 審查 | G1 |
 
 ## 4. v1.0 完成定義

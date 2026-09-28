@@ -11,6 +11,7 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -20,5 +21,10 @@ android {
 }
 
 dependencies {
+    implementation(libs.kotlinx.coroutines.android)
+
     testImplementation(libs.junit)
+    // FR-45 sensor recording runs on a real device (docs/product/mvp-acceptance.md).
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

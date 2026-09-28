@@ -20,6 +20,8 @@ jobs:
         run: python3 scripts/check_limits.py
       - name: Module dependency rules (ADR-0007)
         run: python3 scripts/check_module_deps.py
+      - name: No model-specific code outside device profiles (NFR-9)
+        run: python3 scripts/check_device_neutral.py
       - name: Device profiles match their probe reports (ADR-0003)
         run: for f in assets/device-profiles/*.json; do python3 scripts/probe_to_profile.py "$(basename "$f" .json)" --check; done
 

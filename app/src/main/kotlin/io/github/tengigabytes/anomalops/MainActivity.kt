@@ -15,23 +15,27 @@ import io.github.tengigabytes.anomalops.capture.CameraPermissionGate
 import io.github.tengigabytes.anomalops.capture.CaptureScreen
 import io.github.tengigabytes.anomalops.capture.Message
 import io.github.tengigabytes.anomalops.capture.ShotPipeline
+import io.github.tengigabytes.anomalops.conditions.ShootingConditions
 import io.github.tengigabytes.anomalops.core.camera.session.CameraController
-import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
-import io.github.tengigabytes.anomalops.core.profile.DepthBand
 import io.github.tengigabytes.anomalops.core.profile.DeviceProfile
 import io.github.tengigabytes.anomalops.core.profile.DeviceProfiles
-import io.github.tengigabytes.anomalops.core.profile.LensFilter
 import io.github.tengigabytes.anomalops.core.profile.ProfileValidator
 import io.github.tengigabytes.anomalops.core.store.media.StillStore
 import io.github.tengigabytes.anomalops.core.store.raw.DngStore
 import io.github.tengigabytes.anomalops.core.store.raw.RawKeeper
 import io.github.tengigabytes.anomalops.core.store.stack.BurstStacks
+import io.github.tengigabytes.anomalops.core.telemetry.depth.DepthZone
+import io.github.tengigabytes.anomalops.core.telemetry.depth.ManualDepthSource
 
 /** Single activity (ADR-0007). M1: camera screen only; the dive lock (ADR-0006) arrives in M3. */
 class MainActivity : ComponentActivity() {
     private var controller: CameraController? = null
     private val rawKeeper by lazy { RawKeeper(DngStore(applicationContext), lifecycleScope) }
     private val stacks by lazy { BurstStacks(applicationContext) }
+
+    // FR-84: v1.0 depth is the diver's manual zone; the M3 dive-lock screen gets the switch.
+    private val depth by lazy { ManualDepthSource(initialZone()) }
+    private val conditions by lazy { ShootingConditions(depth) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +50,7 @@ class MainActivity : ComponentActivity() {
                         CaptureScreen(
                             camera,
                             ShotPipeline(camera, StillStore(applicationContext), rawKeeper, stacks),
-                            conditions(),
+                            conditions,
                         )
                     }
                 }
@@ -62,16 +66,15 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * The calibration conditions. M1 has no depth, filter or dive-light switches yet (M3, M4), so they are fixed;
-     * debug builds accept `--es depthBand DEEP` etc. to test the uncalibrated fallback (ADR-0002).
+     * The starting depth zone. The switch arrives with the M3 dive-lock screen; until then debug builds accept
+     * `--es depthBand DEEP` etc. to test the uncalibrated fallback (ADR-0002).
      */
-    private fun conditions(): CalibrationKey {
-        val fixed = CalibrationKey(DepthBand.SHALLOW, LensFilter.NONE, diveLight = false)
+    private fun initialZone(): DepthZone {
         val debuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
-        val requested = intent.getStringExtra(EXTRA_DEPTH_BAND)?.takeIf { debuggable } ?: return fixed
-        val band = DepthBand.entries.firstOrNull { it.name == requested }
-        if (band == null) Log.w(TAG, "ignoring unknown depthBand $requested")
-        return fixed.copy(depthBand = band ?: fixed.depthBand)
+        val requested = intent.getStringExtra(EXTRA_DEPTH_BAND)?.takeIf { debuggable } ?: return DepthZone.SHALLOW
+        val zone = DepthZone.entries.firstOrNull { it.name == requested }
+        if (zone == null) Log.w(TAG, "ignoring unknown depthBand $requested")
+        return zone ?: DepthZone.SHALLOW
     }
 
     /** NFR-9: everything model-specific comes from the device profile; no profile means no camera. */

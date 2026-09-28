@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -30,11 +31,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.tengigabytes.anomalops.R
+import io.github.tengigabytes.anomalops.conditions.ConditionsFollower
+import io.github.tengigabytes.anomalops.conditions.ShootingConditions
 import io.github.tengigabytes.anomalops.core.camera.session.CameraController
 import io.github.tengigabytes.anomalops.core.camera.session.CameraState
 import io.github.tengigabytes.anomalops.core.camera.session.CameraStatus
 import io.github.tengigabytes.anomalops.core.camera.session.StillCapture
-import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.ScenePreset
 import io.github.tengigabytes.anomalops.core.store.media.SavedStill
 import kotlinx.coroutines.launch
@@ -51,7 +53,7 @@ private const val STATUS_LINES = 2
  * RAW frame (FR-62). Stills go to MediaStore (ADR-0004).
  */
 @Composable
-fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditions: CalibrationKey) {
+fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditions: ShootingConditions) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     var preset by rememberSaveable { mutableStateOf(ScenePreset.SNAPSHOT) }
@@ -71,19 +73,27 @@ fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditio
             }
         }
     }
+    // FR-21/24/25: a new depth zone, filter or dive light re-plans the preview on the current lens.
+    val follower = remember(conditions) { ConditionsFollower(conditions) }
+    LaunchedEffect(follower) {
+        follower.changes.collect { key -> run { controller.select(preset, key) } }
+    }
     Column(
         modifier = Modifier.fillMaxSize().background(Color.Black),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CameraPreview(
-            onSurfaceReady = { surface -> run { controller.start(surface, preset, conditions) } },
-            onSurfaceGone = controller::stopBlocking,
+            onSurfaceReady = { surface -> run { controller.start(surface, preset, follower.send()) } },
+            onSurfaceGone = {
+                follower.closed()
+                controller.stopBlocking()
+            },
             modifier = Modifier.fillMaxWidth().aspectRatio(PREVIEW_ASPECT),
         )
         StatusLine(state, lastShot, lastSaved, Notes(rawNote, burstNote))
         PresetBar(selected = preset) { chosen ->
             preset = chosen
-            run { controller.select(chosen, conditions) }
+            run { controller.select(chosen, follower.send()) }
         }
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             LatestThumbnail(lastShot?.bytes, onLongPress = {

@@ -16,7 +16,7 @@ Anomalops/
 ├─ core/                :core:camera、:core:profile、:core:store、:core:telemetry
 ├─ tools/probe/         :tools:probe 能力偵測工具；results/ 放原始偵測報告
 ├─ assets/device-profiles/  各型號能力表與校正表（ADR-0003），由 :core:profile 打包
-├─ scripts/             開發用腳本：check_limits.py、check_module_deps.py
+├─ scripts/             開發用腳本：check_limits.py、check_module_deps.py 等
 ├─ config/detekt/       detekt 設定（只放覆寫預設值的部分）
 ├─ .github/workflows/   CI；目前執行 check_limits.py，M0 起加入 Android 建置與測試
 └─ .claude/             Claude Code 的專案設定
@@ -53,6 +53,7 @@ Anomalops/
 ./gradlew detekt --auto-correct   # 自動修正格式問題
 python scripts/check_limits.py     # 檔案長度、文件索引、連結
 python scripts/check_module_deps.py   # 模組依賴規則（ADR-0007）
+python scripts/check_device_neutral.py   # 產品程式不含型號判斷（NFR-9）
 python scripts/check_flavor_manifests.py   # 兩個 flavor 的權限（NFR-8、ADR-0010），建置後執行
 python scripts/probe_to_profile.py blazer --check   # 能力表與偵測報告一致（ADR-0003）
 ./gradlew :core:camera:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest   # 實機驗收測試（接手機；FR-81 另行遮住鏡頭執行）
