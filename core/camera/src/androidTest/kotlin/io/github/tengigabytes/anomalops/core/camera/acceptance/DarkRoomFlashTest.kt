@@ -35,7 +35,7 @@ class DarkRoomFlashTest {
     fun tearDown() = rig.close()
 
     @Test
-    fun fr81_noFlashInTheDark() = runBlocking {
+    fun fr81_noFlashInTheDark() = runBlocking<Unit> {
         rig.start(ScenePreset.SNAPSHOT)
         val firedPerPreset = ScenePreset.entries.associateWith { preset ->
             rig.controller.select(preset, rig.conditions)

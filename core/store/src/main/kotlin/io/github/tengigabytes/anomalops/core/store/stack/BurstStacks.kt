@@ -7,8 +7,8 @@ import androidx.room.Room
 import io.github.tengigabytes.anomalops.core.store.media.SavedStill
 
 /** FR-68: records each burst as one stack of its saved frames, cover first (ADR-0007: Room). */
-class BurstStacks(context: Context) {
-    private val database = Room.databaseBuilder(context, StackDatabase::class.java, DATABASE_NAME).build()
+class BurstStacks(context: Context, databaseName: String = DATABASE_NAME) : AutoCloseable {
+    private val database = Room.databaseBuilder(context, StackDatabase::class.java, databaseName).build()
     private val dao = database.stacks()
 
     /** Records a burst of [frames] (in frame order) under [stem]; a burst without frames leaves no stack. */
@@ -25,7 +25,9 @@ class BurstStacks(context: Context) {
 
     suspend fun frames(stem: String): List<BurstFrameEntity> = dao.frames(stem)
 
-    private companion object {
+    override fun close() = database.close()
+
+    companion object {
         const val DATABASE_NAME = "burst-stacks.db"
     }
 }

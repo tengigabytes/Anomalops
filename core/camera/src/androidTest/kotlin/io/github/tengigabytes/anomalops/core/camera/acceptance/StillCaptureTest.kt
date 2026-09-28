@@ -37,7 +37,7 @@ class StillCaptureTest {
 
     /** From the capture call to the start of the still's exposure (`SENSOR_TIMESTAMP`, REALTIME time base). */
     @Test
-    fun nfr4_shutterToExposureStart() = runBlocking {
+    fun nfr4_shutterToExposureStart() = runBlocking<Unit> {
         rig.start(ScenePreset.SNAPSHOT)
         repeat(WARM_UP) { rig.controller.capture() }
         val latencyMs = List(SHOTS) {
@@ -51,7 +51,7 @@ class StillCaptureTest {
 
     /** 20 stills over all presets: JPEG_R with a gain map, 6 MB average at most. */
     @Test
-    fun fr61a_ultraHdrStillsCarryGainMaps() = runBlocking {
+    fun fr61a_ultraHdrStillsCarryGainMaps() = runBlocking<Unit> {
         rig.start(ScenePreset.SNAPSHOT)
         val shots = List(ULTRA_HDR_SHOTS) { index ->
             val preset = ScenePreset.entries[index % ScenePreset.entries.size]

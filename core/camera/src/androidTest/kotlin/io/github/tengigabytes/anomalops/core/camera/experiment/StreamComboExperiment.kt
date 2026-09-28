@@ -65,7 +65,7 @@ class StreamComboExperiment {
     }
 
     @Test
-    fun m2_singleAndBurstSessionsPerLens() = runBlocking(handler.asCoroutineDispatcher()) {
+    fun m2_singleAndBurstSessionsPerLens() = runBlocking<Unit>(handler.asCoroutineDispatcher()) {
         preview.setOnImageAvailableListener({
             it.acquireLatestImage()?.close()
             firstPreview.complete(SystemClock.elapsedRealtimeNanos())

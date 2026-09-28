@@ -46,7 +46,7 @@ class PresetSwitchTest {
      * has one threshold for switches on the same physical lens and one for switches that rebuild the session.
      */
     @Test
-    fun fr11_nfr4_fiftyRandomPresetSwitches() = runBlocking {
+    fun fr11_nfr4_fiftyRandomPresetSwitches() = runBlocking<Unit> {
         rig.start(ScenePreset.SNAPSHOT)
         val frameIntervalMs = medianFrameInterval()
         val random = Random(SEED)
