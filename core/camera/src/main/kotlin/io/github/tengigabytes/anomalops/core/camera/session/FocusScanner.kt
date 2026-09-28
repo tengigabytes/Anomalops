@@ -92,9 +92,10 @@ internal class FocusScanner(
         val callback = object : CameraCaptureSession.CaptureCallback() {
             override fun onCaptureCompleted(s: CameraCaptureSession, r: CaptureRequest, result: TotalCaptureResult) {
                 val now = SystemClock.elapsedRealtimeNanos()
-                active(
-                    s,
-                )?.let { settle(it, scan.triggered(result.frameNumber, afState(result, started.spec.physicalId), now)) }
+                val current = active(s) ?: return
+                settle(current, scan.triggered(result.frameNumber, afState(result, started.spec.physicalId), now))
+                // The search starts here; time it out on schedule instead of on the next frame.
+                expireAfter(started, scan, AfScan.BUDGET_NS)
             }
 
             override fun onCaptureFailed(s: CameraCaptureSession, r: CaptureRequest, failure: CaptureFailure) {
@@ -102,6 +103,14 @@ internal class FocusScanner(
             }
         }
         started.session.capture(trigger, callback, handler)
+        expireAfter(started, scan, AfScan.TRIGGER_LIMIT_NS)
+    }
+
+    /** Times [scan] out on schedule if nothing settled it; a later visit or an earlier outcome makes this a no-op. */
+    private fun expireAfter(started: Visit, scan: AfScan, delayNs: Long) {
+        handler.postDelayed({
+            if (visit === started) settle(started, scan.expired(SystemClock.elapsedRealtimeNanos()))
+        }, delayNs / NS_PER_MS)
     }
 
     private fun active(session: CameraCaptureSession) =
@@ -129,5 +138,6 @@ internal class FocusScanner(
     private companion object {
         const val TAG = "FocusScanner"
         const val SETTLE_TIMEOUT_MS = 1_200L
+        const val NS_PER_MS = 1_000_000L
     }
 }

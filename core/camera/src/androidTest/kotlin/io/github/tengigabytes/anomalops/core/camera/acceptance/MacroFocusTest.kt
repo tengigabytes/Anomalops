@@ -3,6 +3,7 @@
 package io.github.tengigabytes.anomalops.core.camera.acceptance
 
 import android.Manifest
+import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
@@ -28,7 +29,8 @@ import org.junit.runner.RunWith
 /**
  * FR-35 / FR-31 on the device (docs/test/m4-af-timeline.md): entering the macro preset sends one AUTO trigger,
  * whose search settles within 0.5 s; staying on the preset does not scan again; a still right after entering
- * waits for the scan. Place a printed page about 5 cm from the lenses. Stills stay in memory, nothing is saved.
+ * waits for the scan, and its output has at least 12 MP (FR-31). Place a printed page about 5 cm from the
+ * lenses. Stills stay in memory, nothing is saved.
  */
 @RunWith(AndroidJUnit4::class)
 class MacroFocusTest {
@@ -70,8 +72,13 @@ class MacroFocusTest {
         assertTrue("the scan settled before the still", scan.isCompleted)
         val settled = scan.await()
         val expected = settled.fallbackDiopters?.let { FocusSpec.Fixed(it) } ?: FocusSpec.Auto
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(still.bytes, 0, still.bytes.size, bounds)
+        val pixels = bounds.outWidth.toLong() * bounds.outHeight
         Log.i(TAG, "FR-35 still after entering: $settled still focus=${still.spec.focus} af=${still.reported.afMode}")
+        Log.i(TAG, "FR-31 macro still ${still.format} ${bounds.outWidth}x${bounds.outHeight} = $pixels px")
         assertEquals(expected, still.spec.focus)
+        assertTrue("FR-31 output $pixels px < $MIN_PIXELS", pixels >= MIN_PIXELS)
     }
 
     private suspend fun enterMacro(): FocusScan =
@@ -93,5 +100,6 @@ class MacroFocusTest {
         const val LOCK_MS = 2_000.0
         const val SCAN_TIMEOUT_MS = 3_000L
         const val QUIET_MS = 1_500L
+        const val MIN_PIXELS = 12_000_000L
     }
 }

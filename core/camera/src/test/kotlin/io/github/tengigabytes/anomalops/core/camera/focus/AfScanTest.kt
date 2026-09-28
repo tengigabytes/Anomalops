@@ -32,18 +32,28 @@ class AfScanTest {
     }
 
     @Test
-    fun fr35_aSearchLongerThanHalfASecondTimesOut() {
+    fun fr35_aSearchOfFourHundredMillisecondsTimesOut() {
         scan.triggered(frameNumber = 10, SCANNING, ms(200))
-        assertNull(scan.result(frameNumber = 20, SCANNING, ms(700)))
-        assertEquals(ScanOutcome.TIMED_OUT, scan.result(frameNumber = 21, SCANNING, ms(733)))
-        assertNull("reported once", scan.result(frameNumber = 22, LOCKED, ms(766)))
+        assertNull(scan.result(frameNumber = 20, SCANNING, ms(599)))
+        assertEquals(ScanOutcome.TIMED_OUT, scan.result(frameNumber = 21, SCANNING, ms(633)))
+        assertNull("reported once", scan.result(frameNumber = 22, LOCKED, ms(666)))
         assertEquals(ScanOutcome.TIMED_OUT, scan.outcome)
     }
 
     @Test
+    fun fr35_theTimerTimesOutOnScheduleWithoutAFrame() {
+        scan.triggered(frameNumber = 10, SCANNING, ms(250))
+        assertNull(scan.expired(ms(649)))
+        assertEquals(ScanOutcome.TIMED_OUT, scan.expired(ms(650)))
+        assertEquals(400.0, scan.searchMs, 0.0)
+        assertNull("reported once", scan.expired(ms(700)))
+    }
+
+    @Test
     fun fr35_aMissingTriggerResultTimesOutAfterOneSecond() {
-        assertNull(scan.result(frameNumber = 30, SCANNING, ms(1_000)))
-        assertEquals(ScanOutcome.TIMED_OUT, scan.result(frameNumber = 31, SCANNING, ms(1_033)))
+        assertNull(scan.expired(ms(999)))
+        assertNull(scan.result(frameNumber = 30, SCANNING, ms(999)))
+        assertEquals(ScanOutcome.TIMED_OUT, scan.expired(ms(1_000)))
     }
 
     @Test
