@@ -55,6 +55,11 @@ object ProfileValidator {
             if (entry.gains.size != GAIN_COUNT || entry.gains.any { it <= 0.0 }) add("$where: need 4 positive gains")
             if (entry.colorMatrix.size != MATRIX_SIZE) add("$where: colorMatrix must have 9 values")
         }
+        profile.calibration
+            .groupBy { listOf(it.physicalId, it.depthBand, it.filter, it.diveLight) }
+            .filterValues { it.size > 1 }
+            .keys
+            .forEach { add("calibration: duplicate entries for $it") }
     }
 
     private fun <T : Comparable<T>> List<T>.isAscendingPair() = size == 2 && this[0] <= this[1]

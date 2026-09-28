@@ -23,6 +23,10 @@ data class DeviceProfile(
 
     /** FR-11: the physical camera a scene preset uses on this model. */
     fun cameraFor(preset: ScenePreset): PhysicalCamera? = physicalCamera(presetLenses.idFor(preset))
+
+    /** ADR-0002: the white-balance calibration for a camera under the given conditions, or null if none exists. */
+    fun calibrationFor(physicalId: String, key: CalibrationKey): CalibrationEntry? =
+        calibration.firstOrNull { it.matches(physicalId, key) }
 }
 
 @Serializable

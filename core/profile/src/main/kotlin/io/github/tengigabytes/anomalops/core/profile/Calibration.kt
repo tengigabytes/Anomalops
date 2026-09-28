@@ -21,6 +21,12 @@ data class CalibrationEntry(
     val source: CalibrationSource,
 )
 
+/** The shooting conditions a calibration entry is chosen by, besides the physical camera (ADR-0002). */
+data class CalibrationKey(val depthBand: DepthBand, val filter: LensFilter, val diveLight: Boolean)
+
+internal fun CalibrationEntry.matches(physicalId: String, key: CalibrationKey): Boolean =
+    this.physicalId == physicalId && depthBand == key.depthBand && filter == key.filter && diveLight == key.diveLight
+
 /** FR-21 depth bands; the boundaries themselves are still an open item (docs/product/requirements/09-open-items.md). */
 @Serializable
 enum class DepthBand { SHALLOW, MID, DEEP }

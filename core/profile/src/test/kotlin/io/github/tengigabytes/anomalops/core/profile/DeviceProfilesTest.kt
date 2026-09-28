@@ -52,18 +52,38 @@ class DeviceProfilesTest {
 
     @Test
     fun validatorFlagsMalformedCalibration() {
-        val entry = CalibrationEntry(
-            physicalId = "2",
-            depthBand = DepthBand.SHALLOW,
-            filter = LensFilter.NONE,
-            diveLight = false,
-            gains = listOf(2.0, 1.0, 1.0),
-            colorMatrix = List(9) { 0.0 },
-            source = CalibrationSource("2026-10-01", "grey card", "test", 3.0),
-        )
+        val entry = calibrationEntry().copy(gains = listOf(2.0, 1.0, 1.0))
         val problems = ProfileValidator.validate(blazer.copy(calibration = listOf(entry)))
         assertTrue(problems.toString(), problems.any { "gains" in it })
     }
+
+    @Test
+    fun validatorFlagsDuplicateCalibrationKeys() {
+        val problems = ProfileValidator.validate(blazer.copy(calibration = List(2) { calibrationEntry() }))
+        assertTrue(problems.toString(), problems.any { "duplicate" in it })
+    }
+
+    @Test
+    fun calibrationLookupMatchesCameraAndAllConditions() {
+        val entry = calibrationEntry()
+        val profile = blazer.copy(calibration = listOf(entry))
+        val key = CalibrationKey(DepthBand.SHALLOW, LensFilter.NONE, diveLight = false)
+        assertEquals(entry, profile.calibrationFor("2", key))
+        assertNull(profile.calibrationFor("3", key))
+        assertNull(profile.calibrationFor("2", key.copy(diveLight = true)))
+        assertNull(profile.calibrationFor("2", key.copy(filter = LensFilter.RED)))
+        assertNull(profile.calibrationFor("2", key.copy(depthBand = DepthBand.MID)))
+    }
+
+    private fun calibrationEntry() = CalibrationEntry(
+        physicalId = "2",
+        depthBand = DepthBand.SHALLOW,
+        filter = LensFilter.NONE,
+        diveLight = false,
+        gains = listOf(2.0, 1.0, 1.0, 1.5),
+        colorMatrix = List(9) { if (it % 4 == 0) 1.0 else 0.0 },
+        source = CalibrationSource("2026-10-01", "grey card", "test", 3.0),
+    )
 
     private fun assertCamera(preset: ScenePreset, id: String, lens: LensKind, readout: Readout) {
         val camera = blazer.cameraFor(preset)

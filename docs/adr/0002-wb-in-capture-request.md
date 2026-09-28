@@ -42,3 +42,5 @@
 - G1：抽查 CaptureResult 的增益是否等於請求值。
 
 2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。所有實體鏡頭都有 `MANUAL_POST_PROCESSING`，實體鏡頭請求鍵含色彩校正增益與矩陣；`CaptureResult` 是否回報請求值仍待 G1。
+
+2026-09-28 補充（M1，維護者同意）：鏡頭支援 `MANUAL_POST_PROCESSING`，但校正表沒有目前「實體鏡頭 × 深度段 × 濾鏡 × 潛水燈模式」的項目時，同樣退回自動白平衡，介面標示「白平衡為近似」。實作於 `:core:camera` 的 `RequestPlanner`（`ColorSpec.AutoApproximate`）。
