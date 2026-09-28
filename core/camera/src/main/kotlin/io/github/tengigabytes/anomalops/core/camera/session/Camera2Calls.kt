@@ -66,19 +66,54 @@ internal suspend fun CameraDevice.configure(
     createCaptureSession(SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outputs, executor, callback))
 }
 
-/** Captures one still into [reader] and returns the encoded bytes with their result. */
+/** The images and result of one still request; [raw] is null when the request had no RAW target. */
+internal class StillImages(val encoded: ByteArray, val raw: Image?, val result: TotalCaptureResult)
+
+/**
+ * Captures one still into [reader], and into [rawReader] when given (ADR-0005). The RAW image is handed over
+ * open; if the capture fails or times out it is closed here, and a late one is dropped.
+ */
 internal suspend fun CameraCaptureSession.captureStill(
     request: CaptureRequest,
     reader: ImageReader,
+    rawReader: ImageReader?,
     handler: Handler,
-): Pair<ByteArray, TotalCaptureResult> {
-    val image = CompletableDeferred<ByteArray>()
+): StillImages {
+    val encoded = CompletableDeferred<ByteArray>()
     reader.setOnImageAvailableListener(
-        { r -> r.acquireNextImage()?.use { image.complete(it.encodedBytes()) } },
+        { r -> r.acquireNextImage()?.use { encoded.complete(it.encodedBytes()) } },
         handler,
     )
+    // The listener and this coroutine both run on the camera thread, so a plain variable is enough.
+    var raw: Image? = null
+    val rawArrived = CompletableDeferred<Unit>()
+    rawReader?.setOnImageAvailableListener({ r ->
+        r.acquireNextImage()?.let { image ->
+            if (raw == null) raw = image.also { rawArrived.complete(Unit) } else image.close()
+        }
+    }, handler)
     val result = CompletableDeferred<TotalCaptureResult>()
-    val callback = object : CameraCaptureSession.CaptureCallback() {
+    capture(request, stillCallback(result), handler)
+    var delivered = false
+    try {
+        // withTimeoutOrNull rather than withTimeout: a timeout must surface as a failure, not as a cancellation.
+        val images = withTimeoutOrNull(STILL_TIMEOUT_MS) {
+            val total = result.await()
+            if (rawReader != null) rawArrived.await()
+            StillImages(encoded.await(), raw, total)
+        } ?: throw CameraFailure("still capture timed out after $STILL_TIMEOUT_MS ms")
+        delivered = true
+        return images
+    } finally {
+        if (!delivered) {
+            rawReader?.setOnImageAvailableListener({ r -> r.acquireNextImage()?.close() }, handler)
+            raw?.close()
+        }
+    }
+}
+
+private fun stillCallback(result: CompletableDeferred<TotalCaptureResult>) =
+    object : CameraCaptureSession.CaptureCallback() {
         override fun onCaptureCompleted(s: CameraCaptureSession, r: CaptureRequest, total: TotalCaptureResult) {
             result.complete(total)
         }
@@ -87,13 +122,6 @@ internal suspend fun CameraCaptureSession.captureStill(
             result.completeExceptionally(CameraFailure("still capture failed, reason ${failure.reason}"))
         }
     }
-    capture(request, callback, handler)
-    // withTimeoutOrNull rather than withTimeout: a timeout must surface as a failure, not as a cancellation.
-    return withTimeoutOrNull(STILL_TIMEOUT_MS) {
-        val total = result.await()
-        image.await() to total
-    } ?: throw CameraFailure("still capture timed out after $STILL_TIMEOUT_MS ms")
-}
 
 /** JPEG and JPEG_R images carry the whole encoded file in their single plane. */
 private fun Image.encodedBytes(): ByteArray {

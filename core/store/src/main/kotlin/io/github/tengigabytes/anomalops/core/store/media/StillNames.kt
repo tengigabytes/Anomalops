@@ -14,6 +14,8 @@ object StillNames {
     /** JPEG_R (Ultra HDR) is a regular JPEG file with an embedded gain map, so both formats share the type. */
     const val MIME_TYPE = "image/jpeg"
 
+    const val DNG_MIME_TYPE = "image/x-adobe-dng"
+
     private const val PREFIX = "ANM_"
     private val STAMP = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss_SSS", Locale.ROOT)
 
@@ -21,4 +23,7 @@ object StillNames {
     fun stem(takenAt: ZonedDateTime): String = PREFIX + STAMP.format(takenAt)
 
     fun stillName(stem: String): String = "$stem.jpg"
+
+    /** ADR-0005: the DNG sits next to its still with the same stem. */
+    fun dngName(stem: String): String = "$stem.dng"
 }

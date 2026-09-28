@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
+import android.media.Image
 import android.os.Handler
 import android.os.SystemClock
 import android.view.Surface
@@ -37,6 +38,7 @@ internal class LensSwitcher(
     private var preview: RequestSpec? = null
     private var metered: Exposure? = null
     private var firstMeter = CompletableDeferred<Unit>()
+    private val rawReaders = RawReaders()
 
     /** Previews [spec] on [target], or on the current surface when null; rebuilds the session only if needed. */
     suspend fun show(spec: RequestSpec, target: Surface?) {
@@ -58,18 +60,31 @@ internal class LensSwitcher(
         val spec = planner.still(checkNotNull(preview), exposure, lens.format)
         val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
             addTarget(lens.reader.surface)
+            lens.rawReader?.let { addTarget(it.surface) }
             // Upright for the portrait-locked M1 screen (docs/test/m1-mediastore.md); M3 revisits orientation.
             set(CaptureRequest.JPEG_ORIENTATION, lens.sensorOrientation)
         }
-        val (bytes, result) = lens.session.captureStill(request, lens.reader, handler)
+        val images = lens.session.captureStill(request, lens.reader, lens.rawReader, handler)
+        val result = images.result
         return StillCapture(
-            bytes = bytes,
+            bytes = images.encoded,
             format = lens.format,
             spec = spec,
             sensorTimestampNs = result.get(CaptureResult.SENSOR_TIMESTAMP) ?: 0L,
             flashFired = result.get(CaptureResult.FLASH_STATE) == CaptureResult.FLASH_STATE_FIRED,
             reported = reportedSettings(result, spec.physicalId),
+            raw = images.raw?.let { rawFrame(lens, it, result) },
         )
+    }
+
+    /** ADR-0005: hand the RAW image over with the physical lens's characteristics and result, for DngCreator. */
+    private fun rawFrame(lens: LensStream, image: Image, total: TotalCaptureResult): RawFrame {
+        val lensId = lens.camera.id
+        rawReaders.acquired(lensId)
+        val physical = total.physicalCameraTotalResults[lensId] ?: total
+        return RawFrame(image, lens.characteristics, physical, lens.sensorOrientation) {
+            handler.post { rawReaders.released(lensId) }
+        }
     }
 
     /** Orderly shutdown for stop(): the session closes before the device, so no reader is left open. */
@@ -82,6 +97,7 @@ internal class LensSwitcher(
     /** Immediate close, for release and for a lost camera. */
     fun closeAll() {
         closeStream()
+        rawReaders.retireAll()
         device?.close()
         device = null
         surface = null
@@ -102,7 +118,8 @@ internal class LensSwitcher(
             closeAll()
             onLost(message)
         }.also { device = it }
-        return LensStream.open(manager, opened, camera, target, executor).also { stream = it }
+        return LensStream.open(manager, opened, camera, target, rawReaders.readerFor(camera), executor)
+            .also { stream = it }
     }
 
     private fun request(spec: RequestSpec, template: Int, targets: CaptureRequest.Builder.() -> Unit): CaptureRequest {

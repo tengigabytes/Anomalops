@@ -44,3 +44,5 @@
 2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。所有實體鏡頭都有 `MANUAL_POST_PROCESSING`，實體鏡頭請求鍵含色彩校正增益與矩陣；`CaptureResult` 是否回報請求值仍待 G1。
 
 2026-09-28 補充（M1，維護者同意）：鏡頭支援 `MANUAL_POST_PROCESSING`，但校正表沒有目前「實體鏡頭 × 深度段 × 濾鏡 × 潛水燈模式」的項目時，同樣退回自動白平衡，介面標示「白平衡為近似」。實作於 `:core:camera` 的 `RequestPlanner`（`ColorSpec.AutoApproximate`）。
+
+2026-09-28 補充（M2）：上文「DNG 的 AsShotNeutral 由 DngCreator 從 CaptureResult 帶入（推測）」已驗證：手動白平衡增益 R 1.6532、B 2.3034 的照片，DNG 的 AsShotNeutral 為 [0.6045, 1, 0.4336]，即增益的倒數（[m2-raw-buffer.md](../test/m2-raw-buffer.md)）。

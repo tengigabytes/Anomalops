@@ -16,4 +16,7 @@
     <string name="iso_clamped">ISO 已達上限</string>
     <string name="flash_fired">閃光燈觸發</string>
     <string name="saved">已儲存 %1$s</string>
+    <string name="thumbnail_description">最近一張，長按保留 RAW</string>
+    <string name="raw_note">RAW：%1$s</string>
+    <string name="raw_gone">已過期或已被擠出</string>
 </resources>

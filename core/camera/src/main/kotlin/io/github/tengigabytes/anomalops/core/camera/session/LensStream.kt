@@ -17,14 +17,17 @@ import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.Executor
 
 /**
- * One capture session on one physical lens of the logical camera: the preview surface plus a full-resolution
- * still reader (FR-61a), both routed with `setPhysicalCameraId` (verified for every lens in G0).
+ * One capture session on one physical lens of the logical camera: the preview surface, a full-resolution still
+ * reader (FR-61a) and the lens's RAW reader (ADR-0005), all routed with `setPhysicalCameraId`. The RAW reader
+ * belongs to [RawReaders] and outlives the session; the still reader closes with it. JPEG_R and JPEG never share
+ * a session: that configuration restarts the camera HAL (docs/test/m2-stream-combos.md).
  */
 internal class LensStream private constructor(
     val camera: PhysicalCamera,
     val format: StillFormat,
-    val sensorOrientation: Int,
+    val characteristics: CameraCharacteristics,
     val reader: ImageReader,
+    val rawReader: ImageReader?,
     val session: CameraCaptureSession,
     private val closed: CompletableDeferred<Unit>,
 ) : AutoCloseable {
@@ -50,6 +53,8 @@ internal class LensStream private constructor(
         reader.close()
     }
 
+    val sensorOrientation: Int get() = characteristics.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
+
     companion object {
         private const val MAX_STILL_IMAGES = 2
 
@@ -58,12 +63,13 @@ internal class LensStream private constructor(
             device: CameraDevice,
             camera: PhysicalCamera,
             preview: Surface,
+            rawReader: ImageReader?,
             executor: Executor,
         ): LensStream {
             val format = StillFormat.bestFor(camera)
             val (width, height) = camera.outputs.getValue(format.name).max.split('x').map(String::toInt)
             val reader = ImageReader.newInstance(width, height, format.imageFormat(), MAX_STILL_IMAGES)
-            val outputs = listOf(preview, reader.surface).map {
+            val outputs = listOfNotNull(preview, reader.surface, rawReader?.surface).map {
                 OutputConfiguration(it).apply { setPhysicalCameraId(camera.id) }
             }
             var configured = false
@@ -74,9 +80,8 @@ internal class LensStream private constructor(
                     closed.complete(Unit)
                 }
                 configured = true
-                val orientation = manager.getCameraCharacteristics(camera.id)
-                    .get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 0
-                return LensStream(camera, format, orientation, reader, session, closed)
+                val characteristics = manager.getCameraCharacteristics(camera.id)
+                return LensStream(camera, format, characteristics, reader, rawReader, session, closed)
             } finally {
                 if (!configured) reader.close()
             }

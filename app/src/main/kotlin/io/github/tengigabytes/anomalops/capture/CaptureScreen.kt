@@ -7,6 +7,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,7 +38,6 @@ import io.github.tengigabytes.anomalops.core.camera.session.StillCapture
 import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.ScenePreset
 import io.github.tengigabytes.anomalops.core.store.media.SavedStill
-import io.github.tengigabytes.anomalops.core.store.media.StillStore
 import kotlinx.coroutines.launch
 import java.io.IOException
 import kotlin.math.roundToLong
@@ -48,14 +48,19 @@ private const val BYTES_PER_MB = 1_048_576.0
 private val SHUTTER_SIZE = 96.dp
 private const val STATUS_LINES = 2
 
-/** M1 test screen: preview, preset switch (FR-11), shutter; stills go to MediaStore (ADR-0004). */
+/**
+ * Test screen: preview, preset switch (FR-11), shutter, and the latest-shot thumbnail whose long press keeps the
+ * RAW frame (FR-62). Stills go to MediaStore (ADR-0004).
+ */
 @Composable
-fun CaptureScreen(controller: CameraController, store: StillStore, conditions: CalibrationKey) {
+fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditions: CalibrationKey) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     var preset by rememberSaveable { mutableStateOf(ScenePreset.SNAPSHOT) }
     var lastShot by remember { mutableStateOf<StillCapture?>(null) }
     var lastSaved by remember { mutableStateOf<SavedStill?>(null) }
+    var rawNote by remember { mutableStateOf<String?>(null) }
+    val rawGone = stringResource(R.string.raw_gone)
     fun run(action: suspend () -> Unit) {
         scope.launch {
             try {
@@ -76,22 +81,32 @@ fun CaptureScreen(controller: CameraController, store: StillStore, conditions: C
             onSurfaceGone = controller::stopBlocking,
             modifier = Modifier.fillMaxWidth().aspectRatio(PREVIEW_ASPECT),
         )
-        StatusLine(state, lastShot, lastSaved)
+        StatusLine(state, lastShot, lastSaved, rawNote)
         PresetBar(selected = preset) { chosen ->
             preset = chosen
             run { controller.select(chosen, conditions) }
         }
-        Button(
-            onClick = {
-                run {
-                    val shot = controller.capture().also(::log)
-                    lastShot = shot
-                    lastSaved = store.save(shot).also { Log.i(TAG, "saved $it") }
-                }
-            },
-            modifier = Modifier.size(SHUTTER_SIZE),
-        ) {
-            Text(stringResource(R.string.shutter))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+            LatestThumbnail(lastShot?.bytes, onLongPress = {
+                val stem = lastSaved?.stem ?: return@LatestThumbnail
+                run { rawNote = pipeline.keepRaw(stem)?.also { Log.i(TAG, "kept $it") }?.displayName ?: rawGone }
+            })
+            Button(
+                onClick = {
+                    run {
+                        val shot = pipeline.shoot()
+                        log(shot.capture)
+                        Log.i(TAG, "saved ${shot.saved}")
+                        lastShot = shot.capture
+                        lastSaved = shot.saved
+                        rawNote = null
+                    }
+                },
+                modifier = Modifier.size(SHUTTER_SIZE),
+            ) {
+                Text(stringResource(R.string.shutter))
+            }
+            Spacer(Modifier.size(THUMBNAIL_SIZE))
         }
     }
 }
@@ -113,7 +128,7 @@ private fun PresetBar(selected: ScenePreset, onSelect: (ScenePreset) -> Unit) {
 }
 
 @Composable
-private fun StatusLine(state: CameraState, lastShot: StillCapture?, lastSaved: SavedStill?) {
+private fun StatusLine(state: CameraState, lastShot: StillCapture?, lastSaved: SavedStill?, rawNote: String?) {
     val parts = buildList {
         state.physicalId?.let { add(stringResource(R.string.status_lens, it)) }
         if (state.colorApproximate) add(stringResource(R.string.wb_approximate))
@@ -122,6 +137,7 @@ private fun StatusLine(state: CameraState, lastShot: StillCapture?, lastSaved: S
         if (lastShot?.spec?.exposure?.isoClamped == true) add(stringResource(R.string.iso_clamped))
         if (lastShot?.flashFired == true) add(stringResource(R.string.flash_fired))
         lastSaved?.let { add(stringResource(R.string.saved, it.displayName)) }
+        rawNote?.let { add(stringResource(R.string.raw_note, it)) }
     }
     // Fixed height so the preset bar and shutter never move under the finger when the text grows.
     Text(

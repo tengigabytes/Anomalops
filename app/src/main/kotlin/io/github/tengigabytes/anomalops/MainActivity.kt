@@ -10,9 +10,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.lifecycleScope
 import io.github.tengigabytes.anomalops.capture.CameraPermissionGate
 import io.github.tengigabytes.anomalops.capture.CaptureScreen
 import io.github.tengigabytes.anomalops.capture.Message
+import io.github.tengigabytes.anomalops.capture.ShotPipeline
 import io.github.tengigabytes.anomalops.core.camera.session.CameraController
 import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.DepthBand
@@ -21,11 +23,13 @@ import io.github.tengigabytes.anomalops.core.profile.DeviceProfiles
 import io.github.tengigabytes.anomalops.core.profile.LensFilter
 import io.github.tengigabytes.anomalops.core.profile.ProfileValidator
 import io.github.tengigabytes.anomalops.core.store.media.StillStore
+import io.github.tengigabytes.anomalops.core.store.raw.DngStore
+import io.github.tengigabytes.anomalops.core.store.raw.RawKeeper
 
 /** Single activity (ADR-0007). M1: camera screen only; the dive lock (ADR-0006) arrives in M3. */
 class MainActivity : ComponentActivity() {
     private var controller: CameraController? = null
-    private val store by lazy { StillStore(applicationContext) }
+    private val rawKeeper by lazy { RawKeeper(DngStore(applicationContext), lifecycleScope) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,13 +40,21 @@ class MainActivity : ComponentActivity() {
                 if (camera == null) {
                     Message(stringResource(R.string.unsupported_device, Build.DEVICE))
                 } else {
-                    CameraPermissionGate { CaptureScreen(camera, store, conditions()) }
+                    CameraPermissionGate {
+                        CaptureScreen(
+                            camera,
+                            ShotPipeline(camera, StillStore(applicationContext), rawKeeper),
+                            conditions(),
+                        )
+                    }
                 }
             }
         }
     }
 
     override fun onDestroy() {
+        // Held RAW frames return their camera buffers before the camera thread stops (ADR-0005).
+        rawKeeper.clear()
         controller?.release()
         super.onDestroy()
     }

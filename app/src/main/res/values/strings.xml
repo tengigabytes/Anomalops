@@ -17,4 +17,7 @@
     <string name="iso_clamped">ISO limit reached</string>
     <string name="flash_fired">Flash fired</string>
     <string name="saved">Saved %1$s</string>
+    <string name="thumbnail_description">Latest photo; long-press to keep its RAW</string>
+    <string name="raw_note">RAW: %1$s</string>
+    <string name="raw_gone">no longer held</string>
 </resources>

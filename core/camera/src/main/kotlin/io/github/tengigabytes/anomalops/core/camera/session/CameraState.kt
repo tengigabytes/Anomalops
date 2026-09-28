@@ -29,6 +29,11 @@ class StillCapture(
     val flashFired: Boolean,
     /** What the physical camera's result reports, to compare with [spec] (ADR-0002, ADR-0009, FR-11). */
     val reported: ReportedSettings,
+    /**
+     * The RAW frame of the same capture (ADR-0005), or null when the lens has no RAW output. Ownership passes to
+     * the caller, who must close it (normally by handing it to the RAW buffer).
+     */
+    val raw: RawFrame? = null,
 )
 
 /**

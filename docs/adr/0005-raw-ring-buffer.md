@@ -52,3 +52,5 @@ FR-62：緩衝最近 5 張 DNG，拍後 10 s 內長按縮圖才寫入，否則�
 2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。RAW 預設 4080×3072（12.53 MP），推測成立；成品與 RAW 同一請求的組合查詢全部支援。
 
 2026-09-28 補充（M2 實測，[m2-stream-combos.md](../test/m2-stream-combos.md)）：單張的工作階段是「預覽 + JPEG\_R + RAW」，鏡頭 2、3、9 實際建立並拍照成功。連拍的一般 JPEG（FR-68）不能和 JPEG\_R 放在同一個工作階段：這種組合建立失敗，並使相機 HAL 程序重啟。因此連拍使用另一個工作階段「預覽 + JPEG」，長按確定後才切換：切換到第一張連拍 JPEG 241–285 ms，連拍 30 fps；連拍後切回預覽 222–894 ms。
+
+2026-09-28 補充（M2 實作，[m2-raw-buffer.md](../test/m2-raw-buffer.md)）：照本 ADR 直接持有 RAW 的 `Image`，不複製。關閉 `ImageReader` 會使它發出的所有 `Image` 失效，所以每個鏡頭的 RAW reader 由 `:core:camera` 的 `RawReaders` 管理，換鏡頭、切到連拍、`stop()` 時都不關閉，等它的 RAW 全部釋放後才關；因此緩衝中的 RAW 在換鏡頭或短暫離開 APP 後仍可保留。DNG 實測：4080 × 3072、未壓縮（Compression = 1）、25,107,212 bytes，寫入約 175 ms。
