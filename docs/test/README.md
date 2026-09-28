@@ -17,4 +17,4 @@
 | [m2-raw-buffer.md](m2-raw-buffer.md) | M2 RAW 緩衝與 DNG 手動實測：過期、換鏡頭、離開 APP 後保留；DNG 標籤，2026-09-28 |
 | [m2-burst.md](m2-burst.md) | M2 連拍手動實測：張數、間隔、寫入積壓、預覽恢復；檔名與 Room 堆疊，2026-09-28 |
 | [m2-instrumented.md](m2-instrumented.md) | M2 實機儀器測試：FR-15、FR-62（含記憶體）、FR-64、FR-68；PSS 看不到 RAW 的發現，2026-09-28 |
-| [m4-instrumented.md](m4-instrumented.md) | M4 實機儀器測試：FR-84 手動深度切換即時改變預覽請求、FR-45 一分鐘感測紀錄；條件切換時序問題的修正，2026-09-28 |
+| [m4-instrumented.md](m4-instrumented.md) | M4 實機儀器測試：FR-84 手動深度切換即時改變預覽請求、FR-45 一分鐘感測紀錄、debug 起始深度段、`:app` 儀器測試回歸；條件切換時序問題的修正，2026-09-28 |
