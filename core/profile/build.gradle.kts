@@ -6,6 +6,15 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 // Pure Kotlin/JVM module: no Android dependency, so its tests run anywhere (ADR-0003, ADR-0007).
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+}
+
+// ADR-0003: device profiles live in assets/device-profiles/ and ship as classpath resources.
+sourceSets {
+    main {
+        resources.srcDir(rootProject.file("assets"))
+        resources.exclude("**/*.md")
+    }
 }
 
 java {
@@ -20,5 +29,6 @@ kotlin {
 }
 
 dependencies {
+    implementation(libs.kotlinx.serialization.json)
     testImplementation(libs.junit)
 }

@@ -14,7 +14,8 @@ Anomalops/
 ├─ docs/                所有文件，見 docs/README.md
 ├─ app/                 :app，UI、潛水鎖定、flavor 相關程式（ADR-0007、0010）
 ├─ core/                :core:camera、:core:profile、:core:store、:core:telemetry
-├─ tools/probe/         :tools:probe 能力偵測工具
+├─ tools/probe/         :tools:probe 能力偵測工具；results/ 放原始偵測報告
+├─ assets/device-profiles/  各型號能力表與校正表（ADR-0003），由 :core:profile 打包
 ├─ scripts/             開發用腳本：check_limits.py、check_module_deps.py
 ├─ config/detekt/       detekt 設定（只放覆寫預設值的部分）
 ├─ .github/workflows/   CI；目前執行 check_limits.py，M0 起加入 Android 建置與測試
@@ -53,6 +54,7 @@ Anomalops/
 python scripts/check_limits.py     # 檔案長度、文件索引、連結
 python scripts/check_module_deps.py   # 模組依賴規則（ADR-0007）
 python scripts/check_flavor_manifests.py   # 兩個 flavor 的權限（NFR-8、ADR-0010），建置後執行
+python scripts/probe_to_profile.py blazer --check   # 能力表與偵測報告一致（ADR-0003）
 ```
 
 detekt 用 2.0 的 alpha 版，因為它是唯一以 Kotlin 2.4 建置的版本；只用在開發檢查，不進 APP，2.0 正式版推出後升級。

@@ -44,3 +44,5 @@ NFR-9 要求新增 Pixel 6 Pro 到 11 Pro 時只補表與實拍校正，不改�
 
 - G0：在 Pixel 10 Pro 跑偵測工具並提交結果，確認 schema 涵蓋 ADR-0001、0002、0004、0005、0009 需要的所有欄位。
 - NFR-9 驗收：新增第二個型號時，只有 `assets/device-profiles/` 有變動。
+
+2026-09-28 實作（Pixel 10 Pro）：`assets/device-profiles/blazer.json` 已提交。能力區段由 `scripts/probe_to_profile.py` 從偵測報告產生，CI 以 `--check` 確保一致；`presetLenses` 與 `calibration` 手寫。**與上文不同**：schema 以 `:core:profile` 的嚴格 Kotlin 資料模型（kotlinx.serialization，未知欄位即失敗）加 `ProfileValidator` 實作，沒有另寫 JSON Schema 檔。此偏離經維護者同意（2026-09-28）。

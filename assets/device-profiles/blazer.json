@@ -1,0 +1,936 @@
+{
+  "schemaVersion": 1,
+  "device": {
+    "buildDevice": "blazer",
+    "model": "Pixel 10 Pro",
+    "socModel": "Tensor G5"
+  },
+  "source": {
+    "probeSchema": "anomalops-probe/3",
+    "probedAt": "2026-09-28T16:03:36.701451+08:00",
+    "buildId": "CP3A.260905.009",
+    "sdkIntFull": 3700001
+  },
+  "capabilities": {
+    "logicalCameras": [
+      {
+        "id": "0",
+        "facing": "BACK",
+        "hardwareLevel": "FULL",
+        "physicalIds": [
+          "2",
+          "3",
+          "4",
+          "5",
+          "6",
+          "9"
+        ],
+        "aeTargetFpsRanges": [
+          [
+            15,
+            15
+          ],
+          [
+            24,
+            24
+          ],
+          [
+            15,
+            30
+          ],
+          [
+            24,
+            30
+          ],
+          [
+            30,
+            30
+          ],
+          [
+            15,
+            60
+          ],
+          [
+            60,
+            60
+          ]
+        ],
+        "zoomRatioRange": [
+          0.50783783,
+          30.0
+        ],
+        "extensions": [
+          "NIGHT"
+        ],
+        "flashAvailable": true
+      },
+      {
+        "id": "1",
+        "facing": "FRONT",
+        "hardwareLevel": "FULL",
+        "physicalIds": [
+          "7",
+          "8"
+        ],
+        "aeTargetFpsRanges": [
+          [
+            15,
+            15
+          ],
+          [
+            15,
+            24
+          ],
+          [
+            24,
+            24
+          ],
+          [
+            15,
+            30
+          ],
+          [
+            24,
+            30
+          ],
+          [
+            30,
+            30
+          ],
+          [
+            15,
+            60
+          ],
+          [
+            60,
+            60
+          ]
+        ],
+        "zoomRatioRange": [
+          0.8958334,
+          10.0
+        ],
+        "extensions": [
+          "NIGHT"
+        ],
+        "flashAvailable": false
+      }
+    ],
+    "physicalCameras": [
+      {
+        "id": "2",
+        "logicalId": "0",
+        "lens": "MAIN",
+        "readout": "BINNED",
+        "focalLengthMm": 6.9,
+        "minFocusDistanceDiopters": 9.5238,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          21,
+          5333
+        ],
+        "maxAnalogIso": 333,
+        "exposureRangeNs": [
+          26345,
+          16000001084
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.119,
+            -0.4931,
+            -0.063,
+            -0.3865,
+            1.4026,
+            0.0617,
+            -0.0325,
+            0.2082,
+            0.7151
+          ],
+          "colorTransform2": [
+            0.7002,
+            -0.0849,
+            -0.1246,
+            -0.5989,
+            1.571,
+            -0.0016,
+            -0.2134,
+            0.4452,
+            0.4157
+          ],
+          "forwardMatrix1": [
+            0.6116,
+            0.1737,
+            0.179,
+            0.1363,
+            0.8365,
+            0.0272,
+            -0.0417,
+            -0.5848,
+            1.4516
+          ],
+          "forwardMatrix2": [
+            0.7144,
+            -0.0009,
+            0.2507,
+            0.2755,
+            0.6223,
+            0.1022,
+            0.0513,
+            -0.506,
+            1.2799
+          ]
+        }
+      },
+      {
+        "id": "3",
+        "logicalId": "0",
+        "lens": "ULTRAWIDE",
+        "readout": "BINNED",
+        "focalLengthMm": 2.02,
+        "minFocusDistanceDiopters": 50,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          52,
+          2310
+        ],
+        "maxAnalogIso": 1155,
+        "exposureRangeNs": [
+          68360,
+          16000000852
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.0015,
+            -0.4012,
+            0.1277,
+            -0.5797,
+            1.5203,
+            0.3272,
+            -0.0785,
+            0.2282,
+            0.7962
+          ],
+          "colorTransform2": [
+            0.7081,
+            -0.1492,
+            -0.0813,
+            -0.6046,
+            1.455,
+            0.1099,
+            -0.2062,
+            0.3978,
+            0.4568
+          ],
+          "forwardMatrix1": [
+            0.7391,
+            0.1889,
+            0.0363,
+            0.2698,
+            0.8598,
+            -0.1295,
+            -0.0082,
+            -0.5439,
+            1.3772
+          ],
+          "forwardMatrix2": [
+            0.7165,
+            0.1439,
+            0.1039,
+            0.2943,
+            0.7786,
+            -0.0729,
+            0.047,
+            -0.4644,
+            1.2426
+          ]
+        }
+      },
+      {
+        "id": "4",
+        "logicalId": "0",
+        "lens": "TELE",
+        "readout": "BINNED",
+        "focalLengthMm": 17.906,
+        "minFocusDistanceDiopters": 3.3333,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          47,
+          16897
+        ],
+        "maxAnalogIso": 1056,
+        "exposureRangeNs": [
+          68360,
+          16000000852
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.0819,
+            -0.4334,
+            0.138,
+            -0.5797,
+            1.5203,
+            0.3272,
+            -0.0766,
+            0.2228,
+            0.7774
+          ],
+          "colorTransform2": [
+            0.7639,
+            -0.1609,
+            -0.0877,
+            -0.6046,
+            1.455,
+            0.1099,
+            -0.1987,
+            0.3834,
+            0.4402
+          ],
+          "forwardMatrix1": [
+            0.7391,
+            0.1889,
+            0.0363,
+            0.2698,
+            0.8598,
+            -0.1295,
+            -0.0083,
+            -0.5439,
+            1.3773
+          ],
+          "forwardMatrix2": [
+            0.7166,
+            0.1438,
+            0.1039,
+            0.2943,
+            0.7786,
+            -0.073,
+            0.0469,
+            -0.4645,
+            1.2427
+          ]
+        }
+      },
+      {
+        "id": "5",
+        "logicalId": "0",
+        "lens": "MAIN",
+        "readout": "CROP_2X",
+        "focalLengthMm": 6.9,
+        "minFocusDistanceDiopters": 9.5238,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          21,
+          10666
+        ],
+        "maxAnalogIso": 666,
+        "exposureRangeNs": [
+          27253,
+          16000001816
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "4080x3072",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.113,
+            -0.4904,
+            -0.0627,
+            -0.3865,
+            1.4026,
+            0.0617,
+            -0.0324,
+            0.2078,
+            0.7137
+          ],
+          "colorTransform2": [
+            0.6993,
+            -0.0848,
+            -0.1244,
+            -0.5989,
+            1.571,
+            -0.0016,
+            -0.2117,
+            0.4416,
+            0.4123
+          ],
+          "forwardMatrix1": [
+            0.6116,
+            0.1736,
+            0.1791,
+            0.1363,
+            0.8365,
+            0.0272,
+            -0.0418,
+            -0.5849,
+            1.4518
+          ],
+          "forwardMatrix2": [
+            0.7145,
+            -0.0008,
+            0.2506,
+            0.2755,
+            0.6223,
+            0.1021,
+            0.0513,
+            -0.5061,
+            1.2799
+          ]
+        }
+      },
+      {
+        "id": "6",
+        "logicalId": "0",
+        "lens": "TELE",
+        "readout": "CROP_2X",
+        "focalLengthMm": 17.906,
+        "minFocusDistanceDiopters": 3.3333,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          33,
+          4224
+        ],
+        "maxAnalogIso": 264,
+        "exposureRangeNs": [
+          122559,
+          16000005957
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.08,
+            -0.4326,
+            0.1378,
+            -0.5797,
+            1.5203,
+            0.3272,
+            -0.0766,
+            0.2229,
+            0.7777
+          ],
+          "colorTransform2": [
+            0.761,
+            -0.1603,
+            -0.0873,
+            -0.6046,
+            1.455,
+            0.1099,
+            -0.1981,
+            0.3821,
+            0.4388
+          ],
+          "forwardMatrix1": [
+            0.7391,
+            0.1889,
+            0.0363,
+            0.2698,
+            0.8598,
+            -0.1296,
+            -0.0084,
+            -0.544,
+            1.3775
+          ],
+          "forwardMatrix2": [
+            0.7167,
+            0.1439,
+            0.1037,
+            0.2944,
+            0.7786,
+            -0.073,
+            0.047,
+            -0.4644,
+            1.2425
+          ]
+        }
+      },
+      {
+        "id": "9",
+        "logicalId": "0",
+        "lens": "ULTRAWIDE",
+        "readout": "CROP_2X",
+        "focalLengthMm": 2.02,
+        "minFocusDistanceDiopters": 50,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          36,
+          4620
+        ],
+        "maxAnalogIso": 288,
+        "exposureRangeNs": [
+          122559,
+          16000005957
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "4032x3024",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.0015,
+            -0.4012,
+            0.1277,
+            -0.5797,
+            1.5203,
+            0.3272,
+            -0.0785,
+            0.2282,
+            0.7962
+          ],
+          "colorTransform2": [
+            0.7081,
+            -0.1492,
+            -0.0813,
+            -0.6046,
+            1.455,
+            0.1099,
+            -0.2062,
+            0.3978,
+            0.4568
+          ],
+          "forwardMatrix1": [
+            0.7391,
+            0.1889,
+            0.0363,
+            0.2698,
+            0.8598,
+            -0.1295,
+            -0.0082,
+            -0.5439,
+            1.3772
+          ],
+          "forwardMatrix2": [
+            0.7165,
+            0.1439,
+            0.1039,
+            0.2943,
+            0.7786,
+            -0.0729,
+            0.047,
+            -0.4644,
+            1.2426
+          ]
+        }
+      },
+      {
+        "id": "7",
+        "logicalId": "1",
+        "lens": "FRONT",
+        "readout": "BINNED",
+        "focalLengthMm": 2.713,
+        "minFocusDistanceDiopters": 5,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          56,
+          20000
+        ],
+        "maxAnalogIso": 1250,
+        "exposureRangeNs": [
+          68360,
+          1000000813
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "3840x2736",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "3840x2736",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "3840x2736",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "3840x2736",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.3027,
+            -0.6529,
+            0.0436,
+            -0.6157,
+            1.6761,
+            0.0007,
+            -0.0449,
+            0.2245,
+            0.7009
+          ],
+          "colorTransform2": [
+            0.8074,
+            -0.2164,
+            -0.0807,
+            -0.5767,
+            1.4627,
+            0.0784,
+            -0.1561,
+            0.3647,
+            0.4497
+          ],
+          "forwardMatrix1": [
+            0.6217,
+            0.2079,
+            0.1347,
+            0.2134,
+            0.7425,
+            0.0442,
+            -0.0817,
+            -0.5493,
+            1.4561
+          ],
+          "forwardMatrix2": [
+            0.6788,
+            0.2035,
+            0.0819,
+            0.2689,
+            0.7804,
+            -0.0493,
+            0.0117,
+            -0.4223,
+            1.2357
+          ]
+        }
+      },
+      {
+        "id": "8",
+        "logicalId": "1",
+        "lens": "FRONT",
+        "readout": "BINNED",
+        "focalLengthMm": 2.713,
+        "minFocusDistanceDiopters": 5,
+        "manualSensor": true,
+        "manualPostProcessing": true,
+        "raw": true,
+        "isoRange": [
+          56,
+          20000
+        ],
+        "maxAnalogIso": 1250,
+        "exposureRangeNs": [
+          68360,
+          1000000628
+        ],
+        "afModes": [
+          "OFF",
+          "AUTO",
+          "MACRO",
+          "CONTINUOUS_VIDEO",
+          "CONTINUOUS_PICTURE",
+          "EDOF"
+        ],
+        "outputs": {
+          "RAW_SENSOR": {
+            "max": "3440x2448",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG": {
+            "max": "3440x2448",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "YUV_420_888": {
+            "max": "3440x2448",
+            "minFrameNs": 33333333,
+            "stallNs": 0
+          },
+          "JPEG_R": {
+            "max": "3440x2448",
+            "minFrameNs": 33333333,
+            "stallNs": 150000000
+          }
+        },
+        "color": {
+          "referenceIlluminant1": 17,
+          "referenceIlluminant2": 21,
+          "colorTransform1": [
+            1.3027,
+            -0.6529,
+            0.0436,
+            -0.6157,
+            1.6761,
+            0.0007,
+            -0.0449,
+            0.2245,
+            0.7009
+          ],
+          "colorTransform2": [
+            0.8074,
+            -0.2164,
+            -0.0807,
+            -0.5767,
+            1.4627,
+            0.0784,
+            -0.1561,
+            0.3647,
+            0.4497
+          ],
+          "forwardMatrix1": [
+            0.6217,
+            0.2079,
+            0.1347,
+            0.2134,
+            0.7425,
+            0.0442,
+            -0.0817,
+            -0.5493,
+            1.4561
+          ],
+          "forwardMatrix2": [
+            0.6788,
+            0.2035,
+            0.0819,
+            0.2689,
+            0.7804,
+            -0.0493,
+            0.0117,
+            -0.4223,
+            1.2357
+          ]
+        }
+      }
+    ],
+    "sensors": {
+      "pressure": {
+        "available": true,
+        "maxDelayUs": 1000000
+      },
+      "light": {
+        "available": true,
+        "maxDelayUs": 1000000
+      },
+      "magneticField": {
+        "available": true,
+        "maxDelayUs": 800000
+      },
+      "ambientTemperature": {
+        "available": false,
+        "maxDelayUs": null
+      },
+      "pressureTemperature": {
+        "available": true,
+        "maxDelayUs": 1000000
+      }
+    }
+  },
+  "presetLenses": {
+    "snapshot": "2",
+    "wide": "3",
+    "fishSchool": "2",
+    "macro": "9",
+    "lowLight": "2"
+  },
+  "calibration": []
+}
