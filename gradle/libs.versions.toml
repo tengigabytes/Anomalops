@@ -1,0 +1,30 @@
+# SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Versions checked against Google Maven / Maven Central on 2026-09-28.
+
+[versions]
+agp = "9.4.1"
+kotlin = "2.4.20"
+compileSdk = "37"
+targetSdk = "37"
+minSdk = "36"
+composeBom = "2026.09.00"
+activityCompose = "1.13.0"
+coreKtx = "1.19.1"
+junit = "4.13.2"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+compose-ui = { module = "androidx.compose.ui:ui" }
+compose-material3 = { module = "androidx.compose.material3:material3" }
+junit = { module = "junit:junit", version.ref = "junit" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+# AGP 9 compiles Kotlin itself (built-in Kotlin); declaring the Compose compiler plugin with an explicit
+# version also pins the Kotlin Gradle plugin version on the build classpath.
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

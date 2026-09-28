@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <string name="app_name" translatable="false">Anomalops</string>
+    <string name="skeleton_placeholder">Anomalops — project skeleton (M0)</string>
+</resources>
