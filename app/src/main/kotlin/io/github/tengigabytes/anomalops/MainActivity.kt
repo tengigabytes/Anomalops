@@ -16,10 +16,12 @@ import io.github.tengigabytes.anomalops.core.camera.session.CameraController
 import io.github.tengigabytes.anomalops.core.profile.DeviceProfile
 import io.github.tengigabytes.anomalops.core.profile.DeviceProfiles
 import io.github.tengigabytes.anomalops.core.profile.ProfileValidator
+import io.github.tengigabytes.anomalops.core.store.media.StillStore
 
 /** Single activity (ADR-0007). M1: camera screen only; the dive lock (ADR-0006) arrives in M3. */
 class MainActivity : ComponentActivity() {
     private var controller: CameraController? = null
+    private val store by lazy { StillStore(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,7 +32,7 @@ class MainActivity : ComponentActivity() {
                 if (camera == null) {
                     Message(stringResource(R.string.unsupported_device, Build.DEVICE))
                 } else {
-                    CameraPermissionGate { CaptureScreen(camera) }
+                    CameraPermissionGate { CaptureScreen(camera, store) }
                 }
             }
         }

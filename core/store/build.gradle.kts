@@ -21,5 +21,6 @@ android {
 
 dependencies {
     implementation(project(":core:camera"))
+    implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
 }

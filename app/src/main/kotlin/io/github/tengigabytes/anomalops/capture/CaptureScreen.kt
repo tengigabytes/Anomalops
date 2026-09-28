@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.tengigabytes.anomalops.R
 import io.github.tengigabytes.anomalops.core.camera.session.CameraController
@@ -37,7 +38,10 @@ import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.DepthBand
 import io.github.tengigabytes.anomalops.core.profile.LensFilter
 import io.github.tengigabytes.anomalops.core.profile.ScenePreset
+import io.github.tengigabytes.anomalops.core.store.media.SavedStill
+import io.github.tengigabytes.anomalops.core.store.media.StillStore
 import kotlinx.coroutines.launch
+import java.io.IOException
 import kotlin.math.roundToLong
 
 // M1 has no depth, filter or dive-light switches yet (M3, M4); calibration lookups use these conditions.
@@ -46,20 +50,24 @@ private const val TAG = "Capture"
 private const val NS_PER_SECOND = 1e9
 private const val BYTES_PER_MB = 1_048_576.0
 private val SHUTTER_SIZE = 96.dp
+private const val STATUS_LINES = 2
 
-/** M1 test screen: preview, preset switch (FR-11) and shutter. Stills are not stored until MediaStore lands. */
+/** M1 test screen: preview, preset switch (FR-11), shutter; stills go to MediaStore (ADR-0004). */
 @Composable
-fun CaptureScreen(controller: CameraController) {
+fun CaptureScreen(controller: CameraController, store: StillStore) {
     val state by controller.state.collectAsState()
     val scope = rememberCoroutineScope()
     var preset by rememberSaveable { mutableStateOf(ScenePreset.SNAPSHOT) }
     var lastShot by remember { mutableStateOf<StillCapture?>(null) }
+    var lastSaved by remember { mutableStateOf<SavedStill?>(null) }
     fun run(action: suspend () -> Unit) {
         scope.launch {
             try {
                 action()
             } catch (e: IllegalStateException) {
                 Log.w(TAG, "camera call failed", e)
+            } catch (e: IOException) {
+                Log.w(TAG, "saving failed", e)
             }
         }
     }
@@ -72,13 +80,19 @@ fun CaptureScreen(controller: CameraController) {
             onSurfaceGone = controller::stopBlocking,
             modifier = Modifier.fillMaxWidth().aspectRatio(PREVIEW_ASPECT),
         )
-        StatusLine(state, lastShot)
+        StatusLine(state, lastShot, lastSaved)
         PresetBar(selected = preset) { chosen ->
             preset = chosen
             run { controller.select(chosen, M1_CONDITIONS) }
         }
         Button(
-            onClick = { run { lastShot = controller.capture().also(::log) } },
+            onClick = {
+                run {
+                    val shot = controller.capture().also(::log)
+                    lastShot = shot
+                    lastSaved = store.save(shot).also { Log.i(TAG, "saved $it") }
+                }
+            },
             modifier = Modifier.size(SHUTTER_SIZE),
         ) {
             Text(stringResource(R.string.shutter))
@@ -103,7 +117,7 @@ private fun PresetBar(selected: ScenePreset, onSelect: (ScenePreset) -> Unit) {
 }
 
 @Composable
-private fun StatusLine(state: CameraState, lastShot: StillCapture?) {
+private fun StatusLine(state: CameraState, lastShot: StillCapture?, lastSaved: SavedStill?) {
     val parts = buildList {
         state.physicalId?.let { add(stringResource(R.string.status_lens, it)) }
         if (state.colorApproximate) add(stringResource(R.string.wb_approximate))
@@ -111,8 +125,17 @@ private fun StatusLine(state: CameraState, lastShot: StillCapture?) {
         lastShot?.let { add(describe(it)) }
         if (lastShot?.spec?.exposure?.isoClamped == true) add(stringResource(R.string.iso_clamped))
         if (lastShot?.flashFired == true) add(stringResource(R.string.flash_fired))
+        lastSaved?.let { add(stringResource(R.string.saved, it.displayName)) }
     }
-    Text(parts.joinToString(" · "), color = Color.White, modifier = Modifier.padding(8.dp))
+    // Fixed height so the preset bar and shutter never move under the finger when the text grows.
+    Text(
+        text = parts.joinToString(" · "),
+        color = Color.White,
+        minLines = STATUS_LINES,
+        maxLines = STATUS_LINES,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(8.dp),
+    )
 }
 
 private fun describe(shot: StillCapture): String {

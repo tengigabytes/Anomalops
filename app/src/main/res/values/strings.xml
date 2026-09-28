@@ -16,4 +16,5 @@
     <string name="camera_failed">Camera error: %1$s</string>
     <string name="iso_clamped">ISO limit reached</string>
     <string name="flash_fired">Flash fired</string>
+    <string name="saved">Saved %1$s</string>
 </resources>

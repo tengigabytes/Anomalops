@@ -15,4 +15,5 @@
     <string name="camera_failed">相機錯誤：%1$s</string>
     <string name="iso_clamped">ISO 已達上限</string>
     <string name="flash_fired">閃光燈觸發</string>
+    <string name="saved">已儲存 %1$s</string>
 </resources>

@@ -50,6 +50,6 @@ G0 只測過 YUV 1920 × 1080 + JPEG\_R；1440 × 1080 的 `SurfaceView` 預覽�
 
 ## 4. 未驗證
 
-- 照片方向：只依感測器方向設定 `JPEG_ORIENTATION`，照片沒有寫出，未檢查。
+- 照片方向：本測試時照片沒有寫出；之後在 `m1/mediastore` 由維護者確認直向拍攝方向正確（[m1-mediastore.md](m1-mediastore.md)）。
 - 預覽 AE 的測光值確實取自正在出圖的實體鏡頭（程式優先讀實體鏡頭結果，沒有記錄是否退回 logical 結果）。
 - 延遲（NFR-4）、增益圖（FR-61a）、預覽與成品色差（FR-91）：留給儀器測試與 `m1/mediastore`。

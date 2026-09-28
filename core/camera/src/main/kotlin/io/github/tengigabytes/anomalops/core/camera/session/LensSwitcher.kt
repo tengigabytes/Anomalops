@@ -51,7 +51,7 @@ internal class LensSwitcher(
         val spec = planner.still(checkNotNull(preview), exposure, lens.format)
         val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
             addTarget(lens.reader.surface)
-            // UNVERIFIED(G1): correct for the portrait-locked M1 screen only; M3 revisits orientation.
+            // Upright for the portrait-locked M1 screen (docs/test/m1-mediastore.md); M3 revisits orientation.
             set(CaptureRequest.JPEG_ORIENTATION, lens.sensorOrientation)
         }
         val (bytes, result) = lens.session.captureStill(request, lens.reader, handler)
