@@ -8,8 +8,8 @@
 
 - [x] 授權：GPL-3.0-or-later、文件 CC BY-SA 4.0（2026-09-28）
 - [x] applicationId：`io.github.tengigabytes.anomalops`（2026-09-28）
-- [ ] 審閱 `NOTICE.md` 的附加許可文字
-- [ ] 確認這批文件沒有不宜公開的內容（repo 是公開的）
+- [x] 審閱 `NOTICE.md` 的附加許可文字（2026-09-28 同意現行文字）
+- [x] 確認這批文件沒有不宜公開的內容（repo 是公開的）（2026-09-28 推送前確認）
 
 ## M0 之前
 
