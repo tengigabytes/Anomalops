@@ -60,7 +60,7 @@ class PresetSwitchTest {
             val lensChange = rig.profile.cameraFor(current)?.id != rig.profile.cameraFor(next)?.id
             if (lensChange) lensChangeMs += ms else sameLensMs += ms
             Log.i(Acceptance.TAG, "switch #$index $current -> $next lensChange=$lensChange %.1f ms".format(ms))
-            val still = rig.controller.capture()
+            val still = rig.capture()
             problems += PresetCheck.problems(rig.profile, rig.conditions, next, still).map { "#$index $next: $it" }
             current = next
         }

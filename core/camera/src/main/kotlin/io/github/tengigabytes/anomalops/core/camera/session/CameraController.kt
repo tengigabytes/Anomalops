@@ -48,6 +48,10 @@ class CameraController(context: Context, profile: DeviceProfile) {
 
     /** Every preview frame's result as it arrives; used to time preset switches (NFR-4). */
     val previewFrames: SharedFlow<PreviewFrame> = frames.asSharedFlow()
+    private val scans = MutableSharedFlow<FocusScan>(extraBufferCapacity = FRAME_BUFFER)
+
+    /** Every AUTO focus scan as it settles (FR-31, FR-35). */
+    val focusScans: SharedFlow<FocusScan> = scans.asSharedFlow()
 
     private val lenses = LensSwitcher(
         manager = requireNotNull(context.getSystemService(CameraManager::class.java)),
@@ -55,6 +59,7 @@ class CameraController(context: Context, profile: DeviceProfile) {
         planner = planner,
         onLost = { message -> mutableState.value = CameraState(status = CameraStatus.FAILED, error = message) },
         onFrame = { frames.tryEmit(it) },
+        onScan = { scans.tryEmit(it) },
     )
 
     /** Opens the camera if needed and previews [preset] on [surface], whose buffer size must be [PREVIEW_SIZE]. */

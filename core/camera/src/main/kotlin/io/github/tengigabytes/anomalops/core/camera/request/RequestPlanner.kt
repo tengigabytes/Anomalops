@@ -66,7 +66,7 @@ class RequestPlanner(private val profile: DeviceProfile) {
         return still.copy(exposure = exposure.copy(frameDurationNs = frameNs))
     }
 
-    /** FR-31: after a failed AF scan, focus at the preset's fallback distance, within the lens's range. */
+    /** FR-31, FR-35: after a failed or overrun AF scan, focus at the preset's fallback distance within range. */
     fun focusFallback(spec: RequestSpec): RequestSpec {
         val policy = PresetTable.parametersFor(spec.preset).focus
         if (policy !is FocusPolicy.AutoWithFixedFallback) return spec

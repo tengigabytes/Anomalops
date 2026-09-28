@@ -30,8 +30,10 @@ internal class LensSwitcher(
     private val planner: RequestPlanner,
     private val onLost: (String) -> Unit,
     private val onFrame: (PreviewFrame) -> Unit,
+    onScan: (FocusScan) -> Unit,
 ) {
     private val executor = Executor { handler.post(it) }
+    private val focus = FocusScanner(planner, handler, onScan)
     private var device: CameraDevice? = null
     private var stream: LensStream? = null
     private var surface: Surface? = null
@@ -46,14 +48,22 @@ internal class LensSwitcher(
         if (next != surface) closeStream()
         surface = next
         val lens = stream?.takeIf { it.camera.id == spec.physicalId } ?: openStream(spec, next)
-        val request = request(spec, CameraDevice.TEMPLATE_PREVIEW) { addTarget(next) }
-        lens.session.setRepeatingRequest(request, meter(spec), handler)
-        preview = spec
+        val withTarget: RequestBuilder = { s, template, extra ->
+            request(
+                s,
+                template,
+            ) { extra().also { addTarget(next) } }
+        }
+        focus.show(lens.session, spec, withTarget) { shown ->
+            lens.session.setRepeatingRequest(withTarget(shown, CameraDevice.TEMPLATE_PREVIEW) {}, meter(shown), handler)
+            preview = shown
+        }
     }
 
     /** One still with the ADR-0009 shutter-priority exposure derived from the latest preview frame. */
     suspend fun takeStill(): StillCapture {
         val lens = checkNotNull(stream) { "preview not started" }
+        focus.settled()
         val spec = planner.still(checkNotNull(preview), awaitMetered(), lens.format)
         val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
             addTarget(lens.reader.surface)
@@ -80,6 +90,7 @@ internal class LensSwitcher(
      */
     suspend fun burst(fps: Int, onFrame: (BurstFrame) -> Unit, until: suspend () -> Unit): Int {
         val lens = checkNotNull(stream) { "preview not started" }
+        focus.settled()
         val base = checkNotNull(preview)
         val target = checkNotNull(surface)
         val spec = planner.burst(base, awaitMetered(), fps)
@@ -139,6 +150,7 @@ internal class LensSwitcher(
     private fun closeStream() {
         stream?.close()
         stream = null
+        focus.reset()
         metered = null
         firstMeter = CompletableDeferred()
     }
@@ -170,6 +182,7 @@ internal class LensSwitcher(
         override fun onCaptureCompleted(s: CameraCaptureSession, r: CaptureRequest, result: TotalCaptureResult) {
             val arrivedAtNs = SystemClock.elapsedRealtimeNanos()
             onFrame(PreviewFrame(spec, result.get(CaptureResult.SENSOR_TIMESTAMP) ?: 0L, arrivedAtNs))
+            focus.onResult(s, result, spec.physicalId)
             // The physical result is present for the streaming lens (docs/test/m1-pipeline-calibration.md).
             val source = result.physicalCameraTotalResults[spec.physicalId] ?: result
             val time = source.get(CaptureResult.SENSOR_EXPOSURE_TIME)

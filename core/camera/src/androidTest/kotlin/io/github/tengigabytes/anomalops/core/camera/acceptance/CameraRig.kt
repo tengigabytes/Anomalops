@@ -11,6 +11,7 @@ import android.os.HandlerThread
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.tengigabytes.anomalops.core.camera.session.CameraController
+import io.github.tengigabytes.anomalops.core.camera.session.StillCapture
 import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.DepthBand
 import io.github.tengigabytes.anomalops.core.profile.DeviceProfile
@@ -41,6 +42,12 @@ internal class CameraRig : AutoCloseable {
     ).apply { setOnImageAvailableListener({ it.acquireLatestImage()?.close() }, Handler(sinkThread.looper)) }
 
     suspend fun start(preset: ScenePreset) = controller.start(sink.surface, preset, conditions)
+
+    /**
+     * One still, with its RAW frame returned at once: the RAW reader holds 7 images (ADR-0005), and a test that
+     * keeps them fills it and crashes the camera thread. The app hands them to the RAW buffer instead.
+     */
+    suspend fun capture(): StillCapture = controller.capture().also { it.raw?.close() }
 
     override fun close() {
         controller.stopBlocking()

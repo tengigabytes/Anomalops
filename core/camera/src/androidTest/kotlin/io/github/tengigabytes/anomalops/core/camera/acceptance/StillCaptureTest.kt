@@ -39,10 +39,10 @@ class StillCaptureTest {
     @Test
     fun nfr4_shutterToExposureStart() = runBlocking<Unit> {
         rig.start(ScenePreset.SNAPSHOT)
-        repeat(WARM_UP) { rig.controller.capture() }
+        repeat(WARM_UP) { rig.capture() }
         val latencyMs = List(SHOTS) {
             val pressedAt = SystemClock.elapsedRealtimeNanos()
-            val still = rig.controller.capture()
+            val still = rig.capture()
             (still.sensorTimestampNs - pressedAt) / NS_PER_MS
         }
         val p95 = Acceptance.report("NFR-4 shutter", latencyMs)
@@ -56,7 +56,7 @@ class StillCaptureTest {
         val shots = List(ULTRA_HDR_SHOTS) { index ->
             val preset = ScenePreset.entries[index % ScenePreset.entries.size]
             rig.controller.select(preset, rig.conditions)
-            rig.controller.capture()
+            rig.capture()
         }
         val options = BitmapFactory.Options().apply { inSampleSize = DECODE_SAMPLE }
         val withGainMap = shots.count { shot ->

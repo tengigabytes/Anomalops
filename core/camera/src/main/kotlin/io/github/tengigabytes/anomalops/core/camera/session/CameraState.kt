@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.core.camera.session
 
+import io.github.tengigabytes.anomalops.core.camera.focus.ScanOutcome
 import io.github.tengigabytes.anomalops.core.camera.request.RequestSpec
 import io.github.tengigabytes.anomalops.core.camera.request.StillFormat
 import io.github.tengigabytes.anomalops.core.profile.ScenePreset
@@ -42,6 +43,19 @@ class StillCapture(
  * `SystemClock.elapsedRealtimeNanos()` time.
  */
 data class PreviewFrame(val spec: RequestSpec, val sensorTimestampNs: Long, val arrivedAtNs: Long)
+
+/**
+ * One AUTO focus scan (FR-31, FR-35): its outcome, the time from sending the trigger and from the start of the
+ * search to the outcome, and the fixed distance in diopters the preview fell back to, or null when it locked.
+ */
+data class FocusScan(
+    val preset: ScenePreset,
+    val physicalId: String,
+    val outcome: ScanOutcome,
+    val totalMs: Double,
+    val searchMs: Double,
+    val fallbackDiopters: Double?,
+)
 
 /** One JPEG of a burst (FR-15, FR-68); [index] counts from 0 in arrival order. */
 class BurstFrame(val index: Int, val bytes: ByteArray, val sensorTimestampNs: Long, val spec: RequestSpec)

@@ -39,7 +39,7 @@ class DarkRoomFlashTest {
         rig.start(ScenePreset.SNAPSHOT)
         val firedPerPreset = ScenePreset.entries.associateWith { preset ->
             rig.controller.select(preset, rig.conditions)
-            val shots = List(SHOTS_PER_PRESET) { rig.controller.capture() }
+            val shots = List(SHOTS_PER_PRESET) { rig.capture() }
             val fired = shots.count { it.flashFired }
             val clamped = shots.count { it.spec.exposure?.isoClamped == true }
             val meanIso = shots.mapNotNull { it.reported.iso }.average()
