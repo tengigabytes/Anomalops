@@ -1,6 +1,6 @@
 # Anomalops 專案規則
 
-Pixel 潛水相機 APP（Android，Kotlin，Camera2）。目前階段：M0 完成（骨架、G0、平台測試、品質檢查、Play Billing 檢查、能力表），下一步是 M1。
+Pixel 潛水相機 APP（Android，Kotlin，Camera2）。目前階段：M1 相機核心完成（FR-91 待灰卡，見 `docs/test/m1-instrumented.md`）；下一步 M2、M3、M4 擇一。
 
 ## 語言
 - 與使用者討論：臺灣正體中文。
