@@ -43,5 +43,8 @@ class StillCapture(
  */
 data class PreviewFrame(val spec: RequestSpec, val sensorTimestampNs: Long, val arrivedAtNs: Long)
 
+/** One JPEG of a burst (FR-15, FR-68); [index] counts from 0 in arrival order. */
+class BurstFrame(val index: Int, val bytes: ByteArray, val sensorTimestampNs: Long, val spec: RequestSpec)
+
 /** A Camera2 operation failed; the message is for logs and the UI status line. */
 class CameraFailure(message: String, cause: Throwable? = null) : IllegalStateException(message, cause)

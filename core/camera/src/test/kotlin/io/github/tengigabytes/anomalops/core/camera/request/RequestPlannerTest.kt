@@ -49,6 +49,17 @@ class RequestPlannerTest {
     }
 
     @Test
+    fun fr15_burstIsPlainJpegAtOneExposurePacedToTheRequestedRate() {
+        val preview = planner.preview(ScenePreset.FISH_SCHOOL, shallow)
+        val burst = planner.burst(preview, Exposure(timeNs = SECOND / 60, iso = 100), fps = 15)
+        assertEquals(AeMode.OFF, burst.ae)
+        assertEquals(SECOND / 250, burst.exposure?.exposure?.timeNs)
+        assertEquals(SECOND / 15, burst.exposure?.frameDurationNs)
+        val fast = planner.burst(preview, Exposure(timeNs = SECOND / 60, iso = 100), fps = 60)
+        assertEquals("never faster than the JPEG stream allows", 33_333_333L, fast.exposure?.frameDurationNs)
+    }
+
+    @Test
     fun fr61a_blazerCamerasPreferJpegR() {
         ScenePreset.entries.forEach { assertEquals(StillFormat.JPEG_R, StillFormat.bestFor(planner.camera(it))) }
     }

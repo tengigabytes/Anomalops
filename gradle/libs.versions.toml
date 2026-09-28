@@ -14,6 +14,9 @@ coreKtx = "1.19.1"
 junit = "4.13.2"
 androidxTest = "1.7.0"
 androidxTestExtJunit = "1.3.0"
+room = "2.8.5"
+# KSP 2.3+ is versioned independently of Kotlin.
+ksp = "2.3.12"
 kotlinxSerialization = "1.11.0"
 # Same version Compose BOM 2026.09.00 already resolves on the app classpath.
 kotlinxCoroutines = "1.9.0"
@@ -32,6 +35,8 @@ androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxT
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidxTestExtJunit" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerialization" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 detekt-ktlint-wrapper = { module = "dev.detekt:detekt-rules-ktlint-wrapper", version.ref = "detekt" }
 
 [plugins]
@@ -43,3 +48,4 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 detekt = { id = "dev.detekt", version.ref = "detekt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

@@ -1,0 +1,128 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "bab115d8c8b0d416aeef2081f9be0232",
+    "entities": [
+      {
+        "tableName": "burst_stack",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`stem` TEXT NOT NULL, `takenAtMs` INTEGER NOT NULL, `frameCount` INTEGER NOT NULL, `coverName` TEXT NOT NULL, `lensId` TEXT NOT NULL, `preset` TEXT NOT NULL, PRIMARY KEY(`stem`))",
+        "fields": [
+          {
+            "fieldPath": "stem",
+            "columnName": "stem",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "takenAtMs",
+            "columnName": "takenAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "frameCount",
+            "columnName": "frameCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "coverName",
+            "columnName": "coverName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "lensId",
+            "columnName": "lensId",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "preset",
+            "columnName": "preset",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "stem"
+          ]
+        }
+      },
+      {
+        "tableName": "burst_frame",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`stem` TEXT NOT NULL, `position` INTEGER NOT NULL, `displayName` TEXT NOT NULL, `uri` TEXT NOT NULL, `takenAtMs` INTEGER NOT NULL, PRIMARY KEY(`stem`, `position`), FOREIGN KEY(`stem`) REFERENCES `burst_stack`(`stem`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "stem",
+            "columnName": "stem",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "displayName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "uri",
+            "columnName": "uri",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "takenAtMs",
+            "columnName": "takenAtMs",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "stem",
+            "position"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_burst_frame_stem",
+            "unique": false,
+            "columnNames": [
+              "stem"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_burst_frame_stem` ON `${TABLE_NAME}` (`stem`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "burst_stack",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "stem"
+            ],
+            "referencedColumns": [
+              "stem"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'bab115d8c8b0d416aeef2081f9be0232')"
+    ]
+  }
+}

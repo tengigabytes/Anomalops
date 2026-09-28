@@ -8,7 +8,7 @@ UI、潛水鎖定與各模組的組裝點。
 | 建置 flavor | `play`（Play Billing 樂捐）、`foss`（無專有相依），見 ADR-0010；樂捐程式放在 `src/play/`、`src/foss/` |
 | 依賴 | `:core:camera`、`:core:profile`、`:core:store`、`:core:telemetry` |
 | 權限 | 不宣告 `INTERNET`（NFR-8） |
-| 內容 | `MainActivity`：依 `Build.DEVICE` 載入並驗證能力表，沒有能力表就不開相機（NFR-9）；debug 版可用 `am start ... --es depthBand DEEP` 選深度段（M3 前的測試用）<br>`capture/CaptureScreen`：M1 測試畫面，預覽、五種預設切換、快門、狀態列（鏡頭、白平衡近似、上一張的格式／大小／快門／ISO、已儲存的檔名）<br>`capture/ShotPipeline`：拍攝 → MediaStore → RAW 進緩衝；`capture/LatestThumbnail`：最近一張縮圖，長按保留 RAW（FR-62）<br>`capture/CameraPreview`：`SurfaceView` 預覽（緩衝固定 1440×1080）與相機權限 |
+| 內容 | `MainActivity`：依 `Build.DEVICE` 載入並驗證能力表，沒有能力表就不開相機（NFR-9）；debug 版可用 `am start ... --es depthBand DEEP` 選深度段（M3 前的測試用）<br>`capture/CaptureScreen`：M1 測試畫面，預覽、五種預設切換、快門、狀態列（鏡頭、白平衡近似、上一張的格式／大小／快門／ISO、已儲存的檔名）<br>`capture/ShutterButton`：按下即拍一張，按住 400 ms 起連拍、放開即停（FR-15、NFR-4）<br>`capture/ShotPipeline`：拍攝 → MediaStore → RAW 進緩衝；連拍時 3 個協程平行寫入並記錄 Room 堆疊；`capture/LatestThumbnail`：最近一張縮圖，長按保留 RAW（FR-62）<br>`capture/CameraPreview`：`SurfaceView` 預覽（緩衝固定 1440×1080）與相機權限 |
 | 權限補充 | `CAMERA`；M1 暫時鎖直向，M3 潛水鎖定介面再決定方向處理 |
 | 測試 | 實機儀器測試 `StillWriteTest`：拍 300 張並寫入 MediaStore（NFR-7），測完刪除 |
 | 現況 | M1 進行中：拍攝後經 `:core:store` 寫入 MediaStore；狀態列固定兩行高，按鍵位置不隨文字長度移動 |

@@ -26,6 +26,12 @@ class StillNamesTest {
     }
 
     @Test
+    fun fr68_burstFramesShareTheStemAndCountFromOne() {
+        assertEquals("ANM_20260928_170241_051_B001.jpg", StillNames.burstName("ANM_20260928_170241_051", 0))
+        assertEquals("ANM_20260928_170241_051_B120.jpg", StillNames.burstName("ANM_20260928_170241_051", 119))
+    }
+
+    @Test
     fun adr0004_stillsGoToPicturesAnomalops() {
         assertEquals("Pictures/Anomalops", StillNames.RELATIVE_PATH)
     }

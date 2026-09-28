@@ -3,6 +3,7 @@
 
 plugins {
     alias(libs.plugins.android.library)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -22,5 +23,12 @@ android {
 dependencies {
     implementation(project(":core:camera"))
     implementation(libs.kotlinx.coroutines.android)
+    // ADR-0007: burst stack index (FR-68) in Room; the schema is exported for review and migrations.
+    implementation(libs.room.runtime)
+    ksp(libs.room.compiler)
     testImplementation(libs.junit)
+}
+
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }

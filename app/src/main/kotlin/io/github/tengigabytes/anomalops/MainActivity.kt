@@ -25,11 +25,13 @@ import io.github.tengigabytes.anomalops.core.profile.ProfileValidator
 import io.github.tengigabytes.anomalops.core.store.media.StillStore
 import io.github.tengigabytes.anomalops.core.store.raw.DngStore
 import io.github.tengigabytes.anomalops.core.store.raw.RawKeeper
+import io.github.tengigabytes.anomalops.core.store.stack.BurstStacks
 
 /** Single activity (ADR-0007). M1: camera screen only; the dive lock (ADR-0006) arrives in M3. */
 class MainActivity : ComponentActivity() {
     private var controller: CameraController? = null
     private val rawKeeper by lazy { RawKeeper(DngStore(applicationContext), lifecycleScope) }
+    private val stacks by lazy { BurstStacks(applicationContext) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -43,7 +45,7 @@ class MainActivity : ComponentActivity() {
                     CameraPermissionGate {
                         CaptureScreen(
                             camera,
-                            ShotPipeline(camera, StillStore(applicationContext), rawKeeper),
+                            ShotPipeline(camera, StillStore(applicationContext), rawKeeper, stacks),
                             conditions(),
                         )
                     }

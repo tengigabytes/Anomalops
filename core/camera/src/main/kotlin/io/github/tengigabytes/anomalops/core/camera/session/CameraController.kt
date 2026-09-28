@@ -75,6 +75,13 @@ class CameraController(context: Context, profile: DeviceProfile) {
         }
     }
 
+    /**
+     * FR-15, FR-68: bursts plain JPEG at [fps] on the current lens until [until] returns; [onFrame] runs on the
+     * camera thread for every frame and must not block. Returns the frame count.
+     */
+    suspend fun burst(fps: Int, onFrame: (BurstFrame) -> Unit, until: suspend () -> Unit): Int =
+        serial { lenses.burst(fps, onFrame, until) }
+
     /** Stops the preview and closes the camera; [start] opens it again. */
     suspend fun stop() = serial {
         lenses.shutdown()

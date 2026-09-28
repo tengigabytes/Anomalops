@@ -24,6 +24,9 @@ object StillNames {
 
     fun stillName(stem: String): String = "$stem.jpg"
 
+    /** FR-68: burst frames share the burst's stem and count from 1, e.g. `ANM_20260928_170241_051_B001.jpg`. */
+    fun burstName(stem: String, index: Int): String = "%s_B%03d.jpg".format(Locale.ROOT, stem, index + 1)
+
     /** ADR-0005: the DNG sits next to its still with the same stem. */
     fun dngName(stem: String): String = "$stem.dng"
 }

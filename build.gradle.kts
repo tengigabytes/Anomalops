@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.detekt) apply false
+    alias(libs.plugins.ksp) apply false
 }
 
 // Static analysis for every module (docs/dev/code-structure.md, section 3): detekt plus its ktlint wrapper.

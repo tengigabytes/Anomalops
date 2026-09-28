@@ -54,10 +54,7 @@ internal class LensSwitcher(
     /** One still with the ADR-0009 shutter-priority exposure derived from the latest preview frame. */
     suspend fun takeStill(): StillCapture {
         val lens = checkNotNull(stream) { "preview not started" }
-        // A shutter press right after start waits for the first metered preview frame instead of failing.
-        if (metered == null) withTimeoutOrNull(FIRST_METER_TIMEOUT_MS) { firstMeter.await() }
-        val exposure = metered ?: throw CameraFailure("no metered preview frame after $FIRST_METER_TIMEOUT_MS ms")
-        val spec = planner.still(checkNotNull(preview), exposure, lens.format)
+        val spec = planner.still(checkNotNull(preview), awaitMetered(), lens.format)
         val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
             addTarget(lens.reader.surface)
             lens.rawReader?.let { addTarget(it.surface) }
@@ -75,6 +72,41 @@ internal class LensSwitcher(
             reported = reportedSettings(result, spec.physicalId),
             raw = images.raw?.let { rawFrame(lens, it, result) },
         )
+    }
+
+    /**
+     * FR-15: swaps the single session for the burst session, repeats one manual JPEG request at [fps] until [until]
+     * returns, then restores the single session and its preview. Returns the number of frames delivered.
+     */
+    suspend fun burst(fps: Int, onFrame: (BurstFrame) -> Unit, until: suspend () -> Unit): Int {
+        val lens = checkNotNull(stream) { "preview not started" }
+        val base = checkNotNull(preview)
+        val target = checkNotNull(surface)
+        val spec = planner.burst(base, awaitMetered(), fps)
+        closeStream()
+        var count = 0
+        val burst = BurstStream.open(checkNotNull(device), lens.camera, target, handler) { bytes, timestamp ->
+            onFrame(BurstFrame(count++, bytes, timestamp, spec))
+        }
+        try {
+            val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
+                addTarget(target)
+                addTarget(burst.surface)
+                set(CaptureRequest.JPEG_ORIENTATION, lens.sensorOrientation)
+            }
+            burst.session.setRepeatingRequest(request, null, handler)
+            until()
+        } finally {
+            burst.closeAndWait(SESSION_CLOSE_TIMEOUT_MS)
+            show(base, target)
+        }
+        return count
+    }
+
+    /** A shutter press right after start waits for the first metered preview frame instead of failing. */
+    private suspend fun awaitMetered(): Exposure {
+        if (metered == null) withTimeoutOrNull(FIRST_METER_TIMEOUT_MS) { firstMeter.await() }
+        return metered ?: throw CameraFailure("no metered preview frame after $FIRST_METER_TIMEOUT_MS ms")
     }
 
     /** ADR-0005: hand the RAW image over with the physical lens's characteristics and result, for DngCreator. */

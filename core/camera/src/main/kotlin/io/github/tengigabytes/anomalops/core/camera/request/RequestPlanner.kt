@@ -10,6 +10,7 @@ import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.DeviceProfile
 import io.github.tengigabytes.anomalops.core.profile.PhysicalCamera
 import io.github.tengigabytes.anomalops.core.profile.ScenePreset
+import kotlin.math.max
 import kotlin.math.min
 
 /** FR-61a: the still output format; the profile's `outputs` map is keyed by these names. */
@@ -53,6 +54,18 @@ class RequestPlanner(private val profile: DeviceProfile) {
         return preview.copy(ae = AeMode.OFF, exposure = exposure)
     }
 
+    /**
+     * FR-15, FR-68: a burst frame is a plain-JPEG still at the same converted exposure for every frame (ADR-0009),
+     * paced at [fps] or slower. JPEG, not JPEG_R: the JPEG_R stall would cap the rate near 6.7 fps.
+     */
+    fun burst(preview: RequestSpec, metered: Exposure, fps: Int): RequestSpec {
+        require(fps > 0) { "fps must be positive" }
+        val still = still(preview, metered, StillFormat.JPEG)
+        val exposure = checkNotNull(still.exposure)
+        val frameNs = max(exposure.frameDurationNs, NS_PER_SECOND / fps)
+        return still.copy(exposure = exposure.copy(frameDurationNs = frameNs))
+    }
+
     /** FR-31: after a failed AF scan, focus at the preset's fallback distance, within the lens's range. */
     fun focusFallback(spec: RequestSpec): RequestSpec {
         val policy = PresetTable.parametersFor(spec.preset).focus
@@ -64,5 +77,9 @@ class RequestPlanner(private val profile: DeviceProfile) {
     private fun color(camera: PhysicalCamera, conditions: CalibrationKey): ColorSpec {
         val entry = profile.calibrationFor(camera.id, conditions)?.takeIf { camera.manualPostProcessing }
         return entry?.let { ColorSpec.Manual(it.gains, it.colorMatrix) } ?: ColorSpec.AutoApproximate
+    }
+
+    private companion object {
+        const val NS_PER_SECOND = 1_000_000_000L
     }
 }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,7 +44,6 @@ import kotlin.math.roundToLong
 private const val TAG = "Capture"
 private const val NS_PER_SECOND = 1e9
 private const val BYTES_PER_MB = 1_048_576.0
-private val SHUTTER_SIZE = 96.dp
 private const val STATUS_LINES = 2
 
 /**
@@ -60,6 +58,7 @@ fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditio
     var lastShot by remember { mutableStateOf<StillCapture?>(null) }
     var lastSaved by remember { mutableStateOf<SavedStill?>(null) }
     var rawNote by remember { mutableStateOf<String?>(null) }
+    var burstNote by remember { mutableStateOf<String?>(null) }
     val rawGone = stringResource(R.string.raw_gone)
     fun run(action: suspend () -> Unit) {
         scope.launch {
@@ -81,7 +80,7 @@ fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditio
             onSurfaceGone = controller::stopBlocking,
             modifier = Modifier.fillMaxWidth().aspectRatio(PREVIEW_ASPECT),
         )
-        StatusLine(state, lastShot, lastSaved, rawNote)
+        StatusLine(state, lastShot, lastSaved, Notes(rawNote, burstNote))
         PresetBar(selected = preset) { chosen ->
             preset = chosen
             run { controller.select(chosen, conditions) }
@@ -89,10 +88,13 @@ fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditio
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(24.dp)) {
             LatestThumbnail(lastShot?.bytes, onLongPress = {
                 val stem = lastSaved?.stem ?: return@LatestThumbnail
-                run { rawNote = pipeline.keepRaw(stem)?.also { Log.i(TAG, "kept $it") }?.displayName ?: rawGone }
+                run {
+                    val kept = pipeline.keepRaw(stem)?.also { Log.i(TAG, "kept $it") }?.displayName ?: rawGone
+                    rawNote = kept
+                }
             })
-            Button(
-                onClick = {
+            ShutterButton(
+                onPress = {
                     run {
                         val shot = pipeline.shoot()
                         log(shot.capture)
@@ -102,10 +104,8 @@ fun CaptureScreen(controller: CameraController, pipeline: ShotPipeline, conditio
                         rawNote = null
                     }
                 },
-                modifier = Modifier.size(SHUTTER_SIZE),
-            ) {
-                Text(stringResource(R.string.shutter))
-            }
+                onHold = { release -> run { burstNote = logBurst(pipeline.burst(until = { release.await() })) } },
+            )
             Spacer(Modifier.size(THUMBNAIL_SIZE))
         }
     }
@@ -128,7 +128,7 @@ private fun PresetBar(selected: ScenePreset, onSelect: (ScenePreset) -> Unit) {
 }
 
 @Composable
-private fun StatusLine(state: CameraState, lastShot: StillCapture?, lastSaved: SavedStill?, rawNote: String?) {
+private fun StatusLine(state: CameraState, lastShot: StillCapture?, lastSaved: SavedStill?, notes: Notes) {
     val parts = buildList {
         state.physicalId?.let { add(stringResource(R.string.status_lens, it)) }
         if (state.colorApproximate) add(stringResource(R.string.wb_approximate))
@@ -137,7 +137,8 @@ private fun StatusLine(state: CameraState, lastShot: StillCapture?, lastSaved: S
         if (lastShot?.spec?.exposure?.isoClamped == true) add(stringResource(R.string.iso_clamped))
         if (lastShot?.flashFired == true) add(stringResource(R.string.flash_fired))
         lastSaved?.let { add(stringResource(R.string.saved, it.displayName)) }
-        rawNote?.let { add(stringResource(R.string.raw_note, it)) }
+        notes.raw?.let { add(stringResource(R.string.raw_note, it)) }
+        notes.burst?.let { add(it) }
     }
     // Fixed height so the preset bar and shutter never move under the finger when the text grows.
     Text(
@@ -174,3 +175,20 @@ private fun ScenePreset.label(): Int = when (this) {
     ScenePreset.MACRO -> R.string.preset_macro
     ScenePreset.LOW_LIGHT -> R.string.preset_low_light
 }
+
+/** FR-15 figures for the log and the status line. */
+private fun logBurst(burst: ShotPipeline.Burst): String {
+    val gaps = burst.gapsMs.sorted()
+    val median = gaps.getOrNull(gaps.size / 2) ?: Double.NaN
+    Log.i(
+        TAG,
+        "burst stem=${burst.stem} frames=${burst.frames} saved=${burst.saved.size} maxBacklog=${burst.maxBacklog} " +
+            "medianGapMs=%.1f maxWriteMs=${burst.saved.maxOfOrNull { it.writeMs }} resumeMs=${burst.resumeMs}".format(
+                median,
+            ),
+    )
+    return "BURST ${burst.saved.size}/${burst.frames}"
+}
+
+/** Outcome of the last RAW keep (FR-62) and the last burst (FR-15). */
+private class Notes(val raw: String?, val burst: String?)
