@@ -1,6 +1,6 @@
 {
-  "schema": "anomalops-probe\/2",
-  "generatedAt": "2026-09-28T15:29:10.544574+08:00",
+  "schema": "anomalops-probe\/3",
+  "generatedAt": "2026-09-28T16:03:36.701451+08:00",
   "device": {
     "manufacturer": "Google",
     "model": "Pixel 10 Pro",
@@ -50,7 +50,40 @@
           "opticalStabilization": [
             "OFF",
             "ON"
-          ]
+          ],
+          "intrinsicCalibration": [
+            2842.869384765625,
+            2842.869384765625,
+            2038.6219482421875,
+            1543.7845458984375,
+            0
+          ],
+          "intrinsicCalibrationMaximumResolution": [
+            5685.73876953125,
+            5685.73876953125,
+            4077.243896484375,
+            3087.569091796875,
+            0
+          ],
+          "distortion": [
+            0.09542093425989151,
+            -0.1739579439163208,
+            0.1269824504852295,
+            0,
+            0
+          ],
+          "poseTranslationM": [
+            0,
+            0,
+            0
+          ],
+          "poseRotation": [
+            -0.7071067690849304,
+            0.7071067690849304,
+            0,
+            0
+          ],
+          "poseReference": 0
         },
         "sensor": {
           "physicalSizeMm": "9.792x7.3728",
@@ -68,6 +101,7 @@
           ],
           "maxFrameDurationNs": 16000001084,
           "whiteLevel": 4095,
+          "binningFactor": "2x2",
           "colorFilterArrangement": 2,
           "timestampSource": "REALTIME"
         },
@@ -609,7 +643,40 @@
               "opticalStabilization": [
                 "OFF",
                 "ON"
-              ]
+              ],
+              "intrinsicCalibration": [
+                2842.869384765625,
+                2842.869384765625,
+                2038.6219482421875,
+                1543.7845458984375,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": [
+                5685.73876953125,
+                5685.73876953125,
+                4077.243896484375,
+                3087.569091796875,
+                0
+              ],
+              "distortion": [
+                0.09542093425989151,
+                -0.1739579439163208,
+                0.1269824504852295,
+                0,
+                0
+              ],
+              "poseTranslationM": [
+                0,
+                0,
+                0
+              ],
+              "poseRotation": [
+                -0.7071067690849304,
+                0.7071067690849304,
+                0,
+                0
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "9.792x7.3728",
@@ -627,6 +694,7 @@
               ],
               "maxFrameDurationNs": 16000001084,
               "whiteLevel": 4095,
+              "binningFactor": "2x2",
               "colorFilterArrangement": 2,
               "timestampSource": "REALTIME"
             },
@@ -1184,7 +1252,34 @@
               "focusDistanceCalibration": "APPROXIMATE",
               "opticalStabilization": [
                 "OFF"
-              ]
+              ],
+              "intrinsicCalibration": [
+                1414.2701416015625,
+                1414.2701416015625,
+                2035.6170654296875,
+                1510.50439453125,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": null,
+              "distortion": [
+                -0.0019733672961592674,
+                0.0019181573297828436,
+                -7.166062714532018E-4,
+                1.2968979717697948E-4,
+                6.213438464328647E-4
+              ],
+              "poseTranslationM": [
+                -0.01585269346833229,
+                -1.2144877837272361E-4,
+                8.390843286179006E-4
+              ],
+              "poseRotation": [
+                -0.7065468430519104,
+                0.7076644897460938,
+                -6.779643590562046E-4,
+                -0.0014456575736403465
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "5.6448x4.2336",
@@ -1202,6 +1297,7 @@
               ],
               "maxFrameDurationNs": 16000000852,
               "whiteLevel": 1023,
+              "binningFactor": null,
               "colorFilterArrangement": 0,
               "timestampSource": "REALTIME"
             },
@@ -1675,7 +1771,34 @@
               "opticalStabilization": [
                 "OFF",
                 "ON"
-              ]
+              ],
+              "intrinsicCalibration": [
+                12469.9892578125,
+                12469.9892578125,
+                2015.575927734375,
+                1495.3739013671875,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": null,
+              "distortion": [
+                0.5864054560661316,
+                -12.2840576171875,
+                214.49708557128906,
+                0,
+                0
+              ],
+              "poseTranslationM": [
+                -0.028773365542292595,
+                -0.002158969873562455,
+                0.01054628286510706
+              ],
+              "poseRotation": [
+                -0.6842848062515259,
+                0.7278990745544434,
+                -0.005380208138376474,
+                -0.0434541217982769
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "5.6448x4.2336",
@@ -1693,6 +1816,7 @@
               ],
               "maxFrameDurationNs": 16000000852,
               "whiteLevel": 1023,
+              "binningFactor": null,
               "colorFilterArrangement": 2,
               "timestampSource": "REALTIME"
             },
@@ -2177,7 +2301,40 @@
               "opticalStabilization": [
                 "OFF",
                 "ON"
-              ]
+              ],
+              "intrinsicCalibration": [
+                2842.869384765625,
+                2842.869384765625,
+                2038.6219482421875,
+                1543.7845458984375,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": [
+                5685.73876953125,
+                5685.73876953125,
+                4077.243896484375,
+                3087.569091796875,
+                0
+              ],
+              "distortion": [
+                0.09542093425989151,
+                -0.1739579439163208,
+                0.1269824504852295,
+                0,
+                0
+              ],
+              "poseTranslationM": [
+                0,
+                0,
+                0
+              ],
+              "poseRotation": [
+                1,
+                0,
+                0,
+                0
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "4.896x3.6864",
@@ -2195,6 +2352,7 @@
               ],
               "maxFrameDurationNs": 16000001816,
               "whiteLevel": 1023,
+              "binningFactor": "2x2",
               "colorFilterArrangement": 2,
               "timestampSource": "REALTIME"
             },
@@ -2718,7 +2876,40 @@
               "opticalStabilization": [
                 "OFF",
                 "ON"
-              ]
+              ],
+              "intrinsicCalibration": [
+                12469.9892578125,
+                12469.9892578125,
+                2015.575927734375,
+                1495.3739013671875,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": [
+                24939.978515625,
+                24939.978515625,
+                4031.15185546875,
+                2990.747802734375,
+                0
+              ],
+              "distortion": [
+                0.5864054560661316,
+                -12.2840576171875,
+                214.49708557128906,
+                0,
+                0
+              ],
+              "poseTranslationM": [
+                0,
+                0,
+                0
+              ],
+              "poseRotation": [
+                1,
+                0,
+                0,
+                0
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "2.8224x2.1168",
@@ -2736,6 +2927,7 @@
               ],
               "maxFrameDurationNs": 16000005957,
               "whiteLevel": 1023,
+              "binningFactor": "2x2",
               "colorFilterArrangement": 2,
               "timestampSource": "REALTIME"
             },
@@ -3253,7 +3445,40 @@
               "focusDistanceCalibration": "APPROXIMATE",
               "opticalStabilization": [
                 "OFF"
-              ]
+              ],
+              "intrinsicCalibration": [
+                1414.2701416015625,
+                1414.2701416015625,
+                2035.6170654296875,
+                1510.50439453125,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": [
+                2828.540283203125,
+                2828.540283203125,
+                4071.234130859375,
+                3021.0087890625,
+                0
+              ],
+              "distortion": [
+                -0.0019733672961592674,
+                0.0019181573297828436,
+                -7.166062714532018E-4,
+                1.2968979717697948E-4,
+                6.213438464328647E-4
+              ],
+              "poseTranslationM": [
+                -0.01585269346833229,
+                -1.2144877837272361E-4,
+                8.390843286179006E-4
+              ],
+              "poseRotation": [
+                -0.7065468430519104,
+                0.7076644897460938,
+                -6.779643590562046E-4,
+                -0.0014456575736403465
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "2.8224x2.1168",
@@ -3271,6 +3496,7 @@
               ],
               "maxFrameDurationNs": 16000005957,
               "whiteLevel": 1023,
+              "binningFactor": "2x2",
               "colorFilterArrangement": 0,
               "timestampSource": "REALTIME"
             },
@@ -3783,7 +4009,34 @@
           "focusDistanceCalibration": "APPROXIMATE",
           "opticalStabilization": [
             "OFF"
-          ]
+          ],
+          "intrinsicCalibration": [
+            1937.8572998046875,
+            1937.8572998046875,
+            1720,
+            1224,
+            0
+          ],
+          "intrinsicCalibrationMaximumResolution": null,
+          "distortion": [
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "poseTranslationM": [
+            0,
+            0,
+            0
+          ],
+          "poseRotation": [
+            0,
+            0,
+            0,
+            1
+          ],
+          "poseReference": 0
         },
         "sensor": {
           "physicalSizeMm": "4.816x3.4272",
@@ -3801,6 +4054,7 @@
           ],
           "maxFrameDurationNs": 1000000628,
           "whiteLevel": 1023,
+          "binningFactor": null,
           "colorFilterArrangement": 0,
           "timestampSource": "REALTIME"
         },
@@ -4253,7 +4507,34 @@
               "focusDistanceCalibration": "APPROXIMATE",
               "opticalStabilization": [
                 "OFF"
-              ]
+              ],
+              "intrinsicCalibration": [
+                1937.8572998046875,
+                1937.8572998046875,
+                1920,
+                1368,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": null,
+              "distortion": [
+                0.03838266059756279,
+                0.0078157102689147,
+                -0.03266260027885437,
+                0,
+                0
+              ],
+              "poseTranslationM": [
+                0,
+                0,
+                0
+              ],
+              "poseRotation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "5.376x3.8304",
@@ -4271,6 +4552,7 @@
               ],
               "maxFrameDurationNs": 1000000813,
               "whiteLevel": 1023,
+              "binningFactor": null,
               "colorFilterArrangement": 0,
               "timestampSource": "REALTIME"
             },
@@ -4753,7 +5035,34 @@
               "focusDistanceCalibration": "APPROXIMATE",
               "opticalStabilization": [
                 "OFF"
-              ]
+              ],
+              "intrinsicCalibration": [
+                1937.8572998046875,
+                1937.8572998046875,
+                1720,
+                1224,
+                0
+              ],
+              "intrinsicCalibrationMaximumResolution": null,
+              "distortion": [
+                0,
+                0,
+                0,
+                0,
+                0
+              ],
+              "poseTranslationM": [
+                0,
+                0,
+                0
+              ],
+              "poseRotation": [
+                0,
+                0,
+                0,
+                1
+              ],
+              "poseReference": 0
             },
             "sensor": {
               "physicalSizeMm": "4.816x3.4272",
@@ -4771,6 +5080,7 @@
               ],
               "maxFrameDurationNs": 1000000628,
               "whiteLevel": 1023,
+              "binningFactor": null,
               "colorFilterArrangement": 0,
               "timestampSource": "REALTIME"
             },
@@ -6237,8 +6547,8 @@
     ],
     "thermal": {
       "currentThermalStatus": 0,
-      "thermalHeadroom10s": 0.5626698136329651,
-      "batteryTemperatureTenthsC": 307
+      "thermalHeadroom10s": 0.6676607728004456,
+      "batteryTemperatureTenthsC": 343
     }
   },
   "sensorSamples": [
@@ -6247,27 +6557,27 @@
       "stringType": "android.sensor.pressure",
       "requestedPeriodUs": 40000,
       "durationMs": 5000,
-      "events": 126,
-      "spanMs": 4977,
+      "events": 111,
+      "spanMs": 4379,
       "valueCount": 1,
       "min": [
-        1005.896240234375
+        1006.4639892578125
       ],
       "max": [
-        1006.8385620117188
+        1006.4806518554688
       ],
       "mean": [
-        1006.3072509765625
+        1006.472412109375
       ],
       "firstEvents": [
         [
-          1006.3088989257812
+          1006.4754638671875
         ],
         [
-          1006.3138427734375
+          1006.4793090820312
         ],
         [
-          1006.3088989257812
+          1006.4804077148438
         ]
       ]
     },
@@ -6276,11 +6586,11 @@
       "stringType": "com.google.sensor.gyro_temperature",
       "requestedPeriodUs": 20000,
       "durationMs": 5000,
-      "events": 247,
-      "spanMs": 4979,
+      "events": 255,
+      "spanMs": 5043,
       "valueCount": 16,
       "min": [
-        34.9375,
+        38.125,
         0,
         0,
         0,
@@ -6298,7 +6608,7 @@
         0
       ],
       "max": [
-        36.625,
+        38.6875,
         0,
         0,
         0,
@@ -6316,7 +6626,7 @@
         0
       ],
       "mean": [
-        35.9271240234375,
+        38.411766052246094,
         0,
         0,
         0,
@@ -6335,7 +6645,7 @@
       ],
       "firstEvents": [
         [
-          35.125,
+          38.4375,
           0,
           0,
           0,
@@ -6353,7 +6663,7 @@
           0
         ],
         [
-          34.9375,
+          38.4375,
           0,
           0,
           0,
@@ -6371,7 +6681,7 @@
           0
         ],
         [
-          35.125,
+          38.4375,
           0,
           0,
           0,
@@ -6395,11 +6705,11 @@
       "stringType": "com.google.sensor.pressure_temp",
       "requestedPeriodUs": 40000,
       "durationMs": 5000,
-      "events": 118,
-      "spanMs": 4659,
+      "events": 112,
+      "spanMs": 4418,
       "valueCount": 16,
       "min": [
-        35.085540771484375,
+        37.618186950683594,
         0,
         0,
         0,
@@ -6417,7 +6727,7 @@
         0
       ],
       "max": [
-        36.12300109863281,
+        37.83085632324219,
         0,
         0,
         0,
@@ -6435,7 +6745,7 @@
         0
       ],
       "mean": [
-        35.77802276611328,
+        37.727203369140625,
         0,
         0,
         0,
@@ -6454,7 +6764,7 @@
       ],
       "firstEvents": [
         [
-          35.085540771484375,
+          37.74665832519531,
           0,
           0,
           0,
@@ -6472,7 +6782,7 @@
           0
         ],
         [
-          35.113609313964844,
+          37.769325256347656,
           0,
           0,
           0,
@@ -6490,7 +6800,7 @@
           0
         ],
         [
-          35.11468505859375,
+          37.773643493652344,
           0,
           0,
           0,

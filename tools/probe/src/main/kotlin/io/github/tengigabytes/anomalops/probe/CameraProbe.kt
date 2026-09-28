@@ -58,6 +58,14 @@ internal class CameraProbe(private val manager: CameraManager) {
             N.name(N.focusCalibrations, ch[CameraCharacteristics.LENS_INFO_FOCUS_DISTANCE_CALIBRATION]),
         "opticalStabilization" to
             N.names(N.oisModes, ch[CameraCharacteristics.LENS_INFO_AVAILABLE_OPTICAL_STABILIZATION]).toJsonArray(),
+        // [fx, fy, cx, cy, s] in pixels: a 2x centre crop of the same sensor shows 2x the focal length in pixels.
+        "intrinsicCalibration" to ch[CameraCharacteristics.LENS_INTRINSIC_CALIBRATION].toJson(),
+        "intrinsicCalibrationMaximumResolution" to
+            ch[CameraCharacteristics.LENS_INTRINSIC_CALIBRATION_MAXIMUM_RESOLUTION].toJson(),
+        "distortion" to ch[CameraCharacteristics.LENS_DISTORTION].toJson(),
+        "poseTranslationM" to ch[CameraCharacteristics.LENS_POSE_TRANSLATION].toJson(),
+        "poseRotation" to ch[CameraCharacteristics.LENS_POSE_ROTATION].toJson(),
+        "poseReference" to ch[CameraCharacteristics.LENS_POSE_REFERENCE],
     )
 
     private fun sensor(ch: CameraCharacteristics) = jsonOf(
@@ -71,6 +79,7 @@ internal class CameraProbe(private val manager: CameraManager) {
         "exposureTimeRangeNs" to ch[CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE].toJson(),
         "maxFrameDurationNs" to ch[CameraCharacteristics.SENSOR_INFO_MAX_FRAME_DURATION],
         "whiteLevel" to ch[CameraCharacteristics.SENSOR_INFO_WHITE_LEVEL],
+        "binningFactor" to ch[CameraCharacteristics.SENSOR_INFO_BINNING_FACTOR]?.toString(),
         "colorFilterArrangement" to ch[CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT],
         "timestampSource" to N.name(N.timestampSources, ch[CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE]),
     )

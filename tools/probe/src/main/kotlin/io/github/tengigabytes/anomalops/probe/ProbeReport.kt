@@ -104,7 +104,7 @@ internal class ProbeReport(private val context: Context) {
     }
 
     private companion object {
-        const val SCHEMA = "anomalops-probe/2"
+        const val SCHEMA = "anomalops-probe/3"
         const val SAMPLE_MS = 5_000L
         const val TAG = "AnomalopsProbe"
     }

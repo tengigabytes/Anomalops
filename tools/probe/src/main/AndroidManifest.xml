@@ -30,6 +30,12 @@
             android:exported="true"
             android:label="Probe: temperature live" />
 
+        <!-- Field-of-view experiment for duplicate physical camera IDs (docs/test/g0-blazer.md). -->
+        <activity
+            android:name=".FovTestActivity"
+            android:exported="true"
+            android:label="Probe: FOV test" />
+
         <!-- Dive-lock platform behaviour test (ADR-0006). -->
         <activity
             android:name=".LockTestActivity"

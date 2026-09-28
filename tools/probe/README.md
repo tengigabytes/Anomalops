@@ -9,5 +9,5 @@
 | 產出 | `assets/device-profiles/<device>.json` 的能力部分，以及各 ADR「驗證」一節的 G0 答案 |
 | 執行 | 安裝後 `adb shell pm grant io.github.tengigabytes.anomalops.probe android.permission.CAMERA`，啟動 APP；報告用 `adb exec-out run-as io.github.tengigabytes.anomalops.probe cat files/probe/latest.json` 取回 |
 | 行為 | 只讀取能力與詢問輸出組合，不拍照、不寫入相簿 |
-| 其他畫面 | `FirLiveActivity`：溫度感測器即時數值；`LockTestActivity`：潛水鎖定平台測試（ADR-0006），用 `am broadcast -a io.github.tengigabytes.anomalops.probe.LOCKTEST --es cmd <lock\|unlock\|notify\|crash\|status>` 驅動 |
+| 其他畫面 | `FirLiveActivity`：溫度感測器即時數值；`FovTestActivity`：重複實體 ID 的視角比對（會取預覽畫面，只在記憶體計算）；`LockTestActivity`：潛水鎖定平台測試（ADR-0006），用 `am broadcast -a io.github.tengigabytes.anomalops.probe.LOCKTEST --es cmd <lock\|unlock\|notify\|crash\|status>` 驅動 |
 | 結果 | `results/<device>-<日期>.json` 原始報告；彙整見 [docs/test/](../../docs/test/README.md) |
