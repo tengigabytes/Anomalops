@@ -14,6 +14,7 @@ import io.github.tengigabytes.anomalops.core.profile.ScenePreset
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
@@ -25,12 +26,13 @@ import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * FR-35 / FR-31 on the device (docs/test/m4-af-timeline.md): entering the macro preset sends one AUTO trigger,
  * whose search settles within 0.5 s; staying on the preset does not scan again; a still right after entering
- * waits for the scan, and its output has at least 12 MP (FR-31). Place a printed page about 5 cm from the
- * lenses. Stills stay in memory, nothing is saved.
+ * waits for the scan, and its output has at least 12 MP (FR-31); a burst rebuilds the session, which scans
+ * again. Place a printed page about 5 cm from the lenses. Stills and burst frames stay in memory.
  */
 @RunWith(AndroidJUnit4::class)
 class MacroFocusTest {
@@ -81,6 +83,20 @@ class MacroFocusTest {
         assertTrue("FR-31 output $pixels px < $MIN_PIXELS", pixels >= MIN_PIXELS)
     }
 
+    @Test
+    fun fr35_aBurstOnMacroScansAgainOnTheRebuiltSession() = runBlocking<Unit> {
+        rig.start(ScenePreset.SNAPSHOT)
+        val first = enterMacro()
+        val frames = AtomicInteger()
+        val rescan = async(start = CoroutineStart.UNDISPATCHED) { rig.controller.focusScans.first() }
+        rig.controller.burst(BURST_FPS, onFrame = { frames.incrementAndGet() }, until = { delay(BURST_MS) })
+        val scan = withTimeout(SCAN_TIMEOUT_MS) { rescan.await() }
+        Log.i(TAG, "FR-35 macro burst of ${frames.get()} frames; before $first; after $scan")
+        assertTrue("the burst delivered frames", frames.get() > 0)
+        assertEquals(MACRO_LENS, scan.physicalId)
+        assertEquals(first.outcome, scan.outcome)
+    }
+
     private suspend fun enterMacro(): FocusScan =
         withTimeout(SCAN_TIMEOUT_MS) { nextScanAfter { rig.controller.select(ScenePreset.MACRO, rig.conditions) } }
 
@@ -101,5 +117,7 @@ class MacroFocusTest {
         const val SCAN_TIMEOUT_MS = 3_000L
         const val QUIET_MS = 1_500L
         const val MIN_PIXELS = 12_000_000L
+        const val BURST_FPS = 30
+        const val BURST_MS = 1_000L
     }
 }
