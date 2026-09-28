@@ -17,6 +17,7 @@ android {
         // versionCode = X * 10000 + Y * 100 + Z (docs/dev/git-workflow.md)
         versionCode = 1
         versionName = "0.0.1"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     // ADR-0010: play = Google Play with Play Billing donations, foss = no proprietary dependencies.
@@ -50,4 +51,8 @@ dependencies {
     implementation(libs.compose.material3)
 
     testImplementation(libs.junit)
+    // End-to-end acceptance tests (capture to MediaStore, NFR-7) run on a real device.
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

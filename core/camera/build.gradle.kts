@@ -11,6 +11,7 @@ android {
 
     defaultConfig {
         minSdk = libs.versions.minSdk.get().toInt()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -24,4 +25,8 @@ dependencies {
     implementation(project(":core:profile"))
     implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
+    // Camera and MediaStore acceptance tests run on a real device (ADR-0007; docs/product/mvp-acceptance.md).
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.test.ext.junit)
 }

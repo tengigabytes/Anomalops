@@ -16,6 +16,8 @@ subprojects {
     extensions.configure<dev.detekt.gradle.extensions.DetektExtension> {
         buildUponDefaultConfig.set(true)
         config.setFrom(rootProject.file("config/detekt/detekt.yml"))
+        // The default sources are src/main and src/test only; the on-device tests follow the same rules.
+        source.from("src/androidTest/kotlin")
     }
     dependencies {
         add("detektPlugins", rootProject.libs.detekt.ktlint.wrapper)

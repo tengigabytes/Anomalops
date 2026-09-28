@@ -16,8 +16,12 @@ import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.DeviceProfile
 import io.github.tengigabytes.anomalops.core.profile.ScenePreset
 import kotlinx.coroutines.android.asCoroutineDispatcher
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Mutex
@@ -37,12 +41,20 @@ class CameraController(context: Context, profile: DeviceProfile) {
     private val mutex = Mutex()
     private val mutableState = MutableStateFlow(CameraState())
     val state: StateFlow<CameraState> = mutableState.asStateFlow()
+    private val frames = MutableSharedFlow<PreviewFrame>(
+        extraBufferCapacity = FRAME_BUFFER,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST,
+    )
+
+    /** Every preview frame's result as it arrives; used to time preset switches (NFR-4). */
+    val previewFrames: SharedFlow<PreviewFrame> = frames.asSharedFlow()
 
     private val lenses = LensSwitcher(
         manager = requireNotNull(context.getSystemService(CameraManager::class.java)),
         handler = handler,
         planner = planner,
         onLost = { message -> mutableState.value = CameraState(status = CameraStatus.FAILED, error = message) },
+        onFrame = { frames.tryEmit(it) },
     )
 
     /** Opens the camera if needed and previews [preset] on [surface], whose buffer size must be [PREVIEW_SIZE]. */
@@ -114,6 +126,7 @@ class CameraController(context: Context, profile: DeviceProfile) {
 
     companion object {
         private const val STOP_TIMEOUT_MS = 2_000L
+        private const val FRAME_BUFFER = 64
 
         /** 4:3 like the stills; the SurfaceView's buffer is fixed to this size. */
         // Configures with a 4080x3072 / 4032x3024 JPEG_R reader on lenses 2, 3 and 9 (docs/test/m1-camera-session.md).

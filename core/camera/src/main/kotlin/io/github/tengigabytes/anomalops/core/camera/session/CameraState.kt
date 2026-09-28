@@ -31,5 +31,12 @@ class StillCapture(
     val reported: ReportedSettings,
 )
 
+/**
+ * One preview frame's result: the spec of the request that produced it, the start of its exposure
+ * (`SENSOR_TIMESTAMP`, REALTIME time base on the Pixel 10 Pro) and when the result reached the app, both in
+ * `SystemClock.elapsedRealtimeNanos()` time.
+ */
+data class PreviewFrame(val spec: RequestSpec, val sensorTimestampNs: Long, val arrivedAtNs: Long)
+
 /** A Camera2 operation failed; the message is for logs and the UI status line. */
 class CameraFailure(message: String, cause: Throwable? = null) : IllegalStateException(message, cause)

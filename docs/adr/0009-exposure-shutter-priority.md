@@ -48,3 +48,5 @@ FR-81 原文寫「FLASH\_MODE\_OFF、AE\_MODE\_ON」，重點是閃光燈不觸�
 - G1：確認拍攝請求從 `AE_MODE_ON` 切到 `AE_MODE_OFF` 時，不會造成預覽閃爍或延遲尖峰（NFR-4）。
 
 2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。AE 幀率範圍最低 15 fps，確認無法以幀率範圍限制在 1/125 s；主鏡頭 ISO 21–5333、類比上限 333。
+
+2026-09-28 補充（M1 儀器測試，[m1-instrumented.md](../test/m1-instrumented.md)）：Pixel 10 Pro 的預覽自動曝光在暗處把幀率降到 15 fps（每幀 66 ms），ISO 停在類比上限 333，沒有往上加數位增益。曾試過把預覽固定在 30 fps（`CONTROL_AE_TARGET_FPS_RANGE` = [30, 30]）以縮短暗處的預設切換延遲，結果測光值最多只到 33 ms × ISO 333，照片換算後暗了約 1 EV，而且測光值本身已欠曝，換算時不會碰到 ISO 上限，`isoClamped` 偵測不到。維護者決定不固定幀率，曝光正確性優先；NFR-4 的切換門檻改在 30 fps 的亮度下判定。

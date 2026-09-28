@@ -9,6 +9,7 @@ import android.hardware.camera2.CaptureRequest
 import android.hardware.camera2.CaptureResult
 import android.hardware.camera2.TotalCaptureResult
 import android.os.Handler
+import android.os.SystemClock
 import android.view.Surface
 import io.github.tengigabytes.anomalops.core.camera.exposure.Exposure
 import io.github.tengigabytes.anomalops.core.camera.request.CaptureRequestWriter
@@ -27,6 +28,7 @@ internal class LensSwitcher(
     private val handler: Handler,
     private val planner: RequestPlanner,
     private val onLost: (String) -> Unit,
+    private val onFrame: (PreviewFrame) -> Unit,
 ) {
     private val executor = Executor { handler.post(it) }
     private var device: CameraDevice? = null
@@ -43,7 +45,7 @@ internal class LensSwitcher(
         surface = next
         val lens = stream?.takeIf { it.camera.id == spec.physicalId } ?: openStream(spec, next)
         val request = request(spec, CameraDevice.TEMPLATE_PREVIEW) { addTarget(next) }
-        lens.session.setRepeatingRequest(request, meter(spec.physicalId), handler)
+        lens.session.setRepeatingRequest(request, meter(spec), handler)
         preview = spec
     }
 
@@ -106,15 +108,21 @@ internal class LensSwitcher(
     private fun request(spec: RequestSpec, template: Int, targets: CaptureRequest.Builder.() -> Unit): CaptureRequest {
         val builder = checkNotNull(device).createCaptureRequest(template, setOf(spec.physicalId))
         builder.targets()
+        builder.setTag(spec)
         CaptureRequestWriter.write(builder, spec)
         return builder.build()
     }
 
-    /** ADR-0009: the preview auto-exposure is the light meter; keep its latest exposure time and ISO. */
-    private fun meter(physicalId: String) = object : CameraCaptureSession.CaptureCallback() {
+    /**
+     * ADR-0009: the preview auto-exposure is the light meter; keep its latest exposure time and ISO. Every frame
+     * is also reported with the spec that produced it, which times preset switches (NFR-4).
+     */
+    private fun meter(spec: RequestSpec) = object : CameraCaptureSession.CaptureCallback() {
         override fun onCaptureCompleted(s: CameraCaptureSession, r: CaptureRequest, result: TotalCaptureResult) {
-            // UNVERIFIED(G1): that the physical result carries the exposure of the lens actually streaming.
-            val source = result.physicalCameraTotalResults[physicalId] ?: result
+            val arrivedAtNs = SystemClock.elapsedRealtimeNanos()
+            onFrame(PreviewFrame(spec, result.get(CaptureResult.SENSOR_TIMESTAMP) ?: 0L, arrivedAtNs))
+            // The physical result is present for the streaming lens (docs/test/m1-pipeline-calibration.md).
+            val source = result.physicalCameraTotalResults[spec.physicalId] ?: result
             val time = source.get(CaptureResult.SENSOR_EXPOSURE_TIME)
             val iso = source.get(CaptureResult.SENSOR_SENSITIVITY)
             if (time != null && iso != null) {

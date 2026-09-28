@@ -33,6 +33,10 @@ internal class LensStream private constructor(
      * returned its buffers. Closing the reader right away made the HAL queue into an abandoned buffer queue.
      */
     override fun close() {
+        // Drop the in-flight preview requests instead of letting them drain: session reconfiguration on a lens
+        // switch fell from a 260 ms to a 122 ms median (docs/test/m1-instrumented.md). Stills are serialised
+        // with switches, so only preview frames are dropped.
+        session.abortCaptures()
         session.close()
     }
 

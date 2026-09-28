@@ -55,6 +55,7 @@ python scripts/check_limits.py     # 檔案長度、文件索引、連結
 python scripts/check_module_deps.py   # 模組依賴規則（ADR-0007）
 python scripts/check_flavor_manifests.py   # 兩個 flavor 的權限（NFR-8、ADR-0010），建置後執行
 python scripts/probe_to_profile.py blazer --check   # 能力表與偵測報告一致（ADR-0003）
+./gradlew :core:camera:connectedDebugAndroidTest :app:connectedFossDebugAndroidTest   # 實機驗收測試（接手機；FR-81 另行遮住鏡頭執行）
 ```
 
 detekt 用 2.0 的 alpha 版，因為它是唯一以 Kotlin 2.4 建置的版本；只用在開發檢查，不進 APP，2.0 正式版推出後升級。
