@@ -103,3 +103,5 @@
 | ADR-0006：螢幕固定、通知、崩潰重啟等平台行為 | M0 的下一步 |
 | ADR-0007：Pixel 6 Pro 的 Android 版本 | 需要那支手機 |
 | ADR-0010：Play Billing 的授權與合併後 manifest 的權限 | M0，加入 `play` flavor 的相依之後 |
+
+2026-09-28 補充（M2）：`isSessionConfigurationSupported` 的回答不可靠。「預覽 + JPEG\_R + JPEG」與「預覽 + JPEG\_R + RAW + JPEG」回報支援，實際建立工作階段卻失敗，並使相機 HAL 程序重啟；「預覽 + JPEG\_R + RAW」與「預覽 + JPEG」在鏡頭 2、3、9 實際建立成功。見 [m2-stream-combos.md](m2-stream-combos.md)。

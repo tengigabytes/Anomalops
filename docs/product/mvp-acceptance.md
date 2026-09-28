@@ -29,7 +29,7 @@
 | FR-11 | 隨機切換預設 50 次，每次的鏡頭、白平衡值、最長曝光、AF 模式都符合 mvp-scope.md 第 4 節參數表，50 / 50 | 儀器測試讀取 `CaptureResult`：實體鏡頭、`COLOR_CORRECTION_GAINS`、拍攝請求的 `SENSOR_EXPOSURE_TIME` ≤ 上限、`CONTROL_AF_MODE` | G1 |
 | FR-12 | 選擇器位於單一長邊，每個目標 ≥ 64 dp，不需捲動；殼內 20 次切換中，第一次按壓就成功的 ≥ 19 次（提議） | UI 測試量測元件邊界；泳池人工紀錄 | G1、G3 |
 | FR-15 | 按住超過 400 ms 轉為連拍；長按 3 s 得到 ≥ 30 張，相鄰 `SENSOR_TIMESTAMP` 間隔中位數 ≤ 100 ms；殼內長按觸發連拍 ≥ 9 / 10（提議） | `captures.csv` | G1、G3 |
-| FR-16 | 10 張 DNG 都能在 Lightroom Classic 開啟，並通過 Adobe `dng_validate` | 人工 + 工具 | G1 |
+| FR-16 | 10 張 DNG 都能在 darktable 開啟，並通過 Adobe `dng_validate`（2026-09-28 由 Lightroom Classic 改為 darktable，見需求第 9 節） | 人工 + 工具 | G1 |
 | FR-21 | 切換深度段後，請求值等於校正表的值；校正後，各深度段驗證照片的灰卡 R/G 與 B/G 都在 0.92–1.08 之間（提議） | 單元測試；G4 第 2–3 趟每段至少 3 張 | G1、G4 |
 | FR-24 | 濾鏡設為「紅」時，淺水段使用濾鏡專屬的校正值，其紅色增益低於「無濾鏡」的值；裝紅濾鏡實拍的灰卡符合 FR-21 門檻 | 單元測試；G4 淺水段 | G1、G4 |
 | FR-25 | 潛水燈模式下，距燈 0.5 m 的灰卡符合 FR-21 門檻；同一張照片中，背景水體的色相落在 160°–230°（提議） | G4 驗證潛水 | G4 |

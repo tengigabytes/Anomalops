@@ -13,3 +13,4 @@
 | [m1-mediastore.md](m1-mediastore.md) | M1 成品寫入 MediaStore：位置、狀態、大小、寫入耗時、增益圖與 EXIF 方向，2026-09-28 |
 | [m1-pipeline-calibration.md](m1-pipeline-calibration.md) | M1 手動白平衡管線：室內自動白平衡讀數、請求與回報一致性、手動與自動成品色彩比較，2026-09-28 |
 | [m1-instrumented.md](m1-instrumented.md) | M1 實機儀器測試：FR-11、NFR-4、FR-61a、FR-81、NFR-7 的結果與切換延遲分析，2026-09-28 |
+| [m2-stream-combos.md](m2-stream-combos.md) | M2 工作階段組合實測：JPEG\_R + RAW 單張、一般 JPEG 連拍、切換時間；JPEG\_R 與 JPEG 同工作階段會使 HAL 重啟，2026-09-28 |
