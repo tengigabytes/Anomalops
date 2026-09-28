@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- Converted from docs/assets/logo.svg. Scaled to 0.8 so the fish (390 of 512 units wide)
+     stays inside the adaptive-icon safe zone (66 of 108 dp). Circles are rewritten as two arcs. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group
+        android:pivotX="256"
+        android:pivotY="256"
+        android:scaleX="0.8"
+        android:scaleY="0.8">
+        <group android:translateY="-30">
+            <path
+                android:fillColor="#3E6A94"
+                android:pathData="M61,226 C88,266 88,306 61,345 C127,325 167,411 273,411 C391,411 451,352 451,286 C451,220 391,160 273,160 C167,160 127,246 61,226 Z" />
+            <path
+                android:fillColor="#070C1A"
+                android:pathData="M250,266 a69,69 0 1,0 138,0 a69,69 0 1,0 -138,0 Z"
+                android:strokeColor="#94A3B8"
+                android:strokeWidth="8" />
+            <path
+                android:fillColor="#0F172A"
+                android:pathData="M266,266 a53,53 0 1,0 106,0 a53,53 0 1,0 -106,0 Z" />
+            <path
+                android:fillColor="#FFFFFF"
+                android:pathData="M324,247 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 Z" />
+            <path
+                android:fillColor="#00F5D4"
+                android:pathData="M255,339 C285,382 352,382 382,339 C345,356 292,356 255,339 Z" />
+        </group>
+    </group>
+</vector>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors -->
+  <!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+  <!-- Anomalops logo: a flashlight fish (genus Anomalops) with its light organ. Trademark rights are not licensed; see NOTICE.md. -->
+  <rect width="512" height="512" fill="#070C1A"/>
+  <g transform="translate(0,-30)">
+    <path d="M 61 226 C 88 266, 88 306, 61 345 C 127 325, 167 411, 273 411
+             C 391 411, 451 352, 451 286 C 451 220, 391 160, 273 160
+             C 167 160, 127 246, 61 226 Z" fill="#3E6A94"/>
+    <circle cx="319" cy="266" r="69" fill="#070C1A" stroke="#94A3B8" stroke-width="8"/>
+    <circle cx="319" cy="266" r="53" fill="#0F172A"/>
+    <circle cx="337" cy="247" r="13" fill="#FFFFFF"/>
+    <path d="M 255 339 C 285 382, 352 382, 382 339 C 345 356, 292 356, 255 339 Z" fill="#00F5D4"/>
+  </g>
+</svg>

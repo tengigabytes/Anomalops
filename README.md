@@ -1,3 +1,5 @@
+<img src="docs/assets/logo.svg" width="128" alt="Anomalops logo">
+
 # Anomalops
 
 [繁體中文](README.zh-TW.md)
