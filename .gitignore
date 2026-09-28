@@ -1,0 +1,30 @@
+# Gradle / Android build outputs
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+
+# Local configuration
+local.properties
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Signing material — never commit
+*.jks
+*.keystore
+keystore.properties
+/signing/
+
+# Private test data — never commit (repo is public)
+/test-data/
+*.dng
+/dives/
+
+# Claude Code personal settings
+.claude/settings.local.json

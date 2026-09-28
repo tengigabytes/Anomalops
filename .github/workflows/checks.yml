@@ -1,0 +1,20 @@
+# SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Repository hygiene checks. Android build, lint and test jobs are added in milestone M0.
+name: checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  limits:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: File limits, docs indexes and links
+        run: python3 scripts/check_limits.py
