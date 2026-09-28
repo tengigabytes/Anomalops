@@ -27,10 +27,11 @@ Documentation under `docs/` and the `README` files are licensed under CC BY-SA 4
 These terms apply to every file licensed under GPL-3.0-or-later in this repository, including all
 contributions submitted under the Developer Certificate of Origin.
 
-1. **Additional permission — Google Play Billing Library.**
+1. **Additional permission — Google Play Billing Library and Google Play services.**
    If you modify this Program, or any covered work, by linking or combining it with the Google Play Billing
-   Library (Maven group `com.android.billingclient`), or a modified version of that library, containing parts
-   covered by the terms of that library's license, the licensors of this Program grant you additional
+   Library (Maven group `com.android.billingclient`) or the Google Play services client libraries it depends
+   on (Maven group `com.google.android.gms`), or a modified version of those libraries, containing parts
+   covered by the terms of those libraries' licenses, the licensors of this Program grant you additional
    permission to convey the resulting work.
 
 2. **Marking of modified versions — section 7(c).**

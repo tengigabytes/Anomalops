@@ -54,3 +54,5 @@
 - M0：列出 `play` flavor 合併後 manifest 的權限。
 - M0：確認 `foss` flavor 的相依樹中沒有任何專有套件。
 - R2 之前：在 Play Console 確認商家地址的顯示方式，以及歐盟交易者身分的申報要求。
+
+2026-09-28 M0 結果（見 [m0-play-billing.md](../test/m0-play-billing.md)）：Billing 9.1.0 為專有授權，並連帶引入 5 個專有的 Play 服務套件，`NOTICE.md` 附加許可已擴充涵蓋 `com.google.android.gms`；`play` 合併後多出 `INTERNET`、`ACCESS_NETWORK_STATE`、`BILLING` 權限與 `datatransport` 背景服務；`foss` 相依樹沒有專有套件。依產品擁有者決定，Billing 相依到 R3 才加入。

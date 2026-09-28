@@ -19,10 +19,10 @@
 
 全文在 `NOTICE.md`，從第一個 commit 起就生效，共兩項：
 
-1. **連結 Google Play Billing Library**：允許 `play` flavor 與這個專有函式庫連結後一起發行（ADR-0010）。沒有這條，GPL 程式不能合法地和專有函式庫一起散布。
+1. **連結 Google Play Billing Library 與 Google Play 服務函式庫**：允許 `play` flavor 與這些專有函式庫連結後一起發行（ADR-0010）。Billing Library 會連帶引入 5 個專有的 `com.google.android.gms` 套件，所以兩者都要涵蓋（2026-09-28 擴充，見 [m0-play-billing.md](../test/m0-play-billing.md)）。沒有這條，GPL 程式不能合法地和專有函式庫一起散布。
 2. **不授予商標權**（第 7 條 (e) 款）：「Anomalops」名稱與圖示不隨程式碼授權。衍生版本要發行時必須改名、換圖示，避免使用者以為是官方版本。
 
-M0 要做的事：從 Play Billing Library 的 POM 確認它的授權名稱，核對 `NOTICE.md` 裡的寫法（ADR-0010）。
+M0 已確認：Billing Library 與 Play 服務函式庫的 POM 授權都是「Android Software Development Kit License」。
 
 ## 3. 貢獻
 

@@ -34,3 +34,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Build both flavors and the probe, run unit tests and detekt
         run: ./gradlew --console=plain assembleFossDebug assemblePlayDebug :tools:probe:assembleDebug test detekt
+      - name: Flavor permissions (NFR-8, ADR-0010)
+        run: python3 scripts/check_flavor_manifests.py

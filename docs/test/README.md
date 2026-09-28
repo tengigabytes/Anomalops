@@ -7,4 +7,5 @@
 | 檔案 | 內容 |
 | --- | --- |
 | [g0-blazer.md](g0-blazer.md) | G0 能力偵測：Pixel 10 Pro（blazer），2026-09-28 |
+| [m0-play-billing.md](m0-play-billing.md) | Play Billing 相依的授權、合併後權限與 foss 相依樹（ADR-0010），2026-09-28 |
 | [g1-dive-lock-platform.md](g1-dive-lock-platform.md) | 潛水鎖定平台行為（ADR-0006）：螢幕固定、抬頭通知、電源鍵、崩潰重啟，2026-09-28 |

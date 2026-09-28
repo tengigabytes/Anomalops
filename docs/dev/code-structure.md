@@ -52,6 +52,7 @@ Anomalops/
 ./gradlew detekt --auto-correct   # 自動修正格式問題
 python scripts/check_limits.py     # 檔案長度、文件索引、連結
 python scripts/check_module_deps.py   # 模組依賴規則（ADR-0007）
+python scripts/check_flavor_manifests.py   # 兩個 flavor 的權限（NFR-8、ADR-0010），建置後執行
 ```
 
 detekt 用 2.0 的 alpha 版，因為它是唯一以 Kotlin 2.4 建置的版本；只用在開發檢查，不進 APP，2.0 正式版推出後升級。
