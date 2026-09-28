@@ -22,5 +22,6 @@ android {
 dependencies {
     // ADR-0007: camera depends on profile only, never on telemetry.
     implementation(project(":core:profile"))
+    implementation(libs.kotlinx.coroutines.android)
     testImplementation(libs.junit)
 }

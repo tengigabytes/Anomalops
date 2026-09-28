@@ -3,5 +3,17 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <resources>
     <string name="app_name" translatable="false">Anomalops</string>
-    <string name="skeleton_placeholder">Anomalops — project skeleton (M0)</string>
+    <string name="unsupported_device">No device profile for %1$s yet.</string>
+    <string name="camera_permission_needed">Camera permission is needed to shoot.</string>
+    <string name="preset_snapshot">Snapshot</string>
+    <string name="preset_wide">Wide</string>
+    <string name="preset_fish_school">Fish school</string>
+    <string name="preset_macro">Macro</string>
+    <string name="preset_low_light">Low light</string>
+    <string name="shutter">Shoot</string>
+    <string name="status_lens">Lens %1$s</string>
+    <string name="wb_approximate">WB approximate</string>
+    <string name="camera_failed">Camera error: %1$s</string>
+    <string name="iso_clamped">ISO limit reached</string>
+    <string name="flash_fired">Flash fired</string>
 </resources>

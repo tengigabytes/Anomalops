@@ -18,7 +18,7 @@ PACKAGE = "io.github.tengigabytes.anomalops"
 # Permissions each flavor may declare after merging (NFR-8, ADR-0010).
 # foss: nothing that reaches the network. play: additionally what Play Billing 9.1.0 merges in
 # (measured 2026-09-28, docs/test/m0-play-billing.md); the dependency itself is only added in R3.
-BASE = {f"{PACKAGE}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"}
+BASE = {f"{PACKAGE}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION", "android.permission.CAMERA"}
 ALLOWED = {
     "foss": BASE,
     "play": BASE | {
