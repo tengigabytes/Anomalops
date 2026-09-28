@@ -55,7 +55,7 @@ MVP 就是 v1.0。它只回答四個問題，不直接服務這四個問題的�
 
 ### 2.3 非功能需求
 
-NFR-1 到 NFR-10 全部適用。NFR-1、NFR-2 原文含 4K 錄影，v1.0 版本改寫在 [mvp-acceptance.md](mvp-acceptance.md)。
+NFR-1 到 NFR-10 全部適用。NFR-1、NFR-2 原文含錄影，v1.0 版本改寫在 [mvp-acceptance.md](mvp-acceptance.md)。
 
 ### 2.4 MVP 需要補的設計產出
 

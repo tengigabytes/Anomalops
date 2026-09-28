@@ -21,6 +21,7 @@
 | [0008](0008-depth-telemetry.md) | 深度與遙測來源抽象、感測記錄 | 已採納 | FR-45、FR-84 |
 | [0009](0009-exposure-shutter-priority.md) | 曝光控制：預覽自動曝光，拍攝時換算為快門優先 | 已採納 | FR-11、FR-81、FR-91 |
 | [0010](0010-flavors-and-donations.md) | 建置 flavor 與樂捐：play 用 Play Billing，foss 用外部連結 | 已採納 | NFR-8、發行 |
+| [0011](0011-logical-viewfinder.md) | v1.1 取景與錄影改用 logical 串流，連續變焦跨鏡頭 | 提議（暫定，待實驗） | FR-13、FR-13a |
 
 ## 範本
 

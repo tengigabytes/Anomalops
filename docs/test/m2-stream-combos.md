@@ -28,3 +28,9 @@ M2 需要單張同時輸出 JPEG\_R 與 RAW（ADR-0005），連拍輸出一般 J
 - RAW 尺寸等於能力表的 `RAW_SENSOR` 預設尺寸（FR-64）。
 - 連拍 30 fps，是 FR-15 門檻（10 fps）的 3 倍。按住 400 ms 後才切換，推算按滿 3 s 約可得 69 張（門檻 ≥ 30 張）。
 - 連拍後切回預覽 222–894 ms，這段時間預覽停住。推測是 HAL 仍在編碼排隊中的 JPEG；FR-15 沒有規定，但會影響操作感，實作時再量測與改善。
+
+## 3. 官方文件補充（2026-09-28 查閱，Android SDK 37 原始碼）
+
+- `CameraDevice` 的串流組合說明：產生 JPEG\_R 時，相機裝置會在內部使用一路 10-bit YUV（`YCBCR_P010`）輸出；支援 10-bit 與 8-bit 同時請求的裝置，還會在內部多配置一路 JPEG 以加速編碼。因此一路 JPEG\_R 在 HAL 內部可能占用兩路以上，「JPEG\_R + JPEG」實際上超出保證組合（推測這是 HAL 重啟的原因，未查證）。含 JPEG\_R 而不在保證表內的組合，文件要求以 `isSessionConfigurationSupported` 查詢，但本機實測該查詢不可靠。
+- `CameraMetadata.REQUEST_AVAILABLE_CAPABILITIES_LOGICAL_MULTI_CAMERA`：實體鏡頭未列在相機 ID 清單時（Pixel 10 Pro 的鏡頭 2–9），該實體鏡頭本身的保證組合必須能透過 logical camera 的實體串流提供；logical 與實體串流混用、或不同實體鏡頭的串流混用則沒有保證。本 APP 每個工作階段只用同一顆鏡頭的實體串流，符合前者。
+

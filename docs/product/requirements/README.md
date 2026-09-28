@@ -14,7 +14,7 @@ grep -rn "FR-62 " docs/product/requirements/
 | 2. 功能參考：OLYMPUS TG-7 水下攝影功能 | [02-reference-tg7.md](02-reference-tg7.md) |  |
 | 3. 目標平台：Pixel 10 硬體與軟體能力盤點 | [03-platform.md](03-platform.md) |  |
 | 4. 使用情境與使用者角色 | [04-scenarios.md](04-scenarios.md) |  |
-| 5.1 拍攝模式 | [05-1-capture.md](05-1-capture.md) | FR-11 … FR-19a（11 項） |
+| 5.1 拍攝模式 | [05-1-capture.md](05-1-capture.md) | FR-11 … FR-19a（13 項） |
 | 5.2 白平衡與色彩還原 | [05-2-white-balance.md](05-2-white-balance.md) | FR-21 … FR-27（7 項） |
 | 5.3 對焦與微距 | [05-3-focus.md](05-3-focus.md) | FR-31 … FR-35（5 項） |
 | 5.4 潛水資訊與中繼資料 | [05-4-dive-data.md](05-4-dive-data.md) | FR-41 … FR-45（5 項） |
