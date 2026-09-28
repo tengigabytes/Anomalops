@@ -17,7 +17,9 @@ start once the Gradle project exists (milestone M0).
 
 - `python scripts/check_limits.py` must pass: Kotlin files ≤ 300 lines, tests ≤ 400, documents ≤ 300 lines
   or 20 KB, every `docs/` directory indexed by its `README.md`, no broken links.
-- From M0, detekt and ktlint enforce functions ≤ 60 lines and lines ≤ 120 characters.
+- `./gradlew detekt` (detekt with its ktlint wrapper) enforces functions ≤ 60 lines, classes ≤ 250 lines and
+  lines ≤ 120 characters; `./gradlew detekt --auto-correct` fixes formatting.
+- `python scripts/check_module_deps.py` enforces the module dependency rules of ADR-0007.
 - Both `play` and `foss` build flavors must build and pass lint and unit tests.
 - Every source file starts with SPDX headers:
 

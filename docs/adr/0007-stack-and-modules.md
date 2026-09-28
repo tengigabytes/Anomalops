@@ -62,3 +62,5 @@ v1.0 只支援 Pixel 10 Pro，但架構要能擴展到 Pixel 6 Pro 至 11 Pro（
 
 - G0：確認 Pixel 6 Pro 的 Android 版本，若低於 16，重新評估 `minSdk`。
 - 在 CI 或本地建置中，加入模組依賴檢查。
+
+2026-09-28 補充：模組依賴檢查以 `scripts/check_module_deps.py` 實作（掃描建置檔，不經 Gradle），本機與 CI 都執行；detekt 與 ktlint 格式檢查以 detekt 2.0.0-alpha.6 加其 ktlint-wrapper 實作。

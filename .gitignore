@@ -28,3 +28,6 @@ keystore.properties
 
 # Claude Code personal settings
 .claude/settings.local.json
+
+# Local scratch output of Claude Code sessions
+/.claude-tmp/

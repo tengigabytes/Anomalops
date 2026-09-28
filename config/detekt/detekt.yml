@@ -1,0 +1,23 @@
+# SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Overrides on top of detekt's default configuration (buildUponDefaultConfig = true).
+# Limits come from docs/dev/code-structure.md, section 3. Defaults already match:
+# LongMethod 60 lines, MaxLineLength / ktlint MaximumLineLength 120 characters.
+
+complexity:
+  LargeClass:
+    allowedLines: 250
+  LongParameterList:
+    allowedFunctionParameters: 6
+    allowedConstructorParameters: 6
+
+style:
+  MaxLineLength:
+    # Duplicate of the ktlint wrapper's MaximumLineLength (also 120); keep one report per long line.
+    active: false
+
+naming:
+  FunctionNaming:
+    # Jetpack Compose convention: composable functions are PascalCase.
+    ignoreAnnotated: ['Composable']

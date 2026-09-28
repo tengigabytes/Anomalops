@@ -104,8 +104,10 @@ class LockTestActivity : Activity() {
             "focus=" + hasWindowFocus(),
             "overlayAllowed=" + Settings.canDrawOverlays(this),
             "dndAccess=" + notifications.isNotificationPolicyAccessGranted,
-            "postNotifications=" + (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED),
+            "postNotifications=" + (
+                checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) ==
+                    PackageManager.PERMISSION_GRANTED
+                ),
         ).joinToString(" ")
     }
 

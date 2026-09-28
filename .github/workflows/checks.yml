@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Repository hygiene checks. Android build, lint and test jobs are added in milestone M0.
+# Definition of done checks (docs/dev/git-workflow.md, section 3).
 name: checks
 
 on:
@@ -15,6 +15,22 @@ jobs:
   limits:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: File limits, docs indexes and links
         run: python3 scripts/check_limits.py
+      - name: Module dependency rules (ADR-0007)
+        run: python3 scripts/check_module_deps.py
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: gradle/actions/wrapper-validation@v6
+      # gradle/gradle-daemon-jvm.properties requires JDK 25 for the Gradle daemon.
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Build both flavors and the probe, run unit tests and detekt
+        run: ./gradlew --console=plain assembleFossDebug assemblePlayDebug :tools:probe:assembleDebug test detekt

@@ -15,14 +15,19 @@ internal object StreamProbe {
             val sizes = map.getOutputSizes(format)?.toList().orEmpty()
             val highRes = map.getHighResolutionOutputSizes(format)?.toList().orEmpty()
             val largest = (sizes + highRes).maxByOrNull { it.area() }
-            formats.put(ConstantNames.format(format), jsonOf(
-                "code" to format,
-                "max" to largest?.toString(),
-                "maxMinFrameDurationNs" to largest?.let { safeDuration { map.getOutputMinFrameDuration(format, it) } },
-                "maxStallDurationNs" to largest?.let { safeDuration { map.getOutputStallDuration(format, it) } },
-                "sizes" to sizes.map { it.toString() }.toJsonArray(),
-                "highResolutionSizes" to highRes.map { it.toString() }.toJsonArray(),
-            ))
+            val minFrame = largest?.let { size -> safeDuration { map.getOutputMinFrameDuration(format, size) } }
+            val stall = largest?.let { size -> safeDuration { map.getOutputStallDuration(format, size) } }
+            formats.put(
+                ConstantNames.format(format),
+                jsonOf(
+                    "code" to format,
+                    "max" to largest?.toString(),
+                    "maxMinFrameDurationNs" to minFrame,
+                    "maxStallDurationNs" to stall,
+                    "sizes" to sizes.map { it.toString() }.toJsonArray(),
+                    "highResolutionSizes" to highRes.map { it.toString() }.toJsonArray(),
+                ),
+            )
         }
         return formats
     }

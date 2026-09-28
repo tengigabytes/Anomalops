@@ -53,7 +53,12 @@ internal class SessionProbe(private val manager: CameraManager, private val hand
         return results
     }
 
-    private fun test(device: CameraDevice, map: StreamConfigurationMap?, physicalId: String?, combo: Combo): JSONObject {
+    private fun test(
+        device: CameraDevice,
+        map: StreamConfigurationMap?,
+        physicalId: String?,
+        combo: Combo,
+    ): JSONObject {
         val sizes = combo.formats.map { it to pickSize(map, it) }
         val result = jsonOf(
             "physicalCameraId" to physicalId,
@@ -80,30 +85,34 @@ internal class SessionProbe(private val manager: CameraManager, private val hand
     private fun pickSize(map: StreamConfigurationMap?, format: Int): Size? {
         val sizes = map?.getOutputSizes(format)?.toList().orEmpty()
         if (format != ImageFormat.YUV_420_888) return sizes.maxByOrNull { it.area() }
-        return sizes.firstOrNull { it.width == 1920 && it.height == 1080 }
-            ?: sizes.filter { it.width <= 1920 }.maxByOrNull { it.area() }
+        return sizes.firstOrNull { it == PREVIEW_SIZE }
+            ?: sizes.filter { it.width <= PREVIEW_SIZE.width }.maxByOrNull { it.area() }
     }
 
     @SuppressLint("MissingPermission") // ProbeReport only calls this after CAMERA is granted.
     private fun open(id: String): CameraDevice? {
         val latch = CountDownLatch(1)
         var opened: CameraDevice? = null
-        manager.openCamera(id, object : CameraDevice.StateCallback() {
-            override fun onOpened(camera: CameraDevice) {
-                opened = camera
-                latch.countDown()
-            }
+        manager.openCamera(
+            id,
+            object : CameraDevice.StateCallback() {
+                override fun onOpened(camera: CameraDevice) {
+                    opened = camera
+                    latch.countDown()
+                }
 
-            override fun onDisconnected(camera: CameraDevice) {
-                camera.close()
-                latch.countDown()
-            }
+                override fun onDisconnected(camera: CameraDevice) {
+                    camera.close()
+                    latch.countDown()
+                }
 
-            override fun onError(camera: CameraDevice, error: Int) {
-                camera.close()
-                latch.countDown()
-            }
-        }, handler)
+                override fun onError(camera: CameraDevice, error: Int) {
+                    camera.close()
+                    latch.countDown()
+                }
+            },
+            handler,
+        )
         latch.await(OPEN_TIMEOUT_S, TimeUnit.SECONDS)
         return opened
     }
@@ -117,5 +126,6 @@ internal class SessionProbe(private val manager: CameraManager, private val hand
 
     private companion object {
         const val OPEN_TIMEOUT_S = 5L
+        val PREVIEW_SIZE = Size(1920, 1080)
     }
 }

@@ -13,6 +13,7 @@ import org.json.JSONObject
 
 /** Sensor list and thermal state for FR-45 logging and ADR-0008 (which sensors exist, can they run at 1 Hz). */
 internal object SensorProbe {
+    private const val HEADROOM_FORECAST_S = 10
     private val fr45Types = setOf(
         Sensor.TYPE_PRESSURE,
         Sensor.TYPE_LIGHT,
@@ -52,7 +53,7 @@ internal object SensorProbe {
         val battery = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         return jsonOf(
             "currentThermalStatus" to power.currentThermalStatus,
-            "thermalHeadroom10s" to power.getThermalHeadroom(10).finiteOrString(),
+            "thermalHeadroom10s" to power.getThermalHeadroom(HEADROOM_FORECAST_S).finiteOrString(),
             "batteryTemperatureTenthsC" to battery?.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, Int.MIN_VALUE),
         )
     }

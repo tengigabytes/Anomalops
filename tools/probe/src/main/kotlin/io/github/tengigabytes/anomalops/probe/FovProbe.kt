@@ -91,7 +91,10 @@ internal class FovProbe(private val manager: CameraManager, private val handler:
         }
         try {
             for (ratio in ZOOM_RATIOS) {
-                val request = previewRequest(device, reader.surface).apply { set(CaptureRequest.CONTROL_ZOOM_RATIO, ratio) }
+                val request = previewRequest(
+                    device,
+                    reader.surface,
+                ).apply { set(CaptureRequest.CONTROL_ZOOM_RATIO, ratio) }
                 session?.setRepeatingRequest(request.build(), listener, handler)
                 Thread.sleep(ZOOM_SETTLE_MS)
                 result.put(ratio.toString(), active ?: JSONObject.NULL)
@@ -133,15 +136,19 @@ internal class FovProbe(private val manager: CameraManager, private val handler:
     private fun open(): CameraDevice? {
         val latch = CountDownLatch(1)
         var opened: CameraDevice? = null
-        manager.openCamera(LOGICAL_BACK, object : CameraDevice.StateCallback() {
-            override fun onOpened(camera: CameraDevice) {
-                opened = camera
-                latch.countDown()
-            }
+        manager.openCamera(
+            LOGICAL_BACK,
+            object : CameraDevice.StateCallback() {
+                override fun onOpened(camera: CameraDevice) {
+                    opened = camera
+                    latch.countDown()
+                }
 
-            override fun onDisconnected(camera: CameraDevice) = latch.countDown()
-            override fun onError(camera: CameraDevice, error: Int) = latch.countDown()
-        }, handler)
+                override fun onDisconnected(camera: CameraDevice) = latch.countDown()
+                override fun onError(camera: CameraDevice, error: Int) = latch.countDown()
+            },
+            handler,
+        )
         latch.await(GRAB_TIMEOUT_S, TimeUnit.SECONDS)
         return opened
     }

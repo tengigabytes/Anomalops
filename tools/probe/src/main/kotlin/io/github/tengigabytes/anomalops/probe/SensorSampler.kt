@@ -21,7 +21,14 @@ internal class SensorSampler(private val sensorManager: SensorManager) {
 
     fun sample(durationMs: Long, handler: Handler): JSONArray {
         val collectors = targets().map { Collector(it) }
-        collectors.forEach { sensorManager.registerListener(it, it.sensor, it.sensor.minDelay.coerceAtLeast(0), handler) }
+        collectors.forEach {
+            sensorManager.registerListener(
+                it,
+                it.sensor,
+                it.sensor.minDelay.coerceAtLeast(0),
+                handler,
+            )
+        }
         try {
             Thread.sleep(durationMs)
         } finally {
@@ -80,10 +87,9 @@ internal class SensorSampler(private val sensorManager: SensorManager) {
         private const val KEPT_EVENTS = 3
         private const val NANOS_PER_MS = 1_000_000L
 
-        fun isTarget(sensor: Sensor): Boolean =
-            sensor.type == Sensor.TYPE_PRESSURE ||
-                sensor.type == Sensor.TYPE_AMBIENT_TEMPERATURE ||
-                sensor.stringType.contains("temperature", ignoreCase = true) ||
-                sensor.stringType.endsWith("_temp", ignoreCase = true)
+        fun isTarget(sensor: Sensor): Boolean = sensor.type == Sensor.TYPE_PRESSURE ||
+            sensor.type == Sensor.TYPE_AMBIENT_TEMPERATURE ||
+            sensor.stringType.contains("temperature", ignoreCase = true) ||
+            sensor.stringType.endsWith("_temp", ignoreCase = true)
     }
 }

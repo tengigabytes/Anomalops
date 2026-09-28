@@ -31,9 +31,8 @@ internal object ConstantNames {
 
     fun format(code: Int): String = imageFormats[code] ?: "0x%x".format(code)
 
-    private fun table(owner: Class<*>, prefix: String): Map<Int, String> =
-        owner.fields
-            .filter { Modifier.isStatic(it.modifiers) && it.type == Int::class.javaPrimitiveType }
-            .filter { it.name.startsWith(prefix) }
-            .associate { it.getInt(null) to it.name.removePrefix(prefix) }
+    private fun table(owner: Class<*>, prefix: String): Map<Int, String> = owner.fields
+        .filter { Modifier.isStatic(it.modifiers) && it.type == Int::class.javaPrimitiveType }
+        .filter { it.name.startsWith(prefix) }
+        .associate { it.getInt(null) to it.name.removePrefix(prefix) }
 }

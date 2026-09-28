@@ -14,7 +14,8 @@ Pixel 潛水相機 APP（Android，Kotlin，Camera2）。目前階段：M0 進�
 
 ## 硬性上限
 - `python scripts/check_limits.py` 檢查：Kotlin 原始檔 300 行、測試檔 400 行。
-- detekt / ktlint 檢查（M0 起）：函式 60 行、每行 120 字元。
+- `./gradlew detekt`（含 ktlint 格式）：函式 60 行、類別 250 行、每行 120 字元；`--auto-correct` 可自動修正格式。
+- `python scripts/check_module_deps.py`：模組依賴規則（ADR-0007）。
 - 文件 300 行或 20 KB；根目錄 `CLAUDE.md` 60 行、子目錄 30 行。
 - 超過上限就拆檔，不要調高上限。
 

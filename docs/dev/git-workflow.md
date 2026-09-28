@@ -30,8 +30,8 @@ Signed-off-by: Name <email>
 
 每次合併進 `main` 前都要符合：
 
-1. `python scripts/check_limits.py` 通過，涵蓋長度、索引、連結。
-2. 建置、ktlint、detekt、單元測試通過，而且 `play`、`foss` 兩個 flavor 都要過。這一項從 M0 建立 Gradle 專案後開始適用。
+1. `python scripts/check_limits.py` 與 `python scripts/check_module_deps.py` 通過。
+2. 建置、單元測試、`./gradlew detekt`（含 ktlint 格式）通過，而且 `play`、`foss` 兩個 flavor 都要過。CI 的 `android` 工作會執行這一項。
 3. 動到的需求都有測試，或在 [mvp-acceptance.md](../product/mvp-acceptance.md) 對應的列上註明驗證方式。
 4. 新增檔案已寫進目錄索引；新的架構決定已寫 ADR。
 5. 如果改變了對外行為，需求文件或驗收文件已同步修改。

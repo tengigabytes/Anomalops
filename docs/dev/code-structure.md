@@ -15,7 +15,8 @@ Anomalops/
 ├─ app/                 :app，UI、潛水鎖定、flavor 相關程式（ADR-0007、0010）
 ├─ core/                :core:camera、:core:profile、:core:store、:core:telemetry
 ├─ tools/probe/         :tools:probe 能力偵測工具
-├─ scripts/             開發用腳本，例如 check_limits.py
+├─ scripts/             開發用腳本：check_limits.py、check_module_deps.py
+├─ config/detekt/       detekt 設定（只放覆寫預設值的部分）
 ├─ .github/workflows/   CI；目前執行 check_limits.py，M0 起加入 Android 建置與測試
 └─ .claude/             Claude Code 的專案設定
 ```
@@ -43,6 +44,17 @@ Anomalops/
 | 腳本（py / sh） | 150 行 | 200 行 | `check_limits.py` |
 | 文件（md） | 250 行或 16 KB | 300 行或 20 KB | `check_limits.py` |
 | `CLAUDE.md` | | 根目錄 60 行，子目錄 30 行 | `check_limits.py` |
+
+**檢查指令**（完成定義見 [git-workflow.md](git-workflow.md) 第 3 節）：
+
+```sh
+./gradlew detekt                  # 程式品質與 ktlint 格式（detekt 2.0.0-alpha.6 加 ktlint-wrapper）
+./gradlew detekt --auto-correct   # 自動修正格式問題
+python scripts/check_limits.py     # 檔案長度、文件索引、連結
+python scripts/check_module_deps.py   # 模組依賴規則（ADR-0007）
+```
+
+detekt 用 2.0 的 alpha 版，因為它是唯一以 Kotlin 2.4 建置的版本；只用在開發檢查，不進 APP，2.0 正式版推出後升級。
 
 **不受限制的檔案**：`LICENSE`、自動產生的檔案、`assets/device-profiles/*.json` 等資料檔。資料檔改由 schema 驗證（ADR-0003）。
 

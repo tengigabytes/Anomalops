@@ -79,7 +79,7 @@ internal class ProbeReport(private val context: Context) {
     }
 
     private fun summary(report: JSONObject, file: File): String = buildString {
-        appendLine("Wrote ${file.name} (${file.length() / 1024} KiB)")
+        appendLine("Wrote ${file.name} (${file.length() / BYTES_PER_KIB} KiB)")
         val cameras = report.getJSONObject("camera").getJSONArray("cameras")
         for (i in 0 until cameras.length()) {
             val cam = cameras.getJSONObject(i)
@@ -99,13 +99,18 @@ internal class ProbeReport(private val context: Context) {
         val samples = report.getJSONArray("sensorSamples")
         for (i in 0 until samples.length()) {
             val s = samples.getJSONObject(i)
-            appendLine("${s.getString("stringType").substringAfterLast('.')}: ${s.getInt("events")} events, mean ${s.get("mean")}")
+            appendLine(
+                "${s.getString(
+                    "stringType",
+                ).substringAfterLast('.')}: ${s.getInt("events")} events, mean ${s.get("mean")}",
+            )
         }
     }
 
     private companion object {
         const val SCHEMA = "anomalops-probe/3"
         const val SAMPLE_MS = 5_000L
+        const val BYTES_PER_KIB = 1024
         const val TAG = "AnomalopsProbe"
     }
 }

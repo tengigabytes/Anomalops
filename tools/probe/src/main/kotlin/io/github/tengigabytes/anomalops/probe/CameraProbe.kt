@@ -22,7 +22,9 @@ internal class CameraProbe(private val manager: CameraManager) {
             val ch = manager.getCameraCharacteristics(id)
             val physical = JSONArray()
             ch.physicalCameraIds.sorted().forEach { pid ->
-                physical.put(describe(pid, manager.getCameraCharacteristics(pid)).put("listedInCameraIdList", pid in listed))
+                physical.put(
+                    describe(pid, manager.getCameraCharacteristics(pid)).put("listedInCameraIdList", pid in listed),
+                )
             }
             cameras.put(describe(id, ch).put("physicalCameras", physical).put("extensions", extensions(id)))
         }
@@ -33,7 +35,10 @@ internal class CameraProbe(private val manager: CameraManager) {
         "id" to id,
         "facing" to N.name(N.lensFacing, ch[CameraCharacteristics.LENS_FACING]),
         "hardwareLevel" to N.name(N.hardwareLevels, ch[CameraCharacteristics.INFO_SUPPORTED_HARDWARE_LEVEL]),
-        "capabilities" to N.names(N.capabilities, ch[CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES]).toJsonArray(),
+        "capabilities" to N.names(
+            N.capabilities,
+            ch[CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES],
+        ).toJsonArray(),
         "lens" to lens(ch),
         "sensor" to sensor(ch),
         "controls" to controls(ch),
@@ -41,8 +46,8 @@ internal class CameraProbe(private val manager: CameraManager) {
         "streams" to StreamProbe.describe(ch[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP]),
         "streamsMaximumResolution" to
             StreamProbe.describe(ch[CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP_MAXIMUM_RESOLUTION]),
-        "dynamicRangeProfiles" to
-            ch[CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES]?.supportedProfiles?.sorted()?.toJsonArray(),
+        "dynamicRangeProfiles" to ch[CameraCharacteristics.REQUEST_AVAILABLE_DYNAMIC_RANGE_PROFILES]
+            ?.supportedProfiles?.sorted()?.toJsonArray(),
         "availableCaptureRequestKeys" to ch.availableCaptureRequestKeys.map { it.name }.sortedJson(),
         "availableSessionKeys" to ch.availableSessionKeys?.map { it.name }.sortedJson(),
         "availablePhysicalCameraRequestKeys" to ch.availablePhysicalCameraRequestKeys?.map { it.name }.sortedJson(),

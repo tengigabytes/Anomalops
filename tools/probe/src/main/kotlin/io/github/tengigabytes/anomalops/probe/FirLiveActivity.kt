@@ -22,7 +22,9 @@ import java.util.concurrent.ConcurrentHashMap
  * Shows the latest values on screen and logs one line per second with tag AnomalopsProbe:
  * `adb logcat -s AnomalopsProbe:I`. Launch: `adb shell am start -n <pkg>/.FirLiveActivity`.
  */
-class FirLiveActivity : Activity(), SensorEventListener {
+class FirLiveActivity :
+    Activity(),
+    SensorEventListener {
     private val latest = ConcurrentHashMap<String, FloatArray>()
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var sensorManager: SensorManager
