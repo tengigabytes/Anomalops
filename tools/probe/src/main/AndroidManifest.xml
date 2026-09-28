@@ -5,6 +5,10 @@
 
     <!-- Needed to read all CameraCharacteristics keys and to query session support. -->
     <uses-permission android:name="android.permission.CAMERA" />
+    <!-- ADR-0006 platform tests: heads-up notification, overlay (crash restart), do-not-disturb access. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <application
         android:allowBackup="false"
@@ -25,6 +29,23 @@
             android:name=".FirLiveActivity"
             android:exported="true"
             android:label="Probe: temperature live" />
+
+        <!-- Dive-lock platform behaviour test (ADR-0006). -->
+        <activity
+            android:name=".LockTestActivity"
+            android:exported="true"
+            android:label="Probe: lock test"
+            android:launchMode="singleTask"
+            android:taskAffinity="io.github.tengigabytes.anomalops.probe.locktest" />
+
+        <!-- Crash-restart trampoline: separate process, same task as LockTestActivity (ADR-0006, NFR-1). -->
+        <activity
+            android:name=".RestartTrampolineActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:process=":restarter"
+            android:taskAffinity="io.github.tengigabytes.anomalops.probe.locktest"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 
 </manifest>
