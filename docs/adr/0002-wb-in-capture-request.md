@@ -40,3 +40,5 @@
 - G0：在 JPEG\_R 輸出下，確認手動增益確實反映在成品上（ADR-0004）。
 - G1：用灰卡量測 FR-91 的 ≤ 5% 門檻，方法見 mvp-acceptance.md。
 - G1：抽查 CaptureResult 的增益是否等於請求值。
+
+2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。所有實體鏡頭都有 `MANUAL_POST_PROCESSING`，實體鏡頭請求鍵含色彩校正增益與矩陣；`CaptureResult` 是否回報請求值仍待 G1。

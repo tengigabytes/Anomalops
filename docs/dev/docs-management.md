@@ -10,7 +10,7 @@
 | `docs/adr/` | 架構決策紀錄，一個決策一份 | `0001-camera2.md` |
 | `docs/dev/` | 開發紀律，也就是本目錄 | `code-structure.md` |
 | `docs/release/` | 授權、發行、上架準備 | `licensing.md` |
-| `docs/test/`（之後新增） | 測試計畫與關卡結果的彙整 | `g0-capabilities.md` |
+| `docs/test/` | 測試計畫與關卡結果的彙整 | `g0-capabilities.md` |
 | 模組內的 `README.md` | 模組職責與介面 | `core/camera/README.md` |
 
 **不放進 repo 的東西**：測試照片、FR-45 原始紀錄、含位置的資料、個人器材清單。repo 是公開的，只提交彙整後的結果。

@@ -10,7 +10,7 @@ Pixel 潛水相機 APP（Android，Kotlin，Camera2）。目前階段：M0 進�
 ## 讀檔順序（控制 context）
 1. 先讀 `docs/README.md` 或目標目錄的 `README.md` 索引，再讀單一目標檔案。
 2. 找需求用 grep 搜尋編號：`grep -rn "FR-62 " docs/product/requirements/`。不要整批讀取需求目錄。
-3. 不要讀 `LICENSE` 全文、建置產物、金鑰；這些已在 `.claude/settings.json` 中禁止讀取。
+3. 不要讀 `LICENSE` 全文、建置產物、金鑰、`tools/probe/results/*.json`；這些已在 `.claude/settings.json` 中禁止讀取。偵測報告用 python 查詢需要的欄位。
 
 ## 硬性上限
 - `python scripts/check_limits.py` 檢查：Kotlin 原始檔 300 行、測試檔 400 行。

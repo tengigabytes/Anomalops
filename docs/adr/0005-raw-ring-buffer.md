@@ -48,3 +48,5 @@ FR-62：緩衝最近 5 張 DNG，拍後 10 s 內長按縮圖才寫入，否則�
 - G1：寫出的 DNG 用 exiftool 查看 Compression 標籤與檔案大小，確認是否未壓縮。
 - G1：在緩衝已滿的狀態下，連續拍攝不出現延遲尖峰（NFR-4）。
 - G1：連拍 300 張，記憶體沒有持續上升（mvp-acceptance.md 的 FR-62 項）。
+
+2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。RAW 預設 4080×3072（12.53 MP），推測成立；成品與 RAW 同一請求的組合查詢全部支援。

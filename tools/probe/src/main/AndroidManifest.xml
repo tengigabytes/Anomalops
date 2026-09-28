@@ -3,6 +3,9 @@
 <!-- SPDX-License-Identifier: GPL-3.0-or-later -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Needed to read all CameraCharacteristics keys and to query session support. -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
     <application
         android:allowBackup="false"
         android:label="Anomalops Probe"
@@ -16,6 +19,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Bench test of the FIR thermometer and other temperature sensors (docs/test/g0-blazer.md). -->
+        <activity
+            android:name=".FirLiveActivity"
+            android:exported="true"
+            android:label="Probe: temperature live" />
     </application>
 
 </manifest>

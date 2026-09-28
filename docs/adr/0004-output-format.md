@@ -30,3 +30,7 @@ FR-61 原本定為 10-bit HEIC + 增益圖。要在 Pixel 上做到，需要 HAL
 - G0：主鏡頭、超廣角、望遠是否各自支援 JPEG\_R。
 - G0：關閉 AWB、手動設定增益時，JPEG\_R 仍正常產生增益圖（以 `Bitmap.hasGainmap()` 檢查）。
 - G1：20 張平均檔案大小 ≤ 6 MB（FR-61 原門檻沿用到 FR-61a）。
+
+2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。JPEG_R 所有鏡頭支援；HEIC 不在輸出格式中。JPEG_R 的 stall 為 150 ms，影響連拍速度，待決。
+
+2026-09-28 補充：因 JPEG_R 的 stall 為 150 ms，產品擁有者決定連拍（FR-68）改用一般 JPEG，單張照片維持 JPEG_R。上方「連拍（FR-68）也用同一格式」一句以此補充為準。

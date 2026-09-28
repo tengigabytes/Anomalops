@@ -7,4 +7,6 @@
 | 職責 | 列出各邏輯與實體鏡頭的 Camera2 能力、串流格式（含 JPEG\_R、RAW）、可用擷取請求鍵、感測器，匯出為 JSON |
 | 依賴 | `:core:profile`（共用 schema） |
 | 產出 | `assets/device-profiles/<device>.json` 的能力部分，以及各 ADR「驗證」一節的 G0 答案 |
-| 現況 | M0 骨架：佔位畫面，偵測功能是 M0 的下一步 |
+| 執行 | 安裝後 `adb shell pm grant io.github.tengigabytes.anomalops.probe android.permission.CAMERA`，啟動 APP；報告用 `adb exec-out run-as io.github.tengigabytes.anomalops.probe cat files/probe/latest.json` 取回 |
+| 行為 | 只讀取能力與詢問輸出組合，不拍照、不寫入相簿 |
+| 結果 | `results/<device>-<日期>.json` 原始報告；彙整見 [docs/test/](../../docs/test/README.md) |

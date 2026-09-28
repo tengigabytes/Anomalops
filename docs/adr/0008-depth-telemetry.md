@@ -50,3 +50,5 @@ FR-84 定義 DepthSource / TelemetrySource 介面，實作有三種：手動深�
 
 - G0：列出 Pixel 10 Pro 可用的感測器種類，以及取樣率是否能設為 1 Hz。
 - G2：90 分鐘場次的 `sensors.csv` 完整度 ≥ 98%（mvp-acceptance.md 的 FR-45 項）。
+
+2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。沒有環境溫度感測器（推測成立），但有氣壓計溫度 `com.google.sensor.pressure_temp`，建議加入 `sensors.csv`；磁力計最慢 0.8 s，需自行降頻到 1 Hz。紅外線溫度計（MLX90632）需要 `signature|preinstalled` 權限，第三方 APP 無法使用，因此不能用來估計水溫。

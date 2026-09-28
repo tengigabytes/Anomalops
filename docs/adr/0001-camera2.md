@@ -35,3 +35,5 @@ G0 能力偵測要在 Pixel 10 Pro 上列出：
 
 - 各邏輯與實體鏡頭的 `INFO_SUPPORTED_HARDWARE_LEVEL`、`REQUEST_AVAILABLE_CAPABILITIES`（至少要有 MANUAL\_SENSOR、MANUAL\_POST\_PROCESSING、RAW）
 - 第三方 APP 能否以 `OutputConfiguration.setPhysicalCameraId` 取用超廣角實體鏡頭（推測可以，未確認）
+
+2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。所有鏡頭皆為 `FULL` 且具備手動控制與 RAW；實體鏡頭經 `setPhysicalCameraId` 的組合查詢全部支援。

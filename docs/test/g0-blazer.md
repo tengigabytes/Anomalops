@@ -1,0 +1,86 @@
+# G0 能力偵測結果：Pixel 10 Pro（blazer）
+
+2026-09-28 · 狀態：已完成（查詢層級）
+
+| 項目 | 內容 |
+| --- | --- |
+| 裝置 | Pixel 10 Pro，代號 `blazer`，Tensor G5 |
+| 系統 | Android 17，SDK 37.1，build `CP3A.260905.009`，安全性修補 2026-09-05 |
+| 工具 | `:tools:probe`（schema `anomalops-probe/2`，含 5 秒感測器取樣） |
+| 原始報告 | `tools/probe/results/blazer-20260928.json`（約 220 KB，請用 python / jq 查詢，不要整份讀取） |
+
+**「查詢層級」的意思**：這次只讀取了 `CameraCharacteristics`，並向 HAL 詢問輸出組合能否使用（`isSessionConfigurationSupported`），沒有實際串流或拍照。實際行為在 G1 驗證。
+
+## 1. 鏡頭組成
+
+| 相機 ID | 類型 | 焦距 | 最近對焦 | 最大輸出（JPEG / JPEG_R / RAW） |
+| --- | --- | --- | --- | --- |
+| 0 | 後置邏輯鏡頭（`LOGICAL_MULTI_CAMERA`），`FULL` | 6.9 mm | 9.52 D（約 10.5 cm） | 4080×3072 |
+| 2、5 | 主鏡頭（實體） | 6.9 mm | 9.52 D | 4080×3072 |
+| 3、9 | 超廣角（實體） | 2.02 mm | 50 D（2.0 cm） | 4032×3024 |
+| 4、6 | 望遠（實體） | 17.9 mm | 3.33 D（約 30 cm） | 4032×3024 |
+| 1 | 前置邏輯鏡頭；實體鏡頭為 7、8 | 2.71 mm | 5 D | 3440×2448 |
+
+- `cameraIdList` 裡只有 `0`、`1`。實體鏡頭不能單獨開啟，只能從邏輯鏡頭用 `setPhysicalCameraId` 取用。
+- 同一顆鏡頭出現兩個實體 ID（2/5、3/9、4/6），它們的 ISO 範圍與類比增益上限都不一樣。推測是不同的感光元件模式，實際差異**未知**，M1 選鏡頭時再確認。
+
+## 2. 各 ADR 的 G0 答案
+
+| ADR / 需求 | 問題 | 結果 |
+| --- | --- | --- |
+| ADR-0001 | 各鏡頭是否支援手動控制與 RAW | 所有邏輯與實體鏡頭都是 `FULL`，都有 `MANUAL_SENSOR`、`MANUAL_POST_PROCESSING`、`RAW`、`BURST_CAPTURE` |
+| ADR-0001、FR-95 | 能否透過 `setPhysicalCameraId` 使用實體鏡頭 | 後置 7 個實體鏡頭 × 4 種組合，HAL 全部回報支援 |
+| ADR-0002 | 手動白平衡的請求鍵 | 邏輯鏡頭有 `colorCorrection.gains`、`transform`、`mode`、`control.awbMode`；實體鏡頭的請求鍵也有 `gains` 和 `transform`，所以可以對每顆實體鏡頭分別設定白平衡 |
+| ADR-0004 | JPEG_R | 所有鏡頭都支援。**HEIC 不在輸出格式裡**，所以 v1.1 的 10-bit HEIC（FR-61）要自建編碼 |
+| ADR-0004 | 10-bit | 動態範圍設定檔有 `STANDARD` 和 `HLG10`，可以輸出 10-bit HLG |
+| ADR-0005 | RAW 預設尺寸 | 主鏡頭 4080×3072 = 12.53 MP，符合原本推測的 12.5 MP。最大解析度模式下沒有 RAW 輸出 |
+| ADR-0005 | 成品與 RAW 能否同一請求 | `JPEG+RAW`、`JPEG_R+RAW`、`YUV1080+JPEG_R+RAW` 全部回報支援 |
+| ADR-0005、FR-64 | 未壓縮 DNG 大小 | 12,533,760 像素 × 2 byte = 25.07 MB，比 v1.1 的門檻 25 MB 多 0.07 MB（還沒加上中繼資料） |
+| ADR-0009 | 自動曝光的幀率範圍 | 最低 15 fps，所以自動曝光最長會用到 1/15 s，無法用幀率範圍限制在 1/125 s，**確認需要 ADR-0009 的換算** |
+| ADR-0009 | ISO 範圍（主鏡頭 ID 2） | 21–5333，類比增益上限 333；超過 ISO 333 之後是數位增益 |
+| ADR-0008、NFR-4 | 時間戳來源 | `REALTIME`，可以直接和 `elapsedRealtimeNanos` 對齊 |
+| FR-31 | 微距最近對焦 | 超廣角 50 D，即 2.0 cm，符合 ≤ 5 cm 的要求 |
+| FR-81 | 閃光燈 | 手機有閃光燈，AE 模式包含 `ON_AUTO_FLASH`、`ON_ALWAYS_FLASH`，所以 ADR-0009 的「禁止閃燈 AE 模式」規則是必要的 |
+| FR-17a | 相機擴充 | 兩個邏輯鏡頭都**只有 `NIGHT`，沒有 `HDR`** |
+| FR-94（v1.1） | LOG 色調曲線 | 有 `tonemap.mode` 和 `tonemap.curve` 請求鍵 |
+
+## 3. 感測器（FR-45、ADR-0008）
+
+| 感測器 | 型號 | 最長取樣間隔 | 1 Hz 記錄 |
+| --- | --- | --- | --- |
+| 氣壓計 | SPL07003 | 1,000,000 µs | 可以直接用 1 Hz |
+| 環境光 | TMD3743（數值改變時才回報） | 1,000,000 µs | 可以 |
+| 磁力計 | MMC5616 | 800,000 µs | 最慢只能 1.25 Hz，要自己降到 1 Hz |
+| 環境溫度（type 13） | **沒有** | — | 和 ADR-0008 的推測一致 |
+| 氣壓計溫度（`com.google.sensor.pressure_temp`） | SPL07003 | 1,000,000 µs | 可以。**ADR-0008 沒預料到**，可以代表殼內空氣溫度，建議加進 `sensors.csv` |
+| 陀螺儀溫度 | ICM45631 | 666,667 µs | 可以。實測約 50 Hz，讀數 35.9 °C |
+| 紅外線溫度計（`fir_temperature`、`fir_extended_temperature`） | MLX90632 | — | **不能用**：需要 `com.google.sensor.permission.FAR_INFRARED_TEMPERATURE`，保護等級 `signature\|preinstalled`（由 `com.android.pixeldisplayservice` 定義），第三方 APP 無法取得。實測 0 筆事件 |
+
+5 秒取樣實測：氣壓計溫度 118 筆（約 25 Hz）、平均 35.8 °C；陀螺儀溫度 247 筆、平均 35.9 °C。兩者每筆回傳 16 個數值，只有第 1 個有意義，其餘為 0。
+
+**水溫**：原本考慮用 FIR 溫度計隔著殼窗量水溫（熱傳導估算顯示窗口內側溫度接近水溫），但因上述權限限制無法實作。氣壓計與陀螺儀溫度是晶片溫度，會被手機發熱墊高，不能代表水溫。照片的水溫只能靠 FR-44（潛水電腦 Log，v1.1）或 FR-85 的 BLE 感測模組。
+
+偵測當下的狀態：熱狀態 `NONE`，10 秒熱餘裕 0.546，電池溫度 30.7 °C。
+
+## 4. 新發現的問題
+
+**JPEG_R 的 stall duration 是 150 ms，JPEG 是 0 ms。**
+
+| 格式 | 最短幀間隔 | stall | 推算連拍上限 | FR-15 要求 |
+| --- | --- | --- | --- | --- |
+| JPEG | 33.3 ms | 0 ms | 約 30 fps | ≥ 10 fps |
+| JPEG_R | 33.3 ms | 150 ms | 約 6.7 fps | ≥ 10 fps |
+
+如果每張 JPEG_R 都要多等 150 ms，連拍速度推算只有 6.7 fps，達不到 FR-15 要求的 10 fps。這是依 API 語意推算的，實際速度要在 G1 量測。
+
+建議：連拍改用一般 JPEG，單張照片維持 JPEG_R。這會影響 FR-68 與 ADR-0004，要由產品擁有者決定。→ 2026-09-28 決定：採用建議，已更新 FR-68、mvp-scope.md、mvp-acceptance.md 與 ADR-0004。
+
+## 5. 還沒驗證的
+
+| 項目 | 何時驗證 |
+| --- | --- |
+| ADR-0002：`CaptureResult` 回報的增益是否等於請求值；手動白平衡下 JPEG_R 是否仍會產生增益圖 | G1，要實際拍攝 |
+| ADR-0005：DNG 的壓縮方式與實際大小；緩衝滿載時的延遲 | G1 |
+| ADR-0006：螢幕固定、通知、崩潰重啟等平台行為 | M0 的下一步 |
+| ADR-0007：Pixel 6 Pro 的 Android 版本 | 需要那支手機 |
+| ADR-0010：Play Billing 的授權與合併後 manifest 的權限 | M0，加入 `play` flavor 的相依之後 |

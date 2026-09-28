@@ -46,3 +46,5 @@ FR-81 原文寫「FLASH\_MODE\_OFF、AE\_MODE\_ON」，重點是閃光燈不觸�
 - G0：列出可用的 `CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES`、感光度範圍、`SENSOR_MAX_ANALOG_SENSITIVITY`。
 - G1：在固定光源下，比較換算前後的灰卡亮度，差異應 ≤ 1/3 EV（提議值）。
 - G1：確認拍攝請求從 `AE_MODE_ON` 切到 `AE_MODE_OFF` 時，不會造成預覽閃爍或延遲尖峰（NFR-4）。
+
+2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。AE 幀率範圍最低 15 fps，確認無法以幀率範圍限制在 1/125 s；主鏡頭 ISO 21–5333、類比上限 333。

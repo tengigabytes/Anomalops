@@ -7,7 +7,8 @@
       "Read(./**/*.keystore)",
       "Read(./**/keystore.properties)",
       "Read(./local.properties)",
-      "Read(./LICENSE)"
+      "Read(./LICENSE)",
+      "Read(./tools/probe/results/**)"
     ]
   }
 }
