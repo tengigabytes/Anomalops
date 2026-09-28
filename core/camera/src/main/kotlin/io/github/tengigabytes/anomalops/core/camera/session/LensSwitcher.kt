@@ -65,13 +65,15 @@ internal class LensSwitcher(
         val lens = checkNotNull(stream) { "preview not started" }
         focus.settled()
         val spec = planner.still(checkNotNull(preview), awaitMetered(), lens.format)
+        // FR-62 frames held elsewhere may fill the RAW reader; then this still has no RAW rather than a crash.
+        val rawReader = lens.rawReader?.takeIf { rawReaders.hasRoom(lens.camera.id) }
         val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
             addTarget(lens.reader.surface)
-            lens.rawReader?.let { addTarget(it.surface) }
+            rawReader?.let { addTarget(it.surface) }
             // Upright for the portrait-locked M1 screen (docs/test/m1-mediastore.md); M3 revisits orientation.
             set(CaptureRequest.JPEG_ORIENTATION, lens.sensorOrientation)
         }
-        val images = lens.session.captureStill(request, lens.reader, lens.rawReader, handler)
+        val images = lens.session.captureStill(request, lens.reader, rawReader, handler)
         val result = images.result
         return StillCapture(
             bytes = images.encoded,

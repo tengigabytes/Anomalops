@@ -14,6 +14,7 @@ import android.hardware.camera2.params.SessionConfiguration
 import android.media.Image
 import android.media.ImageReader
 import android.os.Handler
+import android.util.Log
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
@@ -24,6 +25,7 @@ import kotlin.coroutines.resumeWithException
 // Suspending wrappers around the Camera2 callbacks. All callbacks run on the camera HandlerThread (ADR-0007).
 
 private const val STILL_TIMEOUT_MS = 3_000L
+private const val TAG = "Camera2Calls"
 
 /** Opens [id]; after opening, a disconnect or error is reported through [onLost]. */
 @SuppressLint("MissingPermission") // The app obtains CAMERA before it creates a CameraController.
@@ -87,9 +89,14 @@ internal suspend fun CameraCaptureSession.captureStill(
     // The listener and this coroutine both run on the camera thread, so a plain variable is enough.
     var raw: Image? = null
     val rawArrived = CompletableDeferred<Unit>()
+    rawReader?.drain()
     rawReader?.setOnImageAvailableListener({ r ->
-        r.acquireNextImage()?.let { image ->
-            if (raw == null) raw = image.also { rawArrived.complete(Unit) } else image.close()
+        // A full reader means this still goes without RAW; an empty one is a spurious call and changes nothing.
+        val image = r.acquireOrNull(onFull = { rawArrived.complete(Unit) })
+        when {
+            image == null -> Unit
+            raw == null && !rawArrived.isCompleted -> raw = image.also { rawArrived.complete(Unit) }
+            else -> image.close()
         }
     }, handler)
     val result = CompletableDeferred<TotalCaptureResult>()
@@ -106,7 +113,7 @@ internal suspend fun CameraCaptureSession.captureStill(
         return images
     } finally {
         if (!delivered) {
-            rawReader?.setOnImageAvailableListener({ r -> r.acquireNextImage()?.close() }, handler)
+            rawReader?.setOnImageAvailableListener({ r -> r.acquireOrNull()?.close() }, handler)
             raw?.close()
         }
     }
@@ -122,6 +129,23 @@ private fun stillCallback(result: CompletableDeferred<TotalCaptureResult>) =
             result.completeExceptionally(CameraFailure("still capture failed, reason ${failure.reason}"))
         }
     }
+
+/**
+ * The next image, or null when none is queued or the reader already has maxImages out. The second case is the
+ * last guard behind [RawReaders.hasRoom]: throwing here, on the camera thread, would kill the app.
+ */
+private fun ImageReader.acquireOrNull(onFull: () -> Unit = {}): Image? = try {
+    acquireNextImage()
+} catch (e: IllegalStateException) {
+    Log.w(TAG, "RAW reader full, frame left queued", e)
+    onFull()
+    null
+}
+
+/** Drops RAW images left queued by an earlier full reader or a late frame, so this still gets its own. */
+private fun ImageReader.drain() {
+    while (true) acquireOrNull()?.close() ?: return
+}
 
 /** JPEG and JPEG_R images carry the whole encoded file in their single plane. */
 private fun Image.encodedBytes(): ByteArray {

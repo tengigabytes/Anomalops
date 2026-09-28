@@ -30,6 +30,12 @@ internal class RawReaders {
         }.reader
     }
 
+    /**
+     * Whether [lensId]'s reader can take one more frame. With [MAX_RAW_IMAGES] frames out, acquiring another throws
+     * on the camera thread and kills the app, so such a still goes without RAW (docs/test/m4-af-timeline.md).
+     */
+    fun hasRoom(lensId: String): Boolean = (entries[lensId]?.outstanding ?: 0) < MAX_RAW_IMAGES
+
     /** A frame of [lensId] was handed out. */
     fun acquired(lensId: String) {
         entries[lensId]?.let { it.outstanding++ }

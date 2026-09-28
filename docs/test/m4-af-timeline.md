@@ -1,6 +1,6 @@
 # M4 AF 行為實測：FR-35、FR-31（Pixel 10 Pro）
 
-2026-09-28 · 狀態：量測完成；微距對焦觸發已實作，FR-35 在 G1 通過；FR-31 輸出畫素與隔殼量測待做
+2026-09-28 · 狀態：量測完成；微距對焦觸發已實作，FR-35 在 G1 通過；RAW reader 滿載崩潰已修正；FR-31 輸出畫素與隔殼量測待做
 
 分支 `m4/depth-and-conditions`。實驗 `core/camera/src/androidTest/.../experiment/AfTimelineExperiment`，場景名稱以 `-e scene <名稱>` 傳入，結果從 logcat 標籤 `AfExperiment` 讀取。不拍照。
 
@@ -105,5 +105,31 @@
 | `StillCaptureTest` | NFR-4 快門 p95 130.3 ms；FR-61a 增益圖 20 / 20 | 快門 p95 128.7 ms；20 / 20 |
 
 - **既有的測試問題**：第一次回歸時 `StillCaptureTest` 與 `PresetSwitchTest` 都失敗，相機執行緒崩潰於 `maxImages (7) has already been acquired`。M2 起每張拍照附帶 RAW，`:core:camera` 的測試拿到後沒有歸還，第 8 張時 RAW reader 已滿。M2 只重跑了 `:app` 的測試，這些測試加入 RAW 後沒有再跑過（依程式與 git 紀錄判斷，未以 `main` 重現）。已改為 `CameraRig.capture()` 拍完立即歸還，重跑通過。
-- **推測的風險（未驗證）**：同樣的例外在 APP 裡也會讓相機執行緒崩潰。APP 的 RAW 緩衝最多握 5 張，保留時另有寫入中的 DNG；若同時握住的張數達到 7 張再拍一張，可能觸發。尚未評估實際會不會發生。
+- **APP 的同類風險**：同樣的例外在 APP 裡也會讓相機執行緒崩潰，已修正，見第 8 節。
+
+## 8. RAW reader 滿載時的崩潰（修正）
+
+**條件**：每顆鏡頭的 RAW reader 最多同時交出 7 張（ADR-0005）。APP 裡同時握住 RAW 的有：FR-62 緩衝（最多 5 張）、寫入中的 DNG（每次保留 1 張，M2 量到一次 179 ms）、剛拍完而 JPEG 還在寫入 MediaStore 的那一張（NFR-7 p95 約 110 ms）。同一顆鏡頭握滿 7 張時再拍，`acquireNextImage()` 在相機執行緒拋出例外，整個 APP 崩潰。依量到的時間，要在 DNG 寫入期間連拍兩張、或兩個 DNG 同時寫入才會碰到，機率低；但後果違反 NFR-1。
+
+**修正（維護者選 A）**：
+
+- 送出拍照請求前，以 `RawReaders.hasRoom()` 檢查該鏡頭已交出的張數；已達 7 張時這張不加 RAW 目標，照片照常存，這張不能保留 RAW。
+- 最後防線：讀取 RAW 時接住 reader 已滿的例外，這張視為沒有 RAW；下一次拍照前先清掉 reader 中殘留的影像，避免下一張拿到別張的 RAW。只有 reader 真的滿了才視為沒有 RAW，一般的空回呼不影響。
+
+**實機驗證**（`:app` 的 `RawFullTest`：經拍攝管線拍 5 張填滿緩衝，再另外握住 2 張，然後按快門）：
+
+| 版本 | 結果 |
+| --- | --- |
+| 修正前（872be00） | APP 程序崩潰：`FATAL EXCEPTION: camera`，`maxImages (7) has already been acquired`。測試來不及清理，留下 5 張照片，已依檔名、資料夾與時間確認後刪除 |
+| 修正後 | 不崩潰；第 8 張照片存下（1,562,055 bytes），沒有 RAW，保留回傳空值；歸還 2 張後下一張又有 RAW，且 RAW 的時間戳等於該照片的 `SENSOR_TIMESTAMP` |
+
+修正後的回歸（場景同第 7 節）：
+
+| 測試 | 結果 | 本分支先前 |
+| --- | --- | --- |
+| `RawKeepTest` | FR-62 保留 20 / 20、第六張擠掉第一張、未保留 0；FR-64 DNG 25,107,212 bytes | 相同 |
+| `StillWriteTest` | NFR-7 p95 125.0 ms（中位數 63.0、最大 247.0），門檻 500 ms | p95 110.0 ms、最大 170.0 ms（[m4-instrumented.md](m4-instrumented.md)） |
+| `StillCaptureTest` | NFR-4 快門 p95 128.3 ms；FR-61a 20 / 20 | p95 130.3 ms；20 / 20 |
+
+回歸期間 logcat 沒有出現 reader 已滿的警告，表示正常拍攝不會走到防線。防線本身（接住例外的路徑）在手機上沒有被觸發過，因為前面的檢查先擋下了。
 
