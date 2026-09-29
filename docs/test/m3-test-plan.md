@@ -60,7 +60,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | --- | --- | --- |
 | 固定確認對話框會拿走視窗焦點，關閉時交還 | `lock/PinWatcher` | 第 4 節「固定確認對話框」兩種情況；另有 250 ms 輪詢備援，無對話框且 5 s 未固定視為取消 |
 | 執行中切換 `setShowWhenLocked` 有效 | `lock/WindowLock` | 第 4 節 FR-56 與「一般模式與系統鎖定畫面」 |
-| 過熱警示門檻：系統熱狀態 ≥ MODERATE（提議，需求未定門檻） | `dive/StatusBand` | 需求 07-housing 只寫「溫度異常上升時警示」，門檻待維護者決定；G2 水浴記錄熱狀態 |
+| 過熱警示門檻：系統熱狀態 ≥ MODERATE（維護者 2026-09-29 決定，需求第 9 節） | `dive/StatusBand` | G2 水浴記錄熱狀態，確認警示出現的時機是否合適 |
 
 ## 6. 回歸
 

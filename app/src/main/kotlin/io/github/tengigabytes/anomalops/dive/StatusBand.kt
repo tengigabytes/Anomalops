@@ -34,8 +34,9 @@ private const val READ_EVERY_MS = 10_000L
 private const val TENTHS = 10f
 
 /**
- * 07-housing: the warning threshold for body temperature. Proposal, not in the requirements: the system's own
- * thermal status at MODERATE or above; NFR-2 asks the dive to stay at LIGHT or below. UNVERIFIED(G2).
+ * 07-housing: the warning threshold for body temperature, the system's thermal status at MODERATE or above
+ * (maintainer decision of 2026-09-29, requirements section 9); NFR-2 asks the dive to stay at LIGHT or below.
+ * UNVERIFIED(G2): whether the warning comes at a useful moment in the water bath.
  */
 private const val HOT_FROM = PowerManager.THERMAL_STATUS_MODERATE
 
