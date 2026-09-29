@@ -1,6 +1,6 @@
 # M3 潛水鎖定與操作介面：待測清單（Pixel 10 Pro）
 
-2026-09-28 · 狀態：草案；第 2 節的純邏輯測試已寫，其餘程式未完成、待測
+2026-09-30 · 狀態：第 2、3 節與第 4 節多數項目已測，結果見 [m3-instrumented.md](m3-instrumented.md)；NFR-5 與 FR-51 不熄滅 90 分鐘待測
 
 M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-acceptance.md) 第 2、3 節，畫面配置見 [dive-lock-layout.md](../product/dive-lock-layout.md)。程式在沒有手機的環境撰寫，需要實機的項目回到本機後照本清單執行，結果寫進 `m3-instrumented.md`（屆時新增），本清單改為已完成。
 
@@ -33,26 +33,26 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 
 | 項目 | 方法 | 門檻 | 狀態 |
 | --- | --- | --- | --- |
-| FR-12 選擇器 | UI 測試量測五個預設的邊界 | 位於單一長邊；每個 ≥ 64 dp；不捲動；單點即切換 | 待測 |
-| FR-52 快門條 | UI 測試量測邊界；按下即拍、按住 400 ms 轉連拍沿用 FR-15 的測試 | 寬度 ≥ 88 dp；左右各扣 12 mm | 待測 |
-| FR-55 安全區 | UI 測試讀每個可點元件的邊界，以實機 xdpi / ydpi 換算 mm | 全部 ≥ 12 mm | 待測 |
-| 深度段、潛水燈鍵 | UI 測試量測邊界；點擊後預覽請求改變（沿用 FR-84 的接法） | ≥ 64 dp；位於安全區內；請求值隨之改變 | 待測 |
-| FR-24 設定頁 | 在一般模式選「紅」，回拍攝畫面；進入鎖定後設定鍵不出現 | 請求用濾鏡專屬校正值（陸上尚無值時退回近似，記錄即可）；鎖定中無法開啟設定頁 | 待測 |
-| NFR-1 崩潰重啟 | 手動按「潛水鎖定」並確認固定後，執行 `python scripts/check_crash_restart.py --rounds 10`：每輪以 `am start ... --ez injectCrash true` 注入崩潰（debug 版）。儀器測試做不到，崩潰會連測試程序一起結束 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；程序 ID 改變；FR-45 延續同一場次（沒有多出場次目錄） | 腳本已寫（以假 adb 測過流程），待測 |
-| FR-45 場次檔案 | 儀器測試 `acceptance/DiveSessionTest`：開場次、寫觸控與拍攝列、關閉，再以同一 ID 重開（模擬崩潰重啟）；另測 `PrefsLockStore` 寫入後新實例讀得到 | `touches.csv`、`captures.csv` 標頭各一次、列數與欄位正確；`session.json` 重開後不變；`sensors.csv` 跨兩次開啟時間戳遞增 | 已寫，待測 |
-| FR-45 開始與結束 | 進入鎖定、拍 5 張、解鎖 | 進入時建立場次；`captures.csv` 5 列；`touches.csv` 有觸控列；解鎖後停止寫入；`python scripts/check_dive_log.py <目錄>` 通過（不帶 `--minutes`） | 待測 |
+| FR-12 選擇器 | UI 測試量測五個預設的邊界 | 位於單一長邊；每個 ≥ 64 dp；不捲動；單點即切換 | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
+| FR-52 快門條 | UI 測試量測邊界；按下即拍、按住 400 ms 轉連拍沿用 FR-15 的測試 | 寬度 ≥ 88 dp；左右各扣 12 mm | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
+| FR-55 安全區 | UI 測試讀每個可點元件的邊界，以實機 xdpi / ydpi 換算 mm | 全部 ≥ 12 mm | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
+| 深度段、潛水燈鍵 | UI 測試量測邊界；點擊後預覽請求改變（沿用 FR-84 的接法） | ≥ 64 dp；位於安全區內；請求值隨之改變 | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
+| FR-24 設定頁 | 在一般模式選「紅」，回拍攝畫面；進入鎖定後設定鍵不出現 | 請求用濾鏡專屬校正值（陸上尚無值時退回近似，記錄即可）；鎖定中無法開啟設定頁 | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
+| NFR-1 崩潰重啟 | 手動按「潛水鎖定」並確認固定後，執行 `python scripts/check_crash_restart.py --rounds 10`：每輪以 `am start ... --ez injectCrash true` 注入崩潰（debug 版）。儀器測試做不到，崩潰會連測試程序一起結束 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；程序 ID 改變；FR-45 延續同一場次（沒有多出場次目錄） | 通過，10 / 10（[m3-instrumented.md](m3-instrumented.md) 第 4 節） |
+| FR-45 場次檔案 | 儀器測試 `acceptance/DiveSessionTest`：開場次、寫觸控與拍攝列、關閉，再以同一 ID 重開（模擬崩潰重啟）；另測 `PrefsLockStore` 寫入後新實例讀得到 | `touches.csv`、`captures.csv` 標頭各一次、列數與欄位正確；`session.json` 重開後不變；`sensors.csv` 跨兩次開啟時間戳遞增 | 通過（[m3-instrumented.md](m3-instrumented.md) 第 2 節） |
+| FR-45 開始與結束 | 進入鎖定、拍 5 張、解鎖 | 進入時建立場次；`captures.csv` 5 列；`touches.csv` 有觸控列；解鎖後停止寫入；`python scripts/check_dive_log.py <目錄>` 通過（不帶 `--minutes`） | 通過（[m3-instrumented.md](m3-instrumented.md) 第 4 節） |
 
 ## 4. 實機人工測試（G1）
 
 | 項目 | 方法 | 門檻 | 狀態 |
 | --- | --- | --- | --- |
-| FR-51 手勢 | 鎖定中，四邊的邊緣滑動、返回、主畫面手勢、下拉通知各 30 次 | APP 離開前景 0 次 | 待測 |
-| FR-51 解鎖 | 按住解鎖 3 s 共 10 次；按不足 3 s 共 10 次 | 解鎖 10 / 10；誤解鎖 0 次 | 待測 |
-| FR-51 不熄滅 | 鎖定 90 分鐘不操作（可與 G2 合併） | 螢幕不熄滅、亮度維持最高 | 待測 |
-| FR-56 | 鎖定中按電源鍵關螢幕，再以電源鍵或輕觸喚醒，共 10 次；前提是系統「輕觸喚醒」已開啟 | 1 s 內回到預覽、不需解鎖，10 / 10 | 待測 |
-| 一般模式與系統鎖定畫面 | 一般模式按電源鍵關螢幕再喚醒 | 顯示系統鎖定畫面，不直接蓋上本 APP（`showWhenLocked` 只在鎖定時開啟，推測可行） | 待測 |
-| 固定確認對話框 | 按「潛水鎖定」後按「知道了」；另一次取消 | 按下後進入鎖定、FR-45 開始；取消時留在一般模式且沒有建立場次 | 待測 |
-| 解鎖後 | 解鎖 | 手機隨即上鎖（G1 平台測試第 6 項）；解開手機後回到一般模式 | 待測 |
+| FR-51 手勢 | 鎖定中，四邊的邊緣滑動、返回、主畫面手勢、下拉通知各 30 次 | APP 離開前景 0 次 | 有條件通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
+| FR-51 解鎖 | 按住解鎖 3 s 共 10 次；按不足 3 s 共 10 次 | 解鎖 10 / 10；誤解鎖 0 次 | 有條件通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
+| FR-51 不熄滅 | 鎖定 90 分鐘不操作（可與 G2 合併） | 螢幕不熄滅、亮度維持最高 | 有條件通過，46 分鐘；90 分鐘併入 G2（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
+| FR-56 | 鎖定中按電源鍵關螢幕，再以電源鍵或輕觸喚醒，共 10 次；前提是系統「輕觸喚醒」已開啟 | 1 s 內回到預覽、不需解鎖，10 / 10 | 有條件通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
+| 一般模式與系統鎖定畫面 | 一般模式按電源鍵關螢幕再喚醒 | 顯示系統鎖定畫面，不直接蓋上本 APP（`showWhenLocked` 只在鎖定時開啟，推測可行） | 通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
+| 固定確認對話框 | 按「潛水鎖定」後按「知道了」；另一次取消 | 按下後進入鎖定、FR-45 開始；取消時留在一般模式且沒有建立場次 | 通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
+| 解鎖後 | 解鎖 | 手機隨即上鎖（G1 平台測試第 6 項）；解開手機後回到一般模式 | 通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
 | NFR-5 | 室內與戶外日光各看一次 | 所有控制元件與資訊可辨識；對比已由第 2 節確認 | 待測（5 m 水下在 G4） |
 
 ## 5. 程式中標記 `UNVERIFIED(G1)` 的推測
