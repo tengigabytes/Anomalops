@@ -45,6 +45,11 @@ class ShootingConditions(
         diveLight.value = on
     }
 
+    /** One press of the dive-light key (mvp-scope.md 2.2). */
+    fun toggleLight() {
+        diveLight.value = !diveLight.value
+    }
+
     companion object {
         fun bandOf(zone: DepthZone): DepthBand = when (zone) {
             DepthZone.SHALLOW -> DepthBand.SHALLOW

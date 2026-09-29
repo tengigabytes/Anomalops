@@ -19,3 +19,4 @@
 | [m2-instrumented.md](m2-instrumented.md) | M2 實機儀器測試：FR-15、FR-62（含記憶體）、FR-64、FR-68；PSS 看不到 RAW 的發現，2026-09-28 |
 | [m4-instrumented.md](m4-instrumented.md) | M4 實機儀器測試：FR-84 手動深度切換即時改變預覽請求、FR-45 一分鐘感測紀錄、debug 起始深度段、`:app` 儀器測試回歸；條件切換時序問題的修正，2026-09-28 |
 | [m4-af-timeline.md](m4-af-timeline.md) | M4 AF 行為實測與微距對焦觸發（FR-35、FR-31）：AUTO 觸發到鎖定的時間、連續對焦來回拉、AF 錯誤鎖定、實作驗收與相機回歸、RAW reader 滿載崩潰的修正、全黑下改用固定距離、0.4 s 門檻的有光重跑與回歸，2026-09-28 |
+| [m3-test-plan.md](m3-test-plan.md) | M3 潛水鎖定與操作介面待測清單：實機測試守則、JVM 單元測試、G1 儀器與人工測試、回歸，程式未完成，2026-09-28 |
