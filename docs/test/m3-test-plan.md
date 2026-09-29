@@ -38,7 +38,8 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | FR-55 安全區 | UI 測試讀每個可點元件的邊界，以實機 xdpi / ydpi 換算 mm | 全部 ≥ 12 mm | 待測 |
 | 深度段、潛水燈鍵 | UI 測試量測邊界；點擊後預覽請求改變（沿用 FR-84 的接法） | ≥ 64 dp；位於安全區內；請求值隨之改變 | 待測 |
 | FR-24 設定頁 | 在一般模式選「紅」，回拍攝畫面；進入鎖定後設定鍵不出現 | 請求用濾鏡專屬校正值（陸上尚無值時退回近似，記錄即可）；鎖定中無法開啟設定頁 | 待測 |
-| NFR-1 崩潰重啟 | debug 版在鎖定中以 `adb shell am start -n io.github.tengigabytes.anomalops/.MainActivity --ez injectCrash true` 注入崩潰，連續 10 次 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；FR-45 延續同一場次（檔案持續附加、`session.json` 不變） | 待測 |
+| NFR-1 崩潰重啟 | 手動按「潛水鎖定」並確認固定後，執行 `python scripts/check_crash_restart.py --rounds 10`：每輪以 `am start ... --ez injectCrash true` 注入崩潰（debug 版）。儀器測試做不到，崩潰會連測試程序一起結束 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；程序 ID 改變；FR-45 延續同一場次（沒有多出場次目錄） | 腳本已寫（以假 adb 測過流程），待測 |
+| FR-45 場次檔案 | 儀器測試 `acceptance/DiveSessionTest`：開場次、寫觸控與拍攝列、關閉，再以同一 ID 重開（模擬崩潰重啟）；另測 `PrefsLockStore` 寫入後新實例讀得到 | `touches.csv`、`captures.csv` 標頭各一次、列數與欄位正確；`session.json` 重開後不變；`sensors.csv` 跨兩次開啟時間戳遞增 | 已寫，待測 |
 | FR-45 開始與結束 | 進入鎖定、拍 5 張、解鎖 | 進入時建立場次；`captures.csv` 5 列；`touches.csv` 有觸控列；解鎖後停止寫入；`python scripts/check_dive_log.py <目錄>` 通過（不帶 `--minutes`） | 待測 |
 
 ## 4. 實機人工測試（G1）
@@ -64,7 +65,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 
 ## 6. 回歸
 
-新畫面取代 M1 起的測試畫面，`:app` 儀器測試整組重跑（M4 時 9 個，8 分 29 秒）；`AppRig` 若改動，一併記錄。`:core:camera` 沒改就不重跑。
+新畫面取代 M1 起的測試畫面，`:app` 儀器測試整組重跑（M4 時 9 個，8 分 29 秒；M3 加上 `DiveSessionTest` 的 2 個）；`AppRig` 若改動，一併記錄。`:core:camera` 沒改就不重跑。
 
 ## 7. 這個環境裡已做與未做的驗證
 
@@ -74,7 +75,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 - 非 Compose 的 Android 程式（`lock/`、`Sessions`、`touch/` 與實際的 `:core:telemetry`）：以 Maven Central 上的 Android 17 框架 jar（Robolectric `android-all` 17）編譯通過；`MainActivity` 以替身代入。
 - Compose 畫面（`dive/`、`settings/`、`MainActivity`、`capture/ShutterButton`、`LatestThumbnail`）：AndroidX 只能從 Google Maven 取得，**未編譯**，第一次編譯在 CI 或本機。
 - detekt 2.0.0-alpha.6（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格）：無問題；ktlint 單獨執行時對 `@Composable` 的命名警告，專案的 detekt 設定已排除。
-- lint（含 `MissingTranslation`）、合併後 manifest 檢查（`check_flavor_manifests.py`）：需要建置，未執行。
+- CI（[PR #1](https://github.com/tengigabytes/Anomalops/pull/1)，2026-09-29）：兩個 flavor 建置、`:app` 單元測試、detekt、合併後 manifest 檢查通過，Compose 程式在此第一次編譯。CI 不跑 Android lint，`MissingTranslation` 只在本機 `./gradlew lint` 生效；CI 也不編譯儀器測試，`DiveSessionTest` 以 AndroidX Test 替身在本機編譯過。
 
 ## 8. 之後的關卡（不在 M3 完成條件內）
 
