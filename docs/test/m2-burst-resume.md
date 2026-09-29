@@ -30,14 +30,14 @@ D 推測不是主因：預覽 30 fps 時第一幀約 33–66 ms；暗處降到 1
 
 ## 3. 實機量測方法
 
-在 `LensSwitcher.burst()` 與 `show()` 各步驟加上 `elapsedRealtimeNanos` 記錄（只加 log，不改行為），以 `:app` 的 `BurstTest` 在鏡頭 2、3、9 各連拍 10 次：
+2026-09-29 已在 `LensSwitcher.burst()` 加上記錄（只加 log，不改行為）：放開後 logcat 標籤 `LensSwitcher` 印出 `burst resume: abort … ms, close … ms (onClosed in time: …), reopen … ms`，對應下表 t0→t1、t1→t2、t2→t3；t3→t4 由 `ShotPipeline` 的 `resumeMs`（放開到第一幀）減去前三段得到。以 `:app` 的 `BurstTest` 在鏡頭 2、3、9 各連拍 10 次：
 
 | 時間點 | 位置 |
 | --- | --- |
 | t0 放開 | `until()` 返回 |
 | t1 | `abortCaptures()` 返回 |
 | t2 | `onClosed` 抵達（或 1 s 逾時） |
-| t3 | 新工作階段 `onConfigured` |
+| t3 | 新工作階段建立並送出預覽請求（`show()` 返回） |
 | t4 | 第一個預覽結果 |
 
 同時記錄當次的最大寫入積壓（`maxBacklog`）與預覽幀率。判讀：t2 − t0 最大就是 H1 或 H2（再看是否與積壓相關）；t3 − t2 最大就是 H3；鏡頭之間差異大則看 H4。
@@ -50,4 +50,4 @@ D 推測不是主因：預覽 30 fps 時第一幀約 33–66 ms；暗處降到 1
 | B 最久、與積壓相關 | 連拍 JPEG 的複製改到獨立執行緒，不占相機回呼的執行緒 | 多一條執行緒 |
 | C 最久 | 無法避免重新配置；可改為連拍也在單張工作階段內完成（例如 YUV 自行編碼），屬架構變更，要寫 ADR | 工作量大，編碼速度與畫質待驗證 |
 
-`LensSwitcher.kt` 目前 203 行，超過 200 行的建議上限；若要加上量測記錄，應先拆檔。
+2026-09-29：`LensSwitcher.kt` 已把預覽測光拆到 `PreviewMeter.kt`，由 203 行減為 188 行（含上述記錄）。行為未改，但屬相機模組的修改，回本機時 `:core:camera` 儀器測試要重跑。

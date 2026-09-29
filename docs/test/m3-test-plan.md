@@ -65,7 +65,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 
 ## 6. 回歸
 
-新畫面取代 M1 起的測試畫面，`:app` 儀器測試整組重跑（M4 時 9 個，8 分 29 秒；M3 加上 `DiveSessionTest` 的 2 個）；`AppRig` 若改動，一併記錄。`:core:camera` 沒改就不重跑。
+新畫面取代 M1 起的測試畫面，`:app` 儀器測試整組重跑（M4 時 9 個，8 分 29 秒；M3 加上 `DiveSessionTest` 的 2 個）；`AppRig` 若改動，一併記錄。`:core:camera` 也要重跑：預覽測光拆到 `PreviewMeter`，連拍放開後加了耗時記錄（行為未改，[m2-burst-resume.md](m2-burst-resume.md)）；順便記下 `burst resume` 的各段耗時。
 
 ## 7. 這個環境裡已做與未做的驗證
 
