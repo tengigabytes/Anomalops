@@ -26,9 +26,9 @@
 
 - [ ] Google Play 開發者帳號：個人帳號、身分驗證、一次性註冊費
 - [ ] 找齊 ≥ 12 位封閉測試者，能連續 14 天保持加入
-- [ ] 隱私權政策頁面：可放在 GitHub Pages，內容是不收集資料、影像與感測資料只留在裝置上
+- [ ] 隱私權政策頁面：可放在 GitHub Pages，內容是不收集資料、影像與感測資料只留在裝置上（草案：[privacy-policy.md](privacy-policy.md)，2026-09-29）
 - [ ] 資料安全表單：`play` 版的 Billing Library 會透過 `datatransport` 回傳使用紀錄給 Google（推測），要如實申報（[m0-play-billing.md](../test/m0-play-billing.md)）
-- [ ] 商店頁面素材：圖示、主視覺圖、截圖，文案要有臺灣正體中文與英文
+- [ ] 商店頁面素材：圖示、主視覺圖、截圖，文案要有臺灣正體中文與英文（文案草案：[store-listing.md](store-listing.md)，2026-09-29）
 - [ ] 上傳金鑰：產生並離線備份兩份；啟用 Play App Signing
 - [ ] 查一下「Anomalops」名稱在 Play 與商標資料庫是否有衝突
 
