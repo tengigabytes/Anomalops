@@ -18,35 +18,35 @@
           <rect x="12" y="14" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#FF8A7F" stroke-width=".35"/>
           <text x="17.5" y="19.3" font-size="2.5" fill="#FFF" font-weight="700">解鎖</text>
           <text x="17.5" y="22.6" font-size="1.9" fill="#B8B8B8">按住 3 秒</text>
-          <rect x="12" y="59.75" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <rect x="12" y="59.81" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
           <text x="17.5" y="64.6" font-size="2.1" fill="#B8B8B8">深度</text>
           <text x="17.5" y="68.4" font-size="2.8" fill="#FFF" font-weight="700">淺</text>
-          <rect x="12" y="75" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <rect x="12" y="75.07" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
           <text x="17.5" y="79.85" font-size="2.1" fill="#B8B8B8">潛水燈</text>
           <text x="17.5" y="83.65" font-size="2.8" fill="#FFF" font-weight="700">關</text>
           <rect x="42.68" y="14" width="11" height="11" rx="1.2" fill="#FFC933"/>
           <text x="48.18" y="20.4" font-size="2.6" fill="#000" font-weight="700">快照</text>
-          <rect x="42.68" y="29.25" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <rect x="42.68" y="29.27" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
           <text x="48.18" y="35.65" font-size="2.6" fill="#FFF">廣角</text>
-          <rect x="42.68" y="44.5" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <rect x="42.68" y="44.54" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
           <text x="48.18" y="50.9" font-size="2.6" fill="#FFF">魚群</text>
-          <rect x="42.68" y="59.75" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <rect x="42.68" y="59.81" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
           <text x="48.18" y="66.15" font-size="2.6" fill="#FFF">微距</text>
-          <rect x="42.68" y="75" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <rect x="42.68" y="75.07" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
           <text x="48.18" y="81.4" font-size="2.6" fill="#FFF">低光</text>
-          <rect x="12" y="89.5" width="41.68" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
+          <rect x="12" y="89.57" width="41.68" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
           <text x="32.84" y="94.4" font-size="2.2" fill="#5CC9B4">v1.1 變焦條 FR-13a</text>
           <text x="32.84" y="98" font-size="1.9" fill="#5CC9B4">− 縮小 ｜ 死區 ｜ 放大 +</text>
-          <rect x="12" y="103.5" width="11" height="11" rx="1.2" fill="#2A3A3C" stroke="#B8B8B8" stroke-width=".3"/>
+          <rect x="12" y="103.57" width="11" height="11" rx="1.2" fill="#2A3A3C" stroke="#B8B8B8" stroke-width=".3"/>
           <text x="17.5" y="108.3" font-size="2.3" fill="#FFF">縮圖</text>
           <text x="17.5" y="111.7" font-size="1.8" fill="#B8B8B8">長按 RAW</text>
-          <rect x="27.34" y="103.5" width="11" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
+          <rect x="27.34" y="103.57" width="11" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
           <text x="32.84" y="108.3" font-size="2.1" fill="#5CC9B4">v1.1</text>
           <text x="32.84" y="111.7" font-size="2.1" fill="#5CC9B4">半按</text>
-          <rect x="42.68" y="103.5" width="11" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
+          <rect x="42.68" y="103.57" width="11" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
           <text x="48.18" y="108.3" font-size="2.1" fill="#5CC9B4">v1.1</text>
           <text x="48.18" y="111.7" font-size="2.1" fill="#5CC9B4">錄影</text>
-          <rect x="12" y="117.5" width="41.68" height="17.05" rx="2" fill="#F2F2F2"/>
+          <rect x="12" y="117.57" width="41.68" height="16.98" rx="2" fill="#F2F2F2"/>
           <text x="32.84" y="126.2" font-size="3.6" fill="#000" font-weight="700">快門</text>
           <text x="32.84" y="130.4" font-size="2" fill="#333">按下拍一張 · 按住 400 ms 連拍</text>
         </g>
