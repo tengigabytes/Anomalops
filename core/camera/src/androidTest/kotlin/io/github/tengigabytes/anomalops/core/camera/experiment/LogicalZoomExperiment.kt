@@ -37,11 +37,13 @@ import java.util.concurrent.Executor
 import kotlin.math.pow
 
 /**
- * ADR-0011 experiment: the logical back camera as a single viewfinder. Checks which stream sets configure
- * (preview 1920x1440 as PREVIEW_VIDEO_STILL plus a still output), how a continuous 0.51x to 10x zoom switches
- * lenses (frame gaps, active physical camera), and what a still looks like at each zoom ratio. Each stream set
- * reopens the camera, because a failed configuration can restart the camera HAL (docs/test/m2-stream-combos.md).
- * Results go to logcat under [TAG]; nothing is saved.
+ * ADR-0011 experiment, first stage: the logical back camera as a single viewfinder. Covers the ADR's check 4 only
+ * as far as whether the stream sets configure (preview 1920x1440 as PREVIEW_VIDEO_STILL plus a still output; no
+ * 60 fps, no encoder surface), and parts of checks 1 and 3: how a continuous zoom from the widest ratio to 10x
+ * switches lenses (frame gaps, active physical camera) and each ratio's still size and lens. Checks 2 (wrong
+ * calibration across a lens switch) and 5 (stills while recording) are not covered, so this run alone cannot
+ * accept ADR-0011. Each stream set reopens the camera, because a failed configuration can restart the camera HAL
+ * (docs/test/m2-stream-combos.md). Results go to logcat under [TAG]; nothing is saved.
  */
 @RunWith(AndroidJUnit4::class)
 class LogicalZoomExperiment {
@@ -78,6 +80,8 @@ class LogicalZoomExperiment {
             val configured = runSet(set, wantZoom)
             if (configured && wantZoom) zoomDone = true
         }
+        // Without a JPEG_R set the lens switches are still worth measuring on the guaranteed JPEG set.
+        if (!zoomDone) runSet(sets.first(), withZoom = true)
     }
 
     /** Configures [set] on a freshly opened camera; returns whether it configured. */
@@ -108,9 +112,15 @@ class LogicalZoomExperiment {
                 },
                 raw?.let { OutputConfiguration(it.surface) },
             )
-            val session = runCatching { device.configure(outputs, executor) {} }
+            // A failed configuration can restart the camera HAL (m2-stream-combos.md) and then no callback comes.
+            val session = runCatching {
+                withTimeoutOrNull(
+                    CONFIGURE_TIMEOUT_MS,
+                ) { device.configure(outputs, executor) {} }
+            }
                 .onFailure { Log.i(TAG, "${set.name}: configure FAILED: ${it.message?.take(MESSAGE_CHARS)}") }
                 .getOrNull()
+            if (session == null) Log.i(TAG, "${set.name}: no session (failed or timed out)")
             if (session != null) {
                 Log.i(TAG, "${set.name}: configured (still ${still.width}x${still.height}, RAW ${raw != null})")
                 if (withZoom) {
@@ -127,7 +137,7 @@ class LogicalZoomExperiment {
         }
     }
 
-    /** 0.51x to 10x and back over [SWEEP_MS] each way, one zoom step per frame. */
+    /** The widest ratio to 10x and back over [SWEEP_MS] each way, one zoom step per frame. */
     private suspend fun zoomSweep(device: CameraDevice, session: CameraCaptureSession, preview: ImageReader) {
         frames.clear()
         val listener = object : CameraCaptureSession.CaptureCallback() {
@@ -144,28 +154,36 @@ class LogicalZoomExperiment {
             session.setRepeatingRequest(previewRequest(device, preview, zoom), listener, handler)
             delay(FRAME_MS)
         }
-        hold(MIN_ZOOM)
+        val (minZoom, maxZoom) = zoomRange()
+        hold(minZoom)
         delay(SETTLE_MS)
         val steps = (SWEEP_MS / FRAME_MS).toInt()
-        val zooms = List(steps + 1) { MIN_ZOOM * (MAX_ZOOM / MIN_ZOOM).pow(it.toFloat() / steps) }
+        val zooms = List(steps + 1) { minZoom * (maxZoom / minZoom).pow(it.toFloat() / steps) }
         (zooms + zooms.reversed()).forEach { hold(it) }
         session.stopRepeating()
         report()
     }
 
-    /** Frame gaps, and every lens change with the gap around it. */
+    /**
+     * Frame gaps at the sensor (dropped frames) and on arrival in the app (a frozen preview), and every lens change
+     * with the sensor gaps around it. Frames without a timestamp or active lens are left out.
+     */
     private fun report() {
-        val gaps = frames.zipWithNext { a, b -> (b.sensorNs - a.sensorNs) / NS_PER_MS }
+        val usable = frames.filter { it.sensorNs > 0 }
+        if (usable.size < 2) {
+            Log.i(TAG, "zoom sweep: only ${usable.size} frames with a timestamp")
+            return
+        }
+        val gaps = usable.zipWithNext { a, b -> (b.sensorNs - a.sensorNs) / NS_PER_MS }
+        val arrivals = usable.zipWithNext { a, b -> (b.arrivedNs - a.arrivedNs) / NS_PER_MS }.sorted()
         val sorted = gaps.sorted()
         Log.i(
             TAG,
-            "zoom sweep: ${frames.size} frames, gap median %.1f max %.1f ms".format(
-                sorted[sorted.size / 2],
-                sorted.last(),
-            ),
+            "zoom sweep: ${usable.size} frames, sensor gap median %.1f max %.1f ms, arrival gap median %.1f max %.1f ms"
+                .format(sorted[sorted.size / 2], sorted.last(), arrivals[arrivals.size / 2], arrivals.last()),
         )
-        frames.zipWithNext().forEachIndexed { index, (a, b) ->
-            if (a.lens != b.lens) {
+        usable.zipWithNext().forEachIndexed { index, (a, b) ->
+            if (a.lens != null && b.lens != null && a.lens != b.lens) {
                 val around = gaps.subList((index - 2).coerceAtLeast(0), (index + 3).coerceAtMost(gaps.size))
                 Log.i(
                     TAG,
@@ -186,9 +204,11 @@ class LogicalZoomExperiment {
         preview: ImageReader,
         still: ImageReader,
     ) {
-        STILL_ZOOMS.forEach { zoom ->
+        (listOf(zoomRange().first) + STILL_ZOOMS).forEach { zoom ->
             session.setRepeatingRequest(previewRequest(device, preview, zoom), null, handler)
             delay(SETTLE_MS)
+            // A still that timed out at the previous ratio must not be counted at this one.
+            generateSequence { still.acquireNextImage() }.forEach { it.close() }
             val image = CompletableDeferred<String>()
             still.setOnImageAvailableListener({ r ->
                 r.acquireNextImage()?.use {
@@ -225,6 +245,12 @@ class LogicalZoomExperiment {
             set(CaptureRequest.FLASH_MODE, CaptureRequest.FLASH_MODE_OFF)
         }.build()
 
+    /** The logical camera's zoom range, capped at [MAX_ZOOM]; beyond that is digital crop only. */
+    private fun zoomRange(): Pair<Float, Float> {
+        val range = manager.getCameraCharacteristics(LOGICAL_BACK).get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE)!!
+        return range.lower to minOf(range.upper, MAX_ZOOM)
+    }
+
     private fun reader(format: Int, images: Int): ImageReader {
         val sizes = manager.getCameraCharacteristics(LOGICAL_BACK)
             .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!.getOutputSizes(format)
@@ -247,8 +273,8 @@ class LogicalZoomExperiment {
         val PREVIEW = Size(1920, 1440)
         const val SINK_IMAGES = 4
         const val STILL_IMAGES = 2
-        const val MIN_ZOOM = 0.51f
         const val MAX_ZOOM = 10f
+        const val CONFIGURE_TIMEOUT_MS = 5_000L
         const val SWEEP_MS = 6_000L
         const val FRAME_MS = 33L
         const val SETTLE_MS = 1_500L
@@ -256,6 +282,6 @@ class LogicalZoomExperiment {
         const val OPEN_ATTEMPTS = 8
         const val MESSAGE_CHARS = 90
         const val NS_PER_MS = 1e6
-        val STILL_ZOOMS = listOf(0.51f, 1f, 2f, 3f, 5f, 10f)
+        val STILL_ZOOMS = listOf(1f, 2f, 3f, 5f, 10f)
     }
 }
