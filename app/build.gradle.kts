@@ -59,4 +59,10 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)
+    // Dive-screen UI tests measure the Compose layout on the device; the manifest adds the host activity to debug
+    // builds only.
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.espresso.core)
+    debugImplementation(libs.compose.ui.test.manifest)
 }
