@@ -27,7 +27,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | NFR-5 配色 | 版面用的每組前景 / 背景 | 對比 ≥ 7 : 1；狀態色不是藍色 | 已寫，見下方說明 |
 | NFR-10 字串 | lint `MissingTranslation` 設為錯誤 | 英文與臺灣正體中文字串齊備；人工審查無簡體中文詞彙 | 待寫 |
 
-2026-09-28：上表除 NFR-10 外都已寫成 `:app` 的 JVM 測試（`DiveLockTest`、`HoldToUnlockTest`、`TouchDebouncerTest`、`DiveLockLayoutTest`、`DivePaletteTest`、`DepthSwitchTest`，29 個；之後加上 `SessionRowsTest` 共 31 個）。這個環境無法跑 Gradle，改用獨立的 Kotlin 2.4.20 編譯器（`-Werror`）與 JUnit 4.13.2 在本機編譯執行，全部通過；`:core:profile` 的型別以同名的最小替身代入。另以 detekt 2.0.0-alpha.6 CLI（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格，與既有程式相同）檢查，無問題。Gradle 建置與 CI 待推送後確認。
+2026-09-28：上表除 NFR-10 外都已寫成 `:app` 的 JVM 測試（`DiveLockTest`、`HoldToUnlockTest`、`TouchDebouncerTest`、`DiveLockLayoutTest`、`DivePaletteTest`、`DepthSwitchTest`，29 個；之後加上 `SessionRowsTest` 共 31 個）。這個環境無法跑 Gradle，改用獨立的 Kotlin 2.4.20 編譯器（`-Werror`）與 JUnit 4.13.2 在本機編譯執行，全部通過；`:core:profile` 的型別以同名的最小替身代入。另以 detekt 2.0.0-alpha.6 CLI（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格，與既有程式相同）檢查，無問題。Gradle 建置與 CI 已確認，見第 7 節。
 
 ## 3. 實機儀器測試（G1，陸上、無殼）
 
@@ -76,6 +76,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 - Compose 畫面（`dive/`、`settings/`、`MainActivity`、`capture/ShutterButton`、`LatestThumbnail`）：AndroidX 只能從 Google Maven 取得，**未編譯**，第一次編譯在 CI 或本機。
 - detekt 2.0.0-alpha.6（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格）：無問題；ktlint 單獨執行時對 `@Composable` 的命名警告，專案的 detekt 設定已排除。
 - CI（[PR #1](https://github.com/tengigabytes/Anomalops/pull/1)，2026-09-29）：兩個 flavor 建置、`:app` 單元測試、detekt、合併後 manifest 檢查通過，Compose 程式在此第一次編譯。CI 不跑 Android lint，`MissingTranslation` 只在本機 `./gradlew lint` 生效；CI 也不編譯儀器測試，`DiveSessionTest` 以 AndroidX Test 替身在本機編譯過。
+- 本機 Gradle（2026-09-29，rebase 到 `main` 的 `b6df00b` 之後）：CI 的同一組工作（兩個 flavor 建置、`:tools:probe`、單元測試、detekt）與 `check_flavor_manifests.py` 通過；另跑 `:app:lintFossDebug`、`:app:lintPlayDebug`，沒有錯誤（含 `MissingTranslation`），各 11 個警告未逐項檢視；`:app` 兩個 flavor 與 `:core:camera` 的儀器測試以 Gradle 編譯通過。
 
 ## 8. 之後的關卡（不在 M3 完成條件內）
 
