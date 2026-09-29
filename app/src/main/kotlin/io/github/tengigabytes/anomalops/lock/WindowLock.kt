@@ -14,7 +14,9 @@ import android.view.WindowManager
  * keyguard (docs/product/dive-lock-layout.md, section 2). Orientation is fixed in the manifest.
  */
 fun Activity.applyDiveLockWindow(locked: Boolean) {
-    // UNVERIFIED(G1): switching showWhenLocked at run time; the platform test only set it in onCreate.
+    // G1 (docs/test/m3-instrumented.md, section 6): while pinned the system disables the keyguard, so the power key
+    // does not lock and FR-56 holds without this; normal mode shows the keyguard as intended. Kept for a keyguard
+    // that appears anyway (UNVERIFIED(G1): switching showWhenLocked at run time was not exercised).
     setShowWhenLocked(locked)
     setTurnScreenOn(locked)
     if (locked) {
