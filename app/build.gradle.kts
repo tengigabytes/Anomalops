@@ -30,6 +30,10 @@ android {
     buildFeatures {
         compose = true
     }
+    // NFR-10: every string has English and Taiwan Traditional Chinese.
+    lint {
+        error += "MissingTranslation"
+    }
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

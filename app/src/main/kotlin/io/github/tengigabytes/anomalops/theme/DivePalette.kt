@@ -21,6 +21,9 @@ object DivePalette {
     const val SELECTED_FILL = 0xFFC933
     const val SELECTED_TEXT = 0x000000
 
+    /** The shutter strip, the largest control (07-housing), with [SELECTED_TEXT] on it. */
+    const val SHUTTER_FILL = 0xF2F2F2
+
     /** Recording (FR-45) and warnings such as rising body temperature (07-housing). */
     const val ALERT = 0xFF8A7F
 
@@ -31,6 +34,7 @@ object DivePalette {
         SECONDARY to BACKGROUND,
         SECONDARY to KEY_FILL,
         SELECTED_TEXT to SELECTED_FILL,
+        SELECTED_TEXT to SHUTTER_FILL,
         ALERT to BACKGROUND,
         ALERT to KEY_FILL,
     )

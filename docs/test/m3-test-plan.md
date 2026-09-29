@@ -27,7 +27,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | NFR-5 配色 | 版面用的每組前景 / 背景 | 對比 ≥ 7 : 1；狀態色不是藍色 | 已寫，見下方說明 |
 | NFR-10 字串 | lint `MissingTranslation` 設為錯誤 | 英文與臺灣正體中文字串齊備；人工審查無簡體中文詞彙 | 待寫 |
 
-2026-09-28：上表除 NFR-10 外都已寫成 `:app` 的 JVM 測試（`DiveLockTest`、`HoldToUnlockTest`、`TouchDebouncerTest`、`DiveLockLayoutTest`、`DivePaletteTest`、`DepthSwitchTest`，29 個）。這個環境無法跑 Gradle，改用獨立的 Kotlin 2.4.20 編譯器（`-Werror`）與 JUnit 4.13.2 在本機編譯執行，29 個全部通過；`:core:profile` 的型別以同名的最小替身代入。另以 detekt 2.0.0-alpha.6 CLI（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格，與既有程式相同）檢查，無問題。Gradle 建置與 CI 待推送後確認。
+2026-09-28：上表除 NFR-10 外都已寫成 `:app` 的 JVM 測試（`DiveLockTest`、`HoldToUnlockTest`、`TouchDebouncerTest`、`DiveLockLayoutTest`、`DivePaletteTest`、`DepthSwitchTest`，29 個；之後加上 `SessionRowsTest` 共 31 個）。這個環境無法跑 Gradle，改用獨立的 Kotlin 2.4.20 編譯器（`-Werror`）與 JUnit 4.13.2 在本機編譯執行，全部通過；`:core:profile` 的型別以同名的最小替身代入。另以 detekt 2.0.0-alpha.6 CLI（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格，與既有程式相同）檢查，無問題。Gradle 建置與 CI 待推送後確認。
 
 ## 3. 實機儀器測試（G1，陸上、無殼）
 
@@ -38,7 +38,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | FR-55 安全區 | UI 測試讀每個可點元件的邊界，以實機 xdpi / ydpi 換算 mm | 全部 ≥ 12 mm | 待測 |
 | 深度段、潛水燈鍵 | UI 測試量測邊界；點擊後預覽請求改變（沿用 FR-84 的接法） | ≥ 64 dp；位於安全區內；請求值隨之改變 | 待測 |
 | FR-24 設定頁 | 在一般模式選「紅」，回拍攝畫面；進入鎖定後設定鍵不出現 | 請求用濾鏡專屬校正值（陸上尚無值時退回近似，記錄即可）；鎖定中無法開啟設定頁 | 待測 |
-| NFR-1 崩潰重啟 | debug 版注入崩潰，鎖定中連續 10 次 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；FR-45 延續同一場次（檔案持續附加、`session.json` 不變） | 待測 |
+| NFR-1 崩潰重啟 | debug 版在鎖定中以 `adb shell am start -n io.github.tengigabytes.anomalops/.MainActivity --ez injectCrash true` 注入崩潰，連續 10 次 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；FR-45 延續同一場次（檔案持續附加、`session.json` 不變） | 待測 |
 | FR-45 開始與結束 | 進入鎖定、拍 5 張、解鎖 | 進入時建立場次；`captures.csv` 5 列；`touches.csv` 有觸控列；解鎖後停止寫入；`python scripts/check_dive_log.py <目錄>` 通過（不帶 `--minutes`） | 待測 |
 
 ## 4. 實機人工測試（G1）
@@ -54,11 +54,29 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | 解鎖後 | 解鎖 | 手機隨即上鎖（G1 平台測試第 6 項）；解開手機後回到一般模式 | 待測 |
 | NFR-5 | 室內與戶外日光各看一次 | 所有控制元件與資訊可辨識；對比已由第 2 節確認 | 待測（5 m 水下在 G4） |
 
-## 5. 回歸
+## 5. 程式中標記 `UNVERIFIED(G1)` 的推測
+
+| 推測 | 位置 | 驗證方法 |
+| --- | --- | --- |
+| 固定確認對話框會拿走視窗焦點，關閉時交還 | `lock/PinWatcher` | 第 4 節「固定確認對話框」兩種情況；另有 250 ms 輪詢備援，無對話框且 5 s 未固定視為取消 |
+| 執行中切換 `setShowWhenLocked` 有效 | `lock/WindowLock` | 第 4 節 FR-56 與「一般模式與系統鎖定畫面」 |
+| 過熱警示門檻：系統熱狀態 ≥ MODERATE（提議，需求未定門檻） | `dive/StatusBand` | 需求 07-housing 只寫「溫度異常上升時警示」，門檻待維護者決定；G2 水浴記錄熱狀態 |
+
+## 6. 回歸
 
 新畫面取代 M1 起的測試畫面，`:app` 儀器測試整組重跑（M4 時 9 個，8 分 29 秒）；`AppRig` 若改動，一併記錄。`:core:camera` 沒改就不重跑。
 
-## 6. 之後的關卡（不在 M3 完成條件內）
+## 7. 這個環境裡已做與未做的驗證
+
+2026-09-29，程式在無法執行 Gradle 的環境撰寫（Android SDK 與 Google Maven 被網路政策擋住）：
+
+- 純邏輯與 31 個 JVM 測試：以 Kotlin 2.4.20 編譯器（`-Werror`）編譯並全數通過。
+- 非 Compose 的 Android 程式（`lock/`、`Sessions`、`touch/` 與實際的 `:core:telemetry`）：以 Maven Central 上的 Android 17 框架 jar（Robolectric `android-all` 17）編譯通過；`MainActivity` 以替身代入。
+- Compose 畫面（`dive/`、`settings/`、`MainActivity`、`capture/ShutterButton`、`LatestThumbnail`）：AndroidX 只能從 Google Maven 取得，**未編譯**，第一次編譯在 CI 或本機。
+- detekt 2.0.0-alpha.6（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格）：無問題；ktlint 單獨執行時對 `@Composable` 的命名警告，專案的 detekt 設定已排除。
+- lint（含 `MissingTranslation`）、合併後 manifest 檢查（`check_flavor_manifests.py`）：需要建置，未執行。
+
+## 8. 之後的關卡（不在 M3 完成條件內）
 
 | 項目 | 關卡 |
 | --- | --- |
