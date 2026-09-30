@@ -22,3 +22,4 @@
 | [m3-test-plan.md](m3-test-plan.md) | M3 潛水鎖定與操作介面待測清單：實機測試守則、JVM 單元測試、G1 儀器與人工測試、回歸；各項狀態已依實測更新；G1 已測完，NFR-5 目視延到 UI 整理後，2026-09-30 |
 | [m2-burst-resume.md](m2-burst-resume.md) | 連拍後預覽停頓 222–894 ms 的原因推測與實機量測計畫（各步驟時間點、判讀方式、可能的改善），全部是推測，2026-09-29 |
 | [m3-instrumented.md](m3-instrumented.md) | M3 實機測試：`:app` 儀器測試與相機回歸、NFR-1 崩潰重啟、FR-45 場次、FR-51／FR-56 人工測試與不熄滅（有條件通過）、`DiveScreenTest` UI 量測、NFR-10 字串審查；FR-56 由系統停用鎖定畫面達成、亮度熱節流的發現，2026-09-30 |
+| [macro-stacking-test-plan.md](macro-stacking-test-plan.md) | 微距景深合成待測清單（FR-33、FR-36、FR-37）：已由 repo 資料確認的值、17 項估算或未知數值的方法與通過標準、順序，2026-09-30 |

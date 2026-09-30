@@ -22,6 +22,10 @@
 | [0009](0009-exposure-shutter-priority.md) | 曝光控制：預覽自動曝光，拍攝時換算為快門優先 | 已採納 | FR-11、FR-81、FR-91 |
 | [0010](0010-flavors-and-donations.md) | 建置 flavor 與樂捐：play 用 Play Billing，foss 用外部連結 | 已採納 | NFR-8、發行 |
 | [0011](0011-logical-viewfinder.md) | v1.1 取景與錄影改用 logical 串流，連續變焦跨鏡頭 | 提議（暫定，待實驗） | FR-13、FR-13a |
+| [0012](0012-macro-lens-selection.md) | 微距鏡頭選擇：廣角微距與長焦微距 | 提議 | FR-31、FR-33、FR-36 |
+| [0013](0013-tele-physical-lens-access.md) | 長焦微距的望遠實體鏡頭存取與手動對焦 | 提議 | FR-32、FR-36、FR-95 |
+| [0014](0014-focus-distance-calibration.md) | 對焦距離校準與包圍步進 | 提議 | FR-33、FR-36、NFR-9 |
+| [0015](0015-focus-stacking-algorithm.md) | 景深合成演算法 | 提議（演算法待定） | FR-33、FR-63、NFR-8 |
 
 ## 範本
 
