@@ -83,8 +83,11 @@ M11 技術上只依賴 v1.0，可以和 v1.1 並行；版本號仍照版本表�
 - **範圍**
   - FR-12、FR-51、FR-52、FR-55、FR-56。
   - 深度段切換鍵與潛水燈模式切換鍵（mvp-scope.md 2.2 節）。
+  - FR-24 已裝濾鏡的設定頁（2026-09-28 併入 M3；M4 只做了切換機制）。
+  - 畫面配置見 [dive-lock-layout.md](dive-lock-layout.md)。
   - NFR-5、NFR-6、NFR-10。
 - **完成條件**：以上各列在 G1 通過。
+- **2026-09-30 補註**：M3 畫面是操作邏輯的測試版，外觀之後持續改進（[需求第 9 節](requirements/09-open-items.md)）。NFR-5 室內與戶外目視不列入 M3，延到 UI 整理後；FR-51 鎖定 90 分鐘不熄滅與過熱警示門檻併入 G2。G1 結果見 [m3-instrumented.md](../test/m3-instrumented.md)。
 
 ### M4 對焦、感測與深度來源
 
