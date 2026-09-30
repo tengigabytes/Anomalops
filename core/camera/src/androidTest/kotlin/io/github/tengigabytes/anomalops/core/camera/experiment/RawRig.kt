@@ -129,7 +129,7 @@ internal class RawRig(private val manager: CameraManager, private val handler: H
         const val TAG = "MacroExperiment"
         private const val LOGICAL_BACK = "0"
         private const val SINK_IMAGES = 4
-        private const val PATCH = 512
+        private const val PATCH = 1024
         private const val BAYER_STEP = 2
 
         /**

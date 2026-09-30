@@ -100,8 +100,28 @@ class MacroFocusExperiment {
                 "T1 $scene lens=$id min=${lens.minDiopters} D hyperfocal=${lens.hyperfocalDiopters} D " +
                     "calibration=${lens.calibration}",
             )
-            runCatching { rig.withLens(id, T1_RAW_IMAGES) { sweep(it, lens) } }
+            val steps = List(T1_STEPS) { lens.minDiopters * it / (T1_STEPS - 1) }
+            runCatching { rig.withLens(id, T1_RAW_IMAGES) { sweep("T1", it, lens, steps) } }
                 .onFailure { Log.e(TAG, "T1 lens=$id FAIL ${it.javaClass.simpleName}: ${it.message}", it) }
+        }
+    }
+
+    /**
+     * T3 at one point: with the target at `-e targetCm`, fine steps around its distance; the sharpest step against
+     * the measured distance shows how far off each lens's APPROXIMATE diopters are there.
+     */
+    @Test
+    fun t3_fineSweepAroundTarget() = runBlocking<Unit>(handler.asCoroutineDispatcher()) {
+        val targetCm = requireNotNull(args.getString("targetCm")?.toFloatOrNull()) { "needs -e targetCm <cm>" }
+        val center = CM_PER_M / targetCm
+        FINE_LENSES.forEach { id ->
+            val lens = rig.lens(id)
+            val step = minOf(FINE_MAX_STEP, lens.hyperfocalDiopters)
+            val count = (2 * FINE_HALF_SPAN / step).toInt() + 1
+            val steps = List(count) { center - FINE_HALF_SPAN + it * step }.filter { it in 0f..lens.minDiopters }
+            Log.i(TAG, "T3 $scene lens=$id target=%.3f D step=%.4f D steps=${steps.size}".format(center, step))
+            runCatching { rig.withLens(id, T1_RAW_IMAGES) { sweep("T3", it, lens, steps) } }
+                .onFailure { Log.e(TAG, "T3 lens=$id FAIL ${it.javaClass.simpleName}: ${it.message}", it) }
         }
     }
 
@@ -122,12 +142,11 @@ class MacroFocusExperiment {
         }
     }
 
-    /** T1: ten steps from infinity to the closest focus; per step the settled report and one RAW's sharpness. */
-    private suspend fun sweep(session: RawRig.Session, lens: RawRig.Lens) {
+    /** Per step of [steps]: the settled report and one RAW's sharpness; then the worst error and the sharpest step. */
+    private suspend fun sweep(label: String, session: RawRig.Session, lens: RawRig.Lens, steps: List<Float>) {
         var worst = 0f
         var peak = 0f to -1.0
-        for (i in 0 until T1_STEPS) {
-            val wanted = lens.minDiopters * i / (T1_STEPS - 1)
+        steps.forEachIndexed { i, wanted ->
             val frames = mutableListOf<RawRig.Frame>()
             session.capture.setRepeatingRequest(
                 session.request(wanted, withRaw = false),
@@ -142,7 +161,7 @@ class MacroFocusExperiment {
             if (sharp > peak.second) peak = wanted to sharp
             Log.i(
                 TAG,
-                "T1 lens=${lens.id} step=$i req=%.3f rep=%s state=%s active=%s sharp=%.1f".format(
+                "$label lens=${lens.id} step=$i req=%.3f rep=%s state=%s active=%s sharp=%.1f".format(
                     wanted,
                     reported?.let { "%.3f".format(it) } ?: "null",
                     settled.lastOrNull()?.lensState.stateName(),
@@ -151,7 +170,7 @@ class MacroFocusExperiment {
                 ),
             )
         }
-        Log.i(TAG, "T1 lens=${lens.id} summary maxError=%.3f D sharpestAt=%.3f D".format(worst, peak.first))
+        Log.i(TAG, "$label lens=${lens.id} summary maxError=%.3f D sharpestAt=%.3f D".format(worst, peak.first))
     }
 
     private suspend fun sharpness(session: RawRig.Session, diopters: Float): Double {
@@ -206,6 +225,8 @@ class MacroFocusExperiment {
         const val BRACKET_OVERLAP = 0.7f
         const val NS_PER_MS = 1e6
 
+        const val FINE_HALF_SPAN = 0.5f
+        const val FINE_MAX_STEP = 0.05f
         const val AF_TRIES = 3
         const val AF_WATCH_MS = 2_500L
         const val CM_PER_M = 100f
@@ -213,6 +234,7 @@ class MacroFocusExperiment {
         // Main and tele: their AF ranges both cover a target a little beyond the tele's closest focus.
         val AF_LENSES = listOf("2", "4")
         val TELE = listOf("4", "6")
+        val FINE_LENSES = listOf("2", "4", "6")
 
         // Tele, tele 2x crop, ultra-wide, ultra-wide 2x crop (the v1.0 macro lens), main.
         val BRACKET_LENSES = listOf("4", "6", "3", "9", "2")
