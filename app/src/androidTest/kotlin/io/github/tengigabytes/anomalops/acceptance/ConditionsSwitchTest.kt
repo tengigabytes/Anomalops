@@ -52,7 +52,7 @@ class ConditionsSwitchTest {
         rig.start(PRESET, follower.send())
         val initial = withTimeout(TIMEOUT_MS) { rig.controller.previewFrames.first() }
         assertTrue("shallow on lens 2 is calibrated: ${initial.spec.color}", initial.spec.color is ColorSpec.Manual)
-        // As CaptureScreen does: every new key re-plans the preview on the current preset.
+        // As the dive screen does: every new key re-plans the preview on the current preset.
         val following = launch { follower.changes.collect { rig.controller.select(PRESET, it) } }
         val latenciesMs = List(SWITCHES) { i ->
             val zone = if (i % 2 == 0) DepthZone.DEEP else DepthZone.SHALLOW

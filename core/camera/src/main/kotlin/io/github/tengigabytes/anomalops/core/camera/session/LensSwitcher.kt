@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.core.camera.session
 
-import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
@@ -11,13 +10,12 @@ import android.hardware.camera2.TotalCaptureResult
 import android.media.Image
 import android.os.Handler
 import android.os.SystemClock
+import android.util.Log
 import android.view.Surface
-import io.github.tengigabytes.anomalops.core.camera.exposure.Exposure
 import io.github.tengigabytes.anomalops.core.camera.request.CaptureRequestWriter
 import io.github.tengigabytes.anomalops.core.camera.request.RequestPlanner
 import io.github.tengigabytes.anomalops.core.camera.request.RequestSpec
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.withTimeoutOrNull
+import java.util.Locale
 import java.util.concurrent.Executor
 
 /**
@@ -34,12 +32,11 @@ internal class LensSwitcher(
 ) {
     private val executor = Executor { handler.post(it) }
     private val focus = FocusScanner(planner, handler, onScan)
+    private val meter = PreviewMeter(focus, onFrame)
     private var device: CameraDevice? = null
     private var stream: LensStream? = null
     private var surface: Surface? = null
     private var preview: RequestSpec? = null
-    private var metered: Exposure? = null
-    private var firstMeter = CompletableDeferred<Unit>()
     private val rawReaders = RawReaders()
 
     /** Previews [spec] on [target], or on the current surface when null; rebuilds the session only if needed. */
@@ -49,13 +46,11 @@ internal class LensSwitcher(
         surface = next
         val lens = stream?.takeIf { it.camera.id == spec.physicalId } ?: openStream(spec, next)
         val withTarget: RequestBuilder = { s, template, extra ->
-            request(
-                s,
-                template,
-            ) { extra().also { addTarget(next) } }
+            request(s, template) { extra().also { addTarget(next) } }
         }
         focus.show(lens.session, spec, withTarget) { shown ->
-            lens.session.setRepeatingRequest(withTarget(shown, CameraDevice.TEMPLATE_PREVIEW) {}, meter(shown), handler)
+            val repeating = withTarget(shown, CameraDevice.TEMPLATE_PREVIEW) {}
+            lens.session.setRepeatingRequest(repeating, meter.callback(shown), handler)
             preview = shown
         }
     }
@@ -64,7 +59,7 @@ internal class LensSwitcher(
     suspend fun takeStill(): StillCapture {
         val lens = checkNotNull(stream) { "preview not started" }
         focus.settled()
-        val spec = planner.still(checkNotNull(preview), awaitMetered(), lens.format)
+        val spec = planner.still(checkNotNull(preview), meter.awaitMetered(), lens.format)
         // FR-62 frames held elsewhere may fill the RAW reader; then this still has no RAW rather than a crash.
         val rawReader = lens.rawReader?.takeIf { rawReaders.hasRoom(lens.camera.id) }
         val request = request(spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
@@ -95,7 +90,7 @@ internal class LensSwitcher(
         focus.settled()
         val base = checkNotNull(preview)
         val target = checkNotNull(surface)
-        val spec = planner.burst(base, awaitMetered(), fps)
+        val spec = planner.burst(base, meter.awaitMetered(), fps)
         closeStream()
         var count = 0
         val burst = BurstStream.open(checkNotNull(device), lens.camera, target, handler) { bytes, timestamp ->
@@ -110,16 +105,26 @@ internal class LensSwitcher(
             burst.session.setRepeatingRequest(request, null, handler)
             until()
         } finally {
-            burst.closeAndWait(SESSION_CLOSE_TIMEOUT_MS)
+            val releasedNs = SystemClock.elapsedRealtimeNanos()
+            val closing = burst.closeAndWait(SESSION_CLOSE_TIMEOUT_MS)
+            val closedNs = SystemClock.elapsedRealtimeNanos()
             show(base, target)
+            logResume(releasedNs, closing, closedNs, SystemClock.elapsedRealtimeNanos())
         }
         return count
     }
 
-    /** A shutter press right after start waits for the first metered preview frame instead of failing. */
-    private suspend fun awaitMetered(): Exposure {
-        if (metered == null) withTimeoutOrNull(FIRST_METER_TIMEOUT_MS) { firstMeter.await() }
-        return metered ?: throw CameraFailure("no metered preview frame after $FIRST_METER_TIMEOUT_MS ms")
+    /**
+     * Steps B and C of the preview stall after a burst (docs/test/m2-burst-resume.md); the first preview frame
+     * after release (step D) is timed by the caller from [PreviewFrame]s.
+     */
+    private fun logResume(releasedNs: Long, closing: BurstStream.Closing, closedNs: Long, shownNs: Long) {
+        fun ms(from: Long, to: Long) = "%.1f".format(Locale.ROOT, (to - from) / NS_PER_MS)
+        Log.i(
+            TAG,
+            "burst resume: abort ${ms(releasedNs, closing.abortedNs)} ms, close ${ms(closing.abortedNs, closedNs)} ms" +
+                " (onClosed in time: ${closing.closedInTime}), reopen ${ms(closedNs, shownNs)} ms",
+        )
     }
 
     /** ADR-0005: hand the RAW image over with the physical lens's characteristics and result, for DngCreator. */
@@ -153,8 +158,7 @@ internal class LensSwitcher(
         stream?.close()
         stream = null
         focus.reset()
-        metered = null
-        firstMeter = CompletableDeferred()
+        meter.reset()
     }
 
     private suspend fun openStream(spec: RequestSpec, target: Surface): LensStream {
@@ -176,28 +180,9 @@ internal class LensSwitcher(
         return builder.build()
     }
 
-    /**
-     * ADR-0009: the preview auto-exposure is the light meter; keep its latest exposure time and ISO. Every frame
-     * is also reported with the spec that produced it, which times preset switches (NFR-4).
-     */
-    private fun meter(spec: RequestSpec) = object : CameraCaptureSession.CaptureCallback() {
-        override fun onCaptureCompleted(s: CameraCaptureSession, r: CaptureRequest, result: TotalCaptureResult) {
-            val arrivedAtNs = SystemClock.elapsedRealtimeNanos()
-            onFrame(PreviewFrame(spec, result.get(CaptureResult.SENSOR_TIMESTAMP) ?: 0L, arrivedAtNs))
-            focus.onResult(s, result, spec.physicalId)
-            // The physical result is present for the streaming lens (docs/test/m1-pipeline-calibration.md).
-            val source = result.physicalCameraTotalResults[spec.physicalId] ?: result
-            val time = source.get(CaptureResult.SENSOR_EXPOSURE_TIME)
-            val iso = source.get(CaptureResult.SENSOR_SENSITIVITY)
-            if (time != null && iso != null) {
-                metered = Exposure(time, iso)
-                firstMeter.complete(Unit)
-            }
-        }
-    }
-
     private companion object {
         const val SESSION_CLOSE_TIMEOUT_MS = 1_000L
-        const val FIRST_METER_TIMEOUT_MS = 1_000L
+        const val TAG = "LensSwitcher"
+        const val NS_PER_MS = 1e6
     }
 }

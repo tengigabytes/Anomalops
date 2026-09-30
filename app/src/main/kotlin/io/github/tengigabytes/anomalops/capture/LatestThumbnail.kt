@@ -10,7 +10,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -19,17 +19,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import io.github.tengigabytes.anomalops.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
 
-/** Size of the latest-shot thumbnail: at least 64 dp (docs/product/mvp-scope.md, section 2.2). */
-val THUMBNAIL_SIZE = 72.dp
 private const val THUMBNAIL_SAMPLE = 16
 
-/** FR-62: the latest still; a long press keeps its RAW frame as a DNG. */
+/** FR-62: the latest still; a long press keeps its RAW frame as a DNG. The caller sizes it (dive-lock-layout.md). */
 @Composable
 fun LatestThumbnail(jpeg: ByteArray?, onLongPress: () -> Unit, modifier: Modifier = Modifier) {
     val bitmap by produceState<Bitmap?>(initialValue = null, jpeg) {
@@ -37,12 +34,11 @@ fun LatestThumbnail(jpeg: ByteArray?, onLongPress: () -> Unit, modifier: Modifie
     }
     val description = stringResource(R.string.thumbnail_description)
     val box = modifier
-        .size(THUMBNAIL_SIZE)
         .background(Color.DarkGray)
         .combinedClickable(onClick = {}, onLongClick = onLongPress)
     Box(box) {
         bitmap?.let {
-            Image(it.asImageBitmap(), description, Modifier.size(THUMBNAIL_SIZE), contentScale = ContentScale.Crop)
+            Image(it.asImageBitmap(), description, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         }
     }
 }

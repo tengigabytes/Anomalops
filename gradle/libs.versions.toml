@@ -14,6 +14,8 @@ coreKtx = "1.19.1"
 junit = "4.13.2"
 androidxTest = "1.7.0"
 androidxTestExtJunit = "1.3.0"
+# Compose ui-test brings Espresso 3.5.0, which fails on Android 17 (InputManager.getInstance is gone).
+espresso = "3.7.0"
 room = "2.8.5"
 # KSP 2.3+ is versioned independently of Kotlin.
 ksp = "2.3.12"
@@ -29,6 +31,10 @@ androidx-activity-compose = { module = "androidx.activity:activity-compose", ver
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
+# Instrumented UI tests only (docs/test/m3-test-plan.md, section 3); versions from the Compose BOM.
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidxTest" }
 androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidxTest" }

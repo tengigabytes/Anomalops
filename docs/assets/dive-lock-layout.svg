@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 67.68 148.55" width="338" height="743" role="img" aria-label="潛水鎖定狀態，直向，1 單位等於 1 毫米">
+  <!-- SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors -->
+  <!-- SPDX-License-Identifier: CC-BY-SA-4.0 -->
+  <!-- Dive-lock screen layout for Pixel 10 Pro, 1 unit = 1 mm. See docs/product/dive-lock-layout.md. -->
+        <defs>
+          <pattern id="hatch" width="2" height="2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <line x1="0" y1="0" x2="0" y2="2" stroke="#FF8A7F" stroke-width=".35" opacity=".5"/>
+          </pattern>
+          <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B5C66"/><stop offset="1" stop-color="#0A2A31"/></linearGradient>
+        </defs>
+        <rect x="0" y="0" width="65.68" height="146.55" rx="5" fill="#000"/>
+        <rect x="0" y="0" width="65.68" height="87.57" fill="url(#sea)"/>
+        <text x="32.84" y="50" fill="#CFE3E6" font-size="2.6" text-anchor="middle" font-family="'Noto Sans TC',sans-serif">預覽 4:3</text>
+        <path fill-rule="evenodd" fill="url(#hatch)" d="M0 0H65.68V146.55H0Z M12 12V134.55H53.68V12Z"/>
+        <rect x="12" y="12" width="41.68" height="122.55" fill="none" stroke="#FF8A7F" stroke-width=".3" stroke-dasharray="1 .8"/>
+        <circle cx="32.84" cy="4.6" r="1.7" fill="#111" stroke="#444" stroke-width=".2"/>
+        <g font-family="'Noto Sans TC',sans-serif" text-anchor="middle">
+          <rect x="12" y="14" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#FF8A7F" stroke-width=".35"/>
+          <text x="17.5" y="19.3" font-size="2.5" fill="#FFF" font-weight="700">解鎖</text>
+          <text x="17.5" y="22.6" font-size="1.9" fill="#B8B8B8">按住 3 秒</text>
+          <rect x="12" y="59.81" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <text x="17.5" y="64.6" font-size="2.1" fill="#B8B8B8">深度</text>
+          <text x="17.5" y="68.4" font-size="2.8" fill="#FFF" font-weight="700">淺</text>
+          <rect x="12" y="75.07" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <text x="17.5" y="79.85" font-size="2.1" fill="#B8B8B8">潛水燈</text>
+          <text x="17.5" y="83.65" font-size="2.8" fill="#FFF" font-weight="700">關</text>
+          <rect x="42.68" y="14" width="11" height="11" rx="1.2" fill="#FFC933"/>
+          <text x="48.18" y="20.4" font-size="2.6" fill="#000" font-weight="700">快照</text>
+          <rect x="42.68" y="29.27" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <text x="48.18" y="35.65" font-size="2.6" fill="#FFF">廣角</text>
+          <rect x="42.68" y="44.54" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <text x="48.18" y="50.9" font-size="2.6" fill="#FFF">魚群</text>
+          <rect x="42.68" y="59.81" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <text x="48.18" y="66.15" font-size="2.6" fill="#FFF">微距</text>
+          <rect x="42.68" y="75.07" width="11" height="11" rx="1.2" fill="#0D0D0D" stroke="#B8B8B8" stroke-width=".3"/>
+          <text x="48.18" y="81.4" font-size="2.6" fill="#FFF">低光</text>
+          <rect x="12" y="89.57" width="41.68" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
+          <text x="32.84" y="94.4" font-size="2.2" fill="#5CC9B4">v1.1 變焦條 FR-13a</text>
+          <text x="32.84" y="98" font-size="1.9" fill="#5CC9B4">− 縮小 ｜ 死區 ｜ 放大 +</text>
+          <rect x="12" y="103.57" width="11" height="11" rx="1.2" fill="#2A3A3C" stroke="#B8B8B8" stroke-width=".3"/>
+          <text x="17.5" y="108.3" font-size="2.3" fill="#FFF">縮圖</text>
+          <text x="17.5" y="111.7" font-size="1.8" fill="#B8B8B8">長按 RAW</text>
+          <rect x="27.34" y="103.57" width="11" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
+          <text x="32.84" y="108.3" font-size="2.1" fill="#5CC9B4">v1.1</text>
+          <text x="32.84" y="111.7" font-size="2.1" fill="#5CC9B4">半按</text>
+          <rect x="42.68" y="103.57" width="11" height="11" rx="1.2" fill="none" stroke="#5CC9B4" stroke-width=".3" stroke-dasharray="1 .7"/>
+          <text x="48.18" y="108.3" font-size="2.1" fill="#5CC9B4">v1.1</text>
+          <text x="48.18" y="111.7" font-size="2.1" fill="#5CC9B4">錄影</text>
+          <rect x="12" y="117.57" width="41.68" height="16.98" rx="2" fill="#F2F2F2"/>
+          <text x="32.84" y="126.2" font-size="3.6" fill="#000" font-weight="700">快門</text>
+          <text x="32.84" y="130.4" font-size="2" fill="#333">按下拍一張 · 按住 400 ms 連拍</text>
+        </g>
+        <g font-family="'Noto Sans TC',sans-serif" font-size="2.7" fill="#FFFFFF">
+          <text x="6.5" y="139.6">電量 82% · 34°C</text>
+          <circle cx="47.4" cy="138.7" r="1" fill="#FF8A7F"/>
+          <text x="59.2" y="139.6" fill="#FF8A7F" text-anchor="end">記錄中</text>
+          <text x="6.5" y="143.9" fill="#B8B8B8">淺 · 無濾鏡 · 燈關</text>
+        </g>
+      </svg>

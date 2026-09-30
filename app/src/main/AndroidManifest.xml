@@ -14,16 +14,25 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
-        <!-- Portrait only in M1; the dive-lock UI (M3) decides orientation handling. -->
+        <!-- Portrait (docs/product/dive-lock-layout.md); singleTask as in the G1 platform test (ADR-0006). -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTask"
             android:screenOrientation="portrait">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- NFR-1 crash-restart trampoline: separate process, same task as MainActivity (ADR-0006). -->
+        <activity
+            android:name=".lock.RestartTrampolineActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:process=":restarter"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
     </application>
 
 </manifest>
