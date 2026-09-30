@@ -120,6 +120,10 @@ class MacroFocusExperiment {
             val count = (2 * FINE_HALF_SPAN / step).toInt() + 1
             val steps = List(count) { center - FINE_HALF_SPAN + it * step }.filter { it in 0f..lens.minDiopters }
             Log.i(TAG, "T3 $scene lens=$id target=%.3f D step=%.4f D steps=${steps.size}".format(center, step))
+            if (steps.isEmpty()) {
+                Log.i(TAG, "T3 lens=$id skipped: target is closer than its minimum focus")
+                return@forEach
+            }
             runCatching { rig.withLens(id, T1_RAW_IMAGES) { sweep("T3", it, lens, steps) } }
                 .onFailure { Log.e(TAG, "T3 lens=$id FAIL ${it.javaClass.simpleName}: ${it.message}", it) }
         }
