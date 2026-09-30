@@ -32,11 +32,15 @@ data class PreDiveState(val batteryPercent: Int?, val shotsLeft: Int?, val torch
  */
 object PreDiveChecklist {
     /**
-     * Proposed: NFR-3 budgets 35 % for a 90-minute dive; 50 % leaves 15 points for the time before and after.
+     * Agreed by the maintainer on 2026-09-30 (docs/product/early-logic.md, section 3): NFR-3 budgets 35 % for a
+     * 90-minute dive; 50 % leaves 15 points for the time before and after.
      */
     const val MIN_BATTERY_PERCENT = 50
 
-    /** Proposed: NFR-1's session is 300 photos and 10 bursts of about 80 frames (docs/test/m2-instrumented.md). */
+    /**
+     * Agreed on 2026-09-30 (early-logic.md, section 3): NFR-1's session is 300 photos and 10 bursts of about
+     * 80 frames (docs/test/m2-instrumented.md).
+     */
     const val MIN_SHOTS_LEFT = 1_100
 
     fun evaluate(state: PreDiveState): List<CheckResult> = CheckItem.entries.map { item ->

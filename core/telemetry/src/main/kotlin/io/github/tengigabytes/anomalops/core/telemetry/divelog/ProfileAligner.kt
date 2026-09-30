@@ -44,7 +44,10 @@ class ProfileAligner(dives: List<DiveProfile>, private val maxGapS: Double = MAX
     }
 
     companion object {
-        /** Proposed: logs sample every 2–30 s; a longer hole means the computer lost the profile there. */
+        /**
+         * Agreed on 2026-09-30 (docs/product/early-logic.md, section 3): logs sample every 2–30 s; a longer hole
+         * means the computer lost the profile there.
+         */
         const val MAX_GAP_S = 60.0
         private const val MILLIS_PER_SECOND = 1000.0
     }
