@@ -56,3 +56,5 @@ Pixel 10 Pro 後置 6 個實體 ID 都是 `APPROXIMATE`（[m4-af-timeline.md](..
 ## 驗證
 
 [macro-stacking-test-plan.md](../test/macro-stacking-test-plan.md) T2–T5、T8、T10：各鏡頭的校準類型、實際最近對焦、校正曲線與殘差、感光元件尺寸、水中視距比例、對焦呼吸。
+
+2026-09-30 T9 結果（[m9-macro-land.md](../test/m9-macro-land.md) 第 3 節）：6 張一張換一個距離的 `captureBurst`，感光跨度約 170 ms，但 6 張都標 MOVING，回報的對焦距離比請求超前兩張。第 3 節的步進要以實測的每張對焦位置為準，不能假設每張都在請求的距離上；是否改成每個距離停兩到三幀，由 T7、T10 的影像判斷後決定。

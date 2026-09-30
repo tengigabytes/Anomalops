@@ -23,3 +23,4 @@
 | [m2-burst-resume.md](m2-burst-resume.md) | 連拍後預覽停頓 222–894 ms 的原因推測與實機量測計畫（各步驟時間點、判讀方式、可能的改善），全部是推測，2026-09-29 |
 | [m3-instrumented.md](m3-instrumented.md) | M3 實機測試：`:app` 儀器測試與相機回歸、NFR-1 崩潰重啟、FR-45 場次、FR-51／FR-56 人工測試與不熄滅（有條件通過）、`DiveScreenTest` UI 量測、NFR-10 字串審查；FR-56 由系統停用鎖定畫面達成、亮度熱節流的發現，2026-09-30 |
 | [macro-stacking-test-plan.md](macro-stacking-test-plan.md) | 微距景深合成待測清單（FR-33、FR-36、FR-37）：已由 repo 資料確認的值、17 項估算或未知數值的方法與通過標準、順序，2026-09-30 |
+| [m9-macro-land.md](m9-macro-land.md) | M9 前置的微距陸上實測：T0 以 AF 估目標距離、T1 望遠實體串流與手動對焦（通過）、T9 焦點包圍時間（約 170 ms，但每張對焦位置未確認），2026-09-30 |
