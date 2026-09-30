@@ -39,6 +39,7 @@ class MacroFocusExperiment {
     val cameraPermission: GrantPermissionRule = GrantPermissionRule.grant(Manifest.permission.CAMERA)
 
     private val args = InstrumentationRegistry.getArguments()
+    private val beyondMin = args.getString("beyondMin") == "true"
     private val scene = "scene=${args.getString("scene", "unnamed")} targetCm=${args.getString("targetCm", "-")}"
     private val manager = InstrumentationRegistry.getInstrumentation().targetContext
         .getSystemService(CameraManager::class.java)
@@ -118,7 +119,10 @@ class MacroFocusExperiment {
             val lens = rig.lens(id)
             val step = minOf(FINE_MAX_STEP, lens.hyperfocalDiopters)
             val count = (2 * FINE_HALF_SPAN / step).toInt() + 1
-            val steps = List(count) { center - FINE_HALF_SPAN + it * step }.filter { it in 0f..lens.minDiopters }
+            // `-e beyondMin true` also asks for distances past LENS_INFO_MINIMUM_FOCUS_DISTANCE, to see whether the
+            // HAL clamps them (AF locked at about 10 D on the main lens, whose minimum is 9.52 D; T4, 11 cm).
+            val limit = if (beyondMin) lens.minDiopters + FINE_HALF_SPAN else lens.minDiopters
+            val steps = List(count) { center - FINE_HALF_SPAN + it * step }.filter { it in 0f..limit }
             Log.i(TAG, "T3 $scene lens=$id target=%.3f D step=%.4f D steps=${steps.size}".format(center, step))
             if (steps.isEmpty()) {
                 Log.i(TAG, "T3 lens=$id skipped: target is closer than its minimum focus")
