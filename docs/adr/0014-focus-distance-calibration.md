@@ -10,7 +10,7 @@ FR-33 焦點包圍要在指定的距離範圍內，以不留空隙的步進連�
 - `APPROXIMATE`：單位是屈光度，但與實際距離只大致相符。
 - `UNCALIBRATED`：只保證數值單調，0 是無限遠，與距離沒有對應。
 
-Pixel 10 Pro 的 ID 2、3、9 都是 `APPROXIMATE`（[m4-af-timeline.md](../test/m4-af-timeline.md)）；望遠 ID 4、6 與 2× 裁切 ID 5 未記錄。Pixel 6 Pro 到 11 Pro 各型號、各鏡頭的值未知，而且可能隨系統更新改變。
+Pixel 10 Pro 後置 6 個實體 ID 都是 `APPROXIMATE`（[m4-af-timeline.md](../test/m4-af-timeline.md)；4、5、6 由 2026-09-28 的 probe 報告補讀，[g0-blazer.md](../test/g0-blazer.md)）。Pixel 6 Pro 到 11 Pro 各型號、各鏡頭的值未知，而且可能隨系統更新改變。
 
 ## 決策（提議）
 
