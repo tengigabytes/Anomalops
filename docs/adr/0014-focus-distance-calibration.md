@@ -50,7 +50,7 @@ Pixel 10 Pro 後置 6 個實體 ID 都是 `APPROXIMATE`（[m4-af-timeline.md](..
 
 ## 後果
 
-- probe 要補收 `SENSOR_INFO_PHYSICAL_SIZE`（等效光圈與畫面寬的換算需要）；能力表結構會增加校正表欄位，`ProfileValidator` 同步修改。
+- probe 早已收集 `SENSOR_INFO_PHYSICAL_SIZE`（2026-10-01 查證；原本誤寫為要補收），能力表尚未收錄；執行時直接查詢即可。能力表結構會增加校正表欄位，`ProfileValidator` 同步修改。
 - 每個新型號多一項陸上校正工作（M11），不需下水。
 
 ## 驗證
