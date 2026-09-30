@@ -21,7 +21,7 @@ Pixel 潛水相機 APP（Android，Kotlin，Camera2）。目前階段：M2 RAW �
 - 超過上限就拆檔，不要調高上限。
 
 ## 結構
-- 模組：`:app`、`:core:camera`、`:core:profile`、`:core:store`、`:core:telemetry`、`:tools:probe`（ADR-0007）。
+- 模組：`:app`、`:core:camera`、`:core:imaging`、`:core:profile`、`:core:store`、`:core:telemetry`、`:tools:probe`（ADR-0007、ADR-0016）。
 - 建置 flavor：`play`（Play Billing 樂捐）、`foss`（無專有相依）（ADR-0010）。
 - 每個目錄都有 `README.md` 索引；新增、刪除、改名檔案時同步更新。
 - 原始檔開頭兩行 SPDX 標頭，格式見 `docs/dev/code-structure.md` 第 4 節。
