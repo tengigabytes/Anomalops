@@ -8,6 +8,7 @@ import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.params.OutputConfiguration
 import android.media.ImageReader
 import android.os.Handler
+import android.os.SystemClock
 import android.view.Surface
 import io.github.tengigabytes.anomalops.core.profile.PhysicalCamera
 import kotlinx.coroutines.CompletableDeferred
@@ -24,12 +25,20 @@ internal class BurstStream private constructor(
     val surface: Surface,
     private val closed: CompletableDeferred<Unit>,
 ) {
-    /** Stops the burst and waits at most [timeoutMs] for the session to close; the reader closes with it. */
-    suspend fun closeAndWait(timeoutMs: Long) {
+    /**
+     * Stops the burst and waits at most [timeoutMs] for the session to close; the reader closes with it. Returns
+     * the elapsed-realtime nanoseconds when `abortCaptures()` returned, and whether `onClosed` came in time, for
+     * the preview-stall measurement (docs/test/m2-burst-resume.md).
+     */
+    suspend fun closeAndWait(timeoutMs: Long): Closing {
         session.abortCaptures()
+        val abortedNs = SystemClock.elapsedRealtimeNanos()
         session.close()
-        withTimeoutOrNull(timeoutMs) { closed.await() }
+        val closedInTime = withTimeoutOrNull(timeoutMs) { closed.await() } != null
+        return Closing(abortedNs, closedInTime)
     }
+
+    class Closing(val abortedNs: Long, val closedInTime: Boolean)
 
     companion object {
         private const val BURST_IMAGES = 8

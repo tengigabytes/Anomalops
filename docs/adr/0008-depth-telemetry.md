@@ -52,3 +52,5 @@ FR-84 定義 DepthSource / TelemetrySource 介面，實作有三種：手動深�
 - G2：90 分鐘場次的 `sensors.csv` 完整度 ≥ 98%（mvp-acceptance.md 的 FR-45 項）。
 
 2026-09-28 G0 結果（Pixel 10 Pro）：見 [g0-blazer.md](../test/g0-blazer.md)。沒有環境溫度感測器（推測成立），但有氣壓計溫度 `com.google.sensor.pressure_temp`，建議加入 `sensors.csv`；磁力計最慢 0.8 s，需自行降頻到 1 Hz。紅外線溫度計（MLX90632）需要 `signature|preinstalled` 權限，第三方 APP 無法使用，因此不能用來估計水溫。
+
+2026-09-28 補註（維護者決定）：崩潰後自動重啟（NFR-1、ADR-0006 的跳板做法）不算解鎖，FR-45 延續同一個場次，繼續寫入同一個 `files/dives/<場次 ID>/`。因此「是否在鎖定中」與目前場次 ID 要存在程序外，重啟後讀回。見 [dive-lock-layout.md](../product/dive-lock-layout.md) 第 2 節。
