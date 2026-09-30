@@ -12,3 +12,4 @@ UI、潛水鎖定與各模組的組裝點。
 | 權限補充 | `CAMERA`；M1 暫時鎖直向，M3 潛水鎖定介面再決定方向處理 |
 | 測試 | JVM 單元測試：`conditions/ShootingConditionsTest`（假的 `DepthSource` 切換深度段，預覽請求的色彩值隨之改變；濾鏡與潛水燈各自選到自己的校正值）、`ConditionsFollowerTest`<br>實機儀器測試（`src/androidTest/.../acceptance/`，共用 `AppRig`，測完刪除所有檔案）：`StillWriteTest`（NFR-7）、`RawKeepTest`（FR-62、FR-64）、`BurstTest`（FR-15、FR-68）、`MemoryTest`（FR-62 記憶體，PSS 加 dma-buf）、`ConditionsSwitchTest`（FR-84 深度切換）、`RawFullTest`（RAW reader 滿載時照片照常存、APP 不崩潰）；`experiment/RawMemoryExperiment` 記錄 RAW 在 meminfo 中的位置；結果見 [m2-instrumented.md](../docs/test/m2-instrumented.md)、[m4-instrumented.md](../docs/test/m4-instrumented.md) |
 | 現況 | M1 進行中：拍攝後經 `:core:store` 寫入 MediaStore；狀態列固定兩行高，按鍵位置不隨文字長度移動 |
+| v1.1 提前（未接上） | `standby/StandbyTimer`：FR-57 待機計時；`checklist/PreDiveChecklist`：FR-58 檢查項目評定；`orientation/InversionDetector`：FR-92 倒拿判斷與 `JPEG_ORIENTATION`；JVM 測試各一。尚未接上畫面。見 [early-logic.md](../docs/product/early-logic.md) |

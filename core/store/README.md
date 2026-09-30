@@ -12,3 +12,4 @@
 | RAW | `raw/RawBuffer`：5 張、10 s 的環形緩衝（純邏輯，JVM 測試）<br>`raw/RawKeeper`：持有 RAW 並定時清除過期；長按縮圖時寫 DNG（FR-62）<br>`raw/DngStore`：`DngCreator` 寫 DNG，與成品同一檔名主幹（ADR-0005、FR-64） |
 | 堆疊 | `stack/StackDatabase`、`BurstStacks`：Room 連拍堆疊索引（FR-68，ADR-0007），封面為第一張連拍；schema 在 `schemas/` |
 | 現況 | M2：成品、RAW 緩衝與 DNG、連拍檔案與堆疊索引完成 |
+| v1.1 提前（未接上） | `library/`：FR-66 `Reclaim`、FR-73 `RecycleBin`、FR-70 `KeepBest`、FR-67 `ShotSizes` 與 `Capacity`；`cull/`：FR-69 `FrameMetrics`（清晰度、剪切）與 `StackCull`；JVM 測試 `SpaceRulesTest`、`CapacityTest`、`StackCullTest`。見 [early-logic.md](../../docs/product/early-logic.md) |
