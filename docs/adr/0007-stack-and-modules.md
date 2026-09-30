@@ -66,3 +66,5 @@ v1.0 只支援 Pixel 10 Pro，但架構要能擴展到 Pixel 6 Pro 至 11 Pro（
 2026-09-28 補充：模組依賴檢查以 `scripts/check_module_deps.py` 實作（掃描建置檔，不經 Gradle），本機與 CI 都執行；detekt 與 ktlint 格式檢查以 detekt 2.0.0-alpha.6 加其 ktlint-wrapper 實作。
 
 2026-09-28 補充（M2）：堆疊索引以 Room 2.8.5 實作於 `:core:store` 的 `stack/`，註解處理用 KSP 2.3.12（2.3 起版本不再綁定 Kotlin），在 Kotlin 2.4.20 與 AGP 9 內建 Kotlin 下可建置；schema 匯出到 `core/store/schemas/` 並提交。
+
+2026-10-01 補註：新增純 Kotlin/JVM 模組 `:core:imaging`，負責多幀影像處理（對齊、合成、景深合成），不依賴任何專案模組，`:app` 可以依賴它。見 [ADR-0016](0016-imaging-module.md)。
