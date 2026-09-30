@@ -58,3 +58,5 @@ Pixel 10 Pro 後置 6 個實體 ID 都是 `APPROXIMATE`（[m4-af-timeline.md](..
 [macro-stacking-test-plan.md](../test/macro-stacking-test-plan.md) T2–T5、T8、T10：各鏡頭的校準類型、實際最近對焦、校正曲線與殘差、感光元件尺寸、水中視距比例、對焦呼吸。
 
 2026-09-30 T9 結果（[m9-macro-land.md](../test/m9-macro-land.md) 第 3 節）：6 張一張換一個距離的 `captureBurst`，感光跨度約 170 ms，但 6 張都標 MOVING，回報的對焦距離比請求超前兩張。第 3 節的步進要以實測的每張對焦位置為準，不能假設每張都在請求的距離上；是否改成每個距離停兩到三幀，由 T7、T10 的影像判斷後決定。
+
+2026-10-01 T4 結果（[m9-macro-land.md](../test/m9-macro-land.md) 第 5 節，30–60 cm 六點）：主鏡頭與望遠的 APPROXIMATE 讀數都比實際遠約 0.06–0.08 D，斜率幾乎是 1，一個常數偏移就能修正大部分。修正後望遠仍有約 0.02 D 的殘差（受捲尺精度限制），與其景深 0.049 D 相比不可忽略，因此第 2 節「APPROXIMATE 多疊一張」的做法保留。AF 鎖定的位置（主鏡頭 50 cm 時偏 0.24 D）不能當距離量測用，第 4 節的校正流程維持以細掃取峰值。
