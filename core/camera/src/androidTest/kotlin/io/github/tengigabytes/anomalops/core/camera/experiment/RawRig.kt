@@ -84,12 +84,16 @@ internal class RawRig(private val manager: CameraManager, private val handler: H
         val capture: CameraCaptureSession,
         val raw: ImageReader,
     ) {
-        /** AF off, focus at [diopters]; the RAW reader is a target only when [withRaw]. */
-        fun request(diopters: Float, withRaw: Boolean): CaptureRequest =
+        /**
+         * AF off, focus at [diopters]; the RAW reader is a target only when [withRaw]. [aeLock] holds the exposure,
+         * so a focus sweep compares frames of the same gain.
+         */
+        fun request(diopters: Float, withRaw: Boolean, aeLock: Boolean = false): CaptureRequest =
             device.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE, setOf(id)).apply {
                 addTarget(preview.surface)
                 if (withRaw) addTarget(raw.surface)
                 set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+                set(CaptureRequest.CONTROL_AE_LOCK, aeLock)
                 // As CaptureRequestWriter does: a physical stream follows the physical key, not the logical one.
                 set(CaptureRequest.LENS_FOCUS_DISTANCE, diopters)
                 setPhysicalCameraKey(CaptureRequest.LENS_FOCUS_DISTANCE, diopters, id)
