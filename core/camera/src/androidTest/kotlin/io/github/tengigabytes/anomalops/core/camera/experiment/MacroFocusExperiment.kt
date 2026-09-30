@@ -146,10 +146,13 @@ class MacroFocusExperiment {
     private suspend fun sweep(label: String, session: RawRig.Session, lens: RawRig.Lens, steps: List<Float>) {
         var worst = 0f
         var peak = 0f to -1.0
+        // Let AE settle once, then hold it: a gain change moves the noise floor of the sharpness score (T3, 39.5 cm).
+        session.capture.setRepeatingRequest(session.request(steps.first(), withRaw = false), null, handler)
+        delay(AE_SETTLE_MS)
         steps.forEachIndexed { i, wanted ->
             val frames = mutableListOf<RawRig.Frame>()
             session.capture.setRepeatingRequest(
-                session.request(wanted, withRaw = false),
+                session.request(wanted, withRaw = false, aeLock = true),
                 session.frames { frames += it },
                 handler,
             )
@@ -176,7 +179,7 @@ class MacroFocusExperiment {
     private suspend fun sharpness(session: RawRig.Session, diopters: Float): Double {
         val image = CompletableDeferred<Image>()
         session.raw.setOnImageAvailableListener({ it.acquireNextImage()?.let(image::complete) }, handler)
-        session.capture.capture(session.request(diopters, withRaw = true), null, handler)
+        session.capture.capture(session.request(diopters, withRaw = true, aeLock = true), null, handler)
         return withTimeout(IMAGE_TIMEOUT_MS) { image.await() }.use { RawRig.sharpness(it) }
     }
 
@@ -215,6 +218,7 @@ class MacroFocusExperiment {
         const val T1_STEPS = 10
         const val T1_RAW_IMAGES = 2
         const val SETTLE_MS = 700L
+        const val AE_SETTLE_MS = 1_500L
         const val SETTLED_FRAMES = 5
         const val IMAGE_TIMEOUT_MS = 3_000L
         const val BURST_TIMEOUT_MS = 5_000L
