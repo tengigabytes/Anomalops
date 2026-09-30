@@ -8,6 +8,6 @@
 | [check_flavor_manifests.py](check_flavor_manifests.py) | 檢查兩個 flavor 合併後 manifest 的權限（NFR-8、ADR-0010）；預設檢查 debug 變體，要先建置 |
 | [check_module_deps.py](check_module_deps.py) | 依 ADR-0007 檢查各模組建置檔裡的 `project(":...")` 依賴；出現不允許的依賴時結束碼為 1 |
 | [check_dive_log.py](check_dive_log.py) | FR-45 驗收：檢查一個潛水場次目錄（從手機以 adb 拉回，不進 repo）的四個檔案、`sensors.csv` 時間戳遞增、列數 ≥ 應有的 98%（`--minutes 90` 以 5400 列為準），並列出最長間隔 |
-| [check_crash_restart.py](check_crash_restart.py) | NFR-1 驗收（需手機）：APP 已在潛水鎖定時，以 adb 反覆注入崩潰（debug 版），每輪檢查 3 s 內重啟、仍在固定狀態、程序 ID 改變、沒有多出 FR-45 場次目錄；`--rounds 10` |
+| [check_crash_restart.py](check_crash_restart.py) | NFR-1 驗收（需手機）：APP 已在潛水鎖定時，以 adb 反覆注入崩潰（debug 版），每輪檢查 3 s 內重啟、仍在固定狀態、程序 ID 改變、沒有多出 FR-45 場次目錄；`--rounds 10`，每輪間隔 `--gap 65` 秒（重啟後 60 s 內再崩潰不重啟）；`--crash-loop` 檢查第二次崩潰不重啟、固定解除 |
 | [check_device_neutral.py](check_device_neutral.py) | NFR-9：產品模組（不含測試與 `:tools:probe`）的程式碼不得出現型號代號、「Pixel 數字」型號名、`Build.MODEL` 等型號欄位或對 `Build.DEVICE` 的比較；註解不檢查。代號清單為能力表檔名加上腳本內的 Pixel 6–10 代號；有發現時結束碼為 1 |
 | [check_limits.py](check_limits.py) | 檢查檔案長度上限、`docs/` 各目錄索引是否完整、相對連結是否有效；違反硬性上限時結束碼為 1。規則見 [code-structure.md](../docs/dev/code-structure.md) |

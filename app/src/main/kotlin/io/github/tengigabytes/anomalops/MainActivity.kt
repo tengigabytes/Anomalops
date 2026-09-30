@@ -73,7 +73,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        CrashRestarter.install(this, store)
+        CrashRestarter.install(this, store, store)
         lock = DiveLock(store, isPinned()) { SessionInfo.idAt(LocalDateTime.now()) }
         pins = PinWatcher(this, lock)
         conditions.mount(filters.load())
@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
             lock.state.collect { state ->
                 applyDiveLockWindow(state is LockState.Locked)
                 Sessions.follow(applicationContext, state)
+                pins.follow(state)
             }
         }
         setContent { MaterialTheme { Root() } }

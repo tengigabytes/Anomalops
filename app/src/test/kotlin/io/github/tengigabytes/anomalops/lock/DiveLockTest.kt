@@ -36,6 +36,25 @@ class DiveLockTest {
     }
 
     @Test
+    fun pinEndedByTheSystemEndsTheSession() {
+        val store = MemoryStore()
+        val lock = DiveLock(store, pinnedNow = false, ::newId)
+        lock.requestLock()
+        lock.pinned()
+        lock.pinLost()
+        assertEquals(LockState.Normal, lock.state.value)
+        assertNull(store.sessionId)
+    }
+
+    @Test
+    fun pinLostOutsideDiveLockIsIgnored() {
+        val lock = DiveLock(MemoryStore(), pinnedNow = false, ::newId)
+        lock.requestLock()
+        lock.pinLost()
+        assertEquals(LockState.AwaitingPin, lock.state.value)
+    }
+
+    @Test
     fun cancelledPinStaysNormalWithoutASession() {
         val store = MemoryStore()
         val lock = DiveLock(store, pinnedNow = false, ::newId)

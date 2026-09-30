@@ -56,7 +56,15 @@ class DiveLock(private val store: LockStore, pinnedNow: Boolean, private val new
     }
 
     /** The unlock hold completed and `stopLockTask()` was called. Ends the FR-45 session. */
-    fun unlocked() {
+    fun unlocked() = end()
+
+    /**
+     * The system ended the pin while locked (for example swipe up and hold). Maintainer decision of 2026-09-30
+     * (docs/product/requirements/09-open-items.md): follow the system and do not pin again; it counts as an unlock.
+     */
+    fun pinLost() = end()
+
+    private fun end() {
         if (mutableState.value !is LockState.Locked) return
         store.save(null)
         mutableState.value = LockState.Normal
