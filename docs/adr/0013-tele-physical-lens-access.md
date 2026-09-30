@@ -39,3 +39,5 @@
 ## 驗證
 
 [macro-stacking-test-plan.md](../test/macro-stacking-test-plan.md) 第 2 節 T1、T2：ID 4、6 能否建立預覽與 RAW 串流；`CONTROL_AF_MODE_OFF` 下送出的 `LENS_FOCUS_DISTANCE` 與結果回報是否一致；最近對焦距離處的解析度卡是否清晰；兩顆的距離校準類型。
+
+2026-09-30 T1 結果（[m9-macro-land.md](../test/m9-macro-land.md) 第 2 節）：ID 4、6 都能在邏輯鏡頭 0 上建立「預覽 + RAW」並手動對焦，回報與請求最大差 0.003 D，HAL 沒有換鏡頭；不需要退路。最近對焦距離處的解析度卡還沒拍（目標在約 50–60 cm），併入 T3。注意：`LENS_FOCUS_DISTANCE` 要以 `setPhysicalCameraKey` 設在該實體鏡頭上，只設邏輯層時鏡頭不動（與 v1.0 的 `CaptureRequestWriter` 相同）。
