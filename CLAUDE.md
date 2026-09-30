@@ -1,6 +1,6 @@
 # Anomalops 專案規則
 
-Pixel 潛水相機 APP（Android，Kotlin，Camera2）。目前階段：M2 RAW 與連拍完成（FR-16 待 `dng_validate`／darktable，FR-91 待灰卡）；v1.1 取景架構實驗中（ADR-0011，提議）；M4 陸上部分完成（FR-84、NFR-9、FR-35、FR-31；FR-45 待 M3 接上潛水鎖定，FR-82 待紅外相機）；M3 G1 已測完（`docs/test/m3-instrumented.md`；2026-09-30 新增連續崩潰不重啟、系統解除固定視同解鎖，已實作、不做實機測試；FR-51 90 分鐘與過熱門檻併入 G2，NFR-5 目視延到 UI 整理後），PR #1 待合併。M3 畫面只是操作邏輯的測試版：先完善底層核心功能，UI 之後持續改進。
+Pixel 潛水相機 APP（Android，Kotlin，Camera2）。目前階段：M2 RAW 與連拍完成（FR-16 待 `dng_validate`／darktable，FR-91 待灰卡）；v1.1 取景架構實驗中（ADR-0011，提議）；v1.1 不需手機的純邏輯已合進 main（`docs/product/early-logic.md`）；微距景深合成已規劃（FR-33、FR-36、FR-37，ADR-0012–0015 提議），下一步是 `docs/test/macro-stacking-test-plan.md` 的 T1、T2；M4 陸上部分完成（FR-84、NFR-9、FR-35、FR-31；FR-45 待 M3 接上潛水鎖定，FR-82 待紅外相機）；M3 G1 已測完（`docs/test/m3-instrumented.md`；2026-09-30 新增連續崩潰不重啟、系統解除固定視同解鎖，已實作、不做實機測試；FR-51 90 分鐘與過熱門檻併入 G2，NFR-5 目視延到 UI 整理後），PR #1 待合併。M3 畫面只是操作邏輯的測試版：先完善底層核心功能，UI 之後持續改進。
 
 ## 語言
 - 與使用者討論：臺灣正體中文。

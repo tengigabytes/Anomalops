@@ -15,6 +15,8 @@ Pixel 10 有三項能力在防水殼內會失效：氣壓計測不到水深、GP
 | 感測器 | 氣壓計、磁力計、陀螺儀、加速度計、雷射 AF | 同左，另有光譜 / 閃爍感測器、溫度感測器 |
 | 防水 | IP68（非潛水用） | IP68（非潛水用） |
 
+上表是官方規格。第三方 APP 實際拿到的 RAW 是合併像素後的 12 MP（G0 實測 Pixel 10 Pro：超廣角與望遠 4032 × 3024，主鏡頭 4080 × 3072），另有三顆鏡頭的 2× 中央裁切，輸出同樣是 12 MP（[ADR-0012](../../adr/0012-macro-lens-selection.md)）。
+
 軟體層面可用的能力：
 
 - Camera2 API 的 MANUAL\_SENSOR（快門 / ISO / 對焦距離）與 MANUAL\_POST\_PROCESSING（自訂白平衡增益、色彩矩陣）。各鏡頭實際支援的 hardware level 與 RAW 尺寸需在實機以 CameraCharacteristics 驗證，尚未確認。

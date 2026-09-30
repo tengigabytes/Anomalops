@@ -16,7 +16,7 @@ grep -rn "FR-62 " docs/product/requirements/
 | 4. 使用情境與使用者角色 | [04-scenarios.md](04-scenarios.md) |  |
 | 5.1 拍攝模式 | [05-1-capture.md](05-1-capture.md) | FR-11 … FR-19a（13 項） |
 | 5.2 白平衡與色彩還原 | [05-2-white-balance.md](05-2-white-balance.md) | FR-21 … FR-27（7 項） |
-| 5.3 對焦與微距 | [05-3-focus.md](05-3-focus.md) | FR-31 … FR-35（5 項） |
+| 5.3 對焦與微距 | [05-3-focus.md](05-3-focus.md) | FR-31 … FR-37（7 項） |
 | 5.4 潛水資訊與中繼資料 | [05-4-dive-data.md](05-4-dive-data.md) | FR-41 … FR-45（5 項） |
 | 5.5 潛水鎖定與操作 | [05-5-dive-lock.md](05-5-dive-lock.md) | FR-51 … FR-58（8 項） |
 | 5.6 儲存與檔案管理 | [05-6-storage.md](05-6-storage.md) | FR-61 … FR-73（14 項） |
