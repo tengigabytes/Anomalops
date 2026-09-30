@@ -1,8 +1,8 @@
 # M3 潛水鎖定與操作介面：待測清單（Pixel 10 Pro）
 
-2026-09-30 · 狀態：第 2、3 節與第 4 節多數項目已測，結果見 [m3-instrumented.md](m3-instrumented.md)；NFR-5 與 FR-51 不熄滅 90 分鐘待測
+2026-09-30 · 狀態：原有 G1 項目已測完；2026-09-30 新增的連續崩潰與系統解除固定兩項已實作，維護者決定不做實機測試（第 4 節）；結果見 [m3-instrumented.md](m3-instrumented.md)；FR-51 不熄滅 90 分鐘與過熱門檻併入 G2，NFR-5 目視延到 UI 整理後（第 8 節）；NFR-10 字串審查待維護者確認
 
-M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-acceptance.md) 第 2、3 節，畫面配置見 [dive-lock-layout.md](../product/dive-lock-layout.md)。程式在沒有手機的環境撰寫，需要實機的項目回到本機後照本清單執行，結果寫進 `m3-instrumented.md`（屆時新增），本清單改為已完成。
+M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-acceptance.md) 第 2、3 節，畫面配置見 [dive-lock-layout.md](../product/dive-lock-layout.md)。程式在沒有手機的環境撰寫，需要實機的項目回到本機後照本清單執行，結果寫進 [m3-instrumented.md](m3-instrumented.md)，本清單的狀態欄隨之更新。
 
 ## 1. 實機測試守則
 
@@ -25,7 +25,9 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | 鎖定狀態機 | 一般 → 等待固定 → 鎖定 → 解鎖中 → 一般；固定被取消；崩潰重啟回鎖定 | 每個轉換符合 dive-lock-layout.md 第 2 節；重啟後場次 ID 不變 | 已寫，見下方說明 |
 | 深度段、潛水燈鍵 | 深度段連按 3 次、潛水燈連按 2 次 | 淺 → 中 → 深 → 淺；關 → 開 → 關 | 已寫，見下方說明 |
 | NFR-5 配色 | 版面用的每組前景 / 背景 | 對比 ≥ 7 : 1；狀態色不是藍色 | 已寫，見下方說明 |
-| NFR-10 字串 | lint `MissingTranslation` 設為錯誤 | 英文與臺灣正體中文字串齊備；人工審查無簡體中文詞彙 | 待寫 |
+| NFR-10 字串 | lint `MissingTranslation` 設為錯誤 | 英文與臺灣正體中文字串齊備；人工審查無簡體中文詞彙 | 通過，待維護者確認審查（[m3-instrumented.md](m3-instrumented.md) 第 8 節） |
+
+NFR-10 不寫 JVM 測試：`MissingTranslation` 在 `app/build.gradle.kts` 設為錯誤，由 lint 把關；字串審查是人工項目，2026-09-30 做過一次。
 
 2026-09-28：上表除 NFR-10 外都已寫成 `:app` 的 JVM 測試（`DiveLockTest`、`HoldToUnlockTest`、`TouchDebouncerTest`、`DiveLockLayoutTest`、`DivePaletteTest`、`DepthSwitchTest`，29 個；之後加上 `SessionRowsTest` 共 31 個）。這個環境無法跑 Gradle，改用獨立的 Kotlin 2.4.20 編譯器（`-Werror`）與 JUnit 4.13.2 在本機編譯執行，全部通過；`:core:profile` 的型別以同名的最小替身代入。另以 detekt 2.0.0-alpha.6 CLI（專案設定）與 ktlint 1.8.0（`intellij_idea` 風格，與既有程式相同）檢查，無問題。Gradle 建置與 CI 已確認，見第 7 節。
 
@@ -38,7 +40,7 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | FR-55 安全區 | UI 測試讀每個可點元件的邊界，以實機 xdpi / ydpi 換算 mm | 全部 ≥ 12 mm | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
 | 深度段、潛水燈鍵 | UI 測試量測邊界；點擊後預覽請求改變（沿用 FR-84 的接法） | ≥ 64 dp；位於安全區內；請求值隨之改變 | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
 | FR-24 設定頁 | 在一般模式選「紅」，回拍攝畫面；進入鎖定後設定鍵不出現 | 請求用濾鏡專屬校正值（陸上尚無值時退回近似，記錄即可）；鎖定中無法開啟設定頁 | 通過（`DiveScreenTest`，[m3-instrumented.md](m3-instrumented.md) 第 7 節） |
-| NFR-1 崩潰重啟 | 手動按「潛水鎖定」並確認固定後，執行 `python scripts/check_crash_restart.py --rounds 10`：每輪以 `am start ... --ez injectCrash true` 注入崩潰（debug 版）。儀器測試做不到，崩潰會連測試程序一起結束 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；程序 ID 改變；FR-45 延續同一場次（沒有多出場次目錄） | 通過，10 / 10（[m3-instrumented.md](m3-instrumented.md) 第 4 節） |
+| NFR-1 崩潰重啟 | 手動按「潛水鎖定」並確認固定後，執行 `python scripts/check_crash_restart.py --rounds 10`：每輪以 `am start ... --ez injectCrash true` 注入崩潰（debug 版）。2026-09-30 起重啟後 60 s 內再崩潰就不重啟（見下列「連續崩潰」），每輪間隔 65 s（`--gap`），10 輪約 11 分鐘。下方 10 / 10 是這項改動之前的結果，改動後沒有重跑（維護者 2026-09-30 決定）。儀器測試做不到，崩潰會連測試程序一起結束 | 每次 3 s 內回到潛水鎖定，10 / 10；固定狀態保住；程序 ID 改變；FR-45 延續同一場次（沒有多出場次目錄） | 通過，10 / 10（[m3-instrumented.md](m3-instrumented.md) 第 4 節） |
 | FR-45 場次檔案 | 儀器測試 `acceptance/DiveSessionTest`：開場次、寫觸控與拍攝列、關閉，再以同一 ID 重開（模擬崩潰重啟）；另測 `PrefsLockStore` 寫入後新實例讀得到 | `touches.csv`、`captures.csv` 標頭各一次、列數與欄位正確；`session.json` 重開後不變；`sensors.csv` 跨兩次開啟時間戳遞增 | 通過（[m3-instrumented.md](m3-instrumented.md) 第 2 節） |
 | FR-45 開始與結束 | 進入鎖定、拍 5 張、解鎖 | 進入時建立場次；`captures.csv` 5 列；`touches.csv` 有觸控列；解鎖後停止寫入；`python scripts/check_dive_log.py <目錄>` 通過（不帶 `--minutes`） | 通過（[m3-instrumented.md](m3-instrumented.md) 第 4 節） |
 
@@ -53,14 +55,19 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | 一般模式與系統鎖定畫面 | 一般模式按電源鍵關螢幕再喚醒 | 顯示系統鎖定畫面，不直接蓋上本 APP（`showWhenLocked` 只在鎖定時開啟，推測可行） | 通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
 | 固定確認對話框 | 按「潛水鎖定」後按「知道了」；另一次取消 | 按下後進入鎖定、FR-45 開始；取消時留在一般模式且沒有建立場次 | 通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
 | 解鎖後 | 解鎖 | 手機隨即上鎖（G1 平台測試第 6 項）；解開手機後回到一般模式 | 通過（[m3-instrumented.md](m3-instrumented.md) 第 5 節） |
-| NFR-5 | 室內與戶外日光各看一次 | 所有控制元件與資訊可辨識；對比已由第 2 節確認 | 待測（5 m 水下在 G4） |
+| 連續崩潰（需求第 9 節，2026-09-30 決定） | 手動進入潛水鎖定後執行 `python scripts/check_crash_restart.py --crash-loop`：先重啟一次，接著立刻再注入崩潰 | 第二次不重啟；系統解除固定；再開 APP 是一般模式，沒有多出場次目錄。另記錄手機是否隨即上鎖 | 不測（維護者 2026-09-30 決定），只有 JVM 測試 `CrashLoopTest` |
+| 系統解除固定（需求第 9 節，2026-09-30 決定） | 鎖定中上滑並按住，解除固定，共 3 次 | 1 s 內結束 FR-45 場次（logcat `pin ended by the system`，`sensors.csv` 停止寫入）；不再跳固定對話框；解開手機後是一般模式。另記錄手機是否隨即上鎖 | 不測（維護者 2026-09-30 決定），只有 JVM 測試 `DiveLockTest`；G3 泳池若發生解除固定，順便看場次是否結束 |
+| NFR-5 | 室內與戶外日光各看一次 | 所有控制元件與資訊可辨識；對比已由第 2 節確認 | 延到 UI 整理後（維護者 2026-09-30 決定，見下方說明）；5 m 水下在 G4 |
+
+NFR-5 目視延後的原因：M3 的畫面只是操作邏輯的測試版，外觀之後持續改進（[需求第 9 節](../product/requirements/09-open-items.md)）。現在逐項看字級與版面，整理後大多要重看。對比與狀態色的程式檢查（第 2 節）不受影響。
 
 ## 5. 程式中標記 `UNVERIFIED(G1)` 的推測
 
 | 推測 | 位置 | 驗證方法 |
 | --- | --- | --- |
-| 固定確認對話框會拿走視窗焦點，關閉時交還 | `lock/PinWatcher` | 第 4 節「固定確認對話框」兩種情況；另有 250 ms 輪詢備援，無對話框且 5 s 未固定視為取消 |
-| 執行中切換 `setShowWhenLocked` 有效 | `lock/WindowLock` | 第 4 節 FR-56 與「一般模式與系統鎖定畫面」 |
+| 固定確認對話框會拿走視窗焦點，關閉時交還 | `lock/PinWatcher` | 第 4 節「固定確認對話框」兩種情況；另有 250 ms 輪詢備援，無對話框且 5 s 未固定視為取消。2026-09-29 兩種情況都通過 |
+| 執行中切換 `setShowWhenLocked` 有效 | `lock/WindowLock` | 第 4 節 FR-56 與「一般模式與系統鎖定畫面」。2026-09-29：FR-56 由系統在固定期間停用鎖定畫面達成，這項推測沒有被驗證到（[m3-instrumented.md](m3-instrumented.md) 第 6 節第 1 點） |
+| 上滑並按住解除固定時程序仍在，`PinWatcher` 的每秒檢查看得到 | `lock/PinWatcher` | 第 4 節「系統解除固定」；維護者決定不測，推測維持未驗證 |
 | 過熱警示門檻：系統熱狀態 ≥ MODERATE（維護者 2026-09-29 決定，需求第 9 節） | `dive/StatusBand` | G2 水浴記錄熱狀態，確認警示出現的時機是否合適 |
 
 ## 6. 回歸
@@ -89,3 +96,6 @@ M3 的驗收項目與量測方法，依 [mvp-acceptance.md](../product/mvp-accep
 | FR-51 泳池 30 分鐘意外離開 0 次；解除固定手勢是否被誤觸 | G3 |
 | NFR-6 被濾掉事件的數量與位置分布 | G3、G4 |
 | 固定中、手機真正上鎖時按電源鍵（藍牙信任裝置不在） | G2 |
+| FR-51 鎖定 90 分鐘不熄滅（G1 跑到 46 分鐘）；過熱警示門檻 | G2 |
+| NFR-5 室內與戶外目視 | UI 整理後 |
+| NFR-10 字串審查重做 | UI 字串改寫後 |
