@@ -141,8 +141,11 @@ class DngReaderTest {
         val sharp = scene.render(256, 192)
         val blurred = scene.render(256, 192, blur = 2f)
         val files = listOf(blurred, sharp, blurred).mapIndexed { k, plane ->
-            // Grey RAW at twice the size: every photosite of a 2 x 2 cell shows the same scene pixel.
-            val bytes = dng(512, 384, gainMaps = true) { x, y -> 64 + (plane[x / 2, y / 2] * 0.5f * 959).toInt() }
+            // Grey RAW at twice the size: every photosite of a 2 x 2 cell shows the same scene pixel. The scene runs
+            // from about -45 to 195; mapped into 0..1 of the 10-bit range so no sample wraps past 16 bits.
+            val bytes = dng(512, 384, gainMaps = true) { x, y ->
+                64 + ((plane[x / 2, y / 2] + 50f) / 250f * 959).toInt().coerceIn(0, 959)
+            }
             File(temp.root, "f$k.dng").apply { writeBytes(bytes) }.path
         }
         val out = temp.newFolder("out")

@@ -26,7 +26,9 @@ class Pyramid(base: Plane, minSize: Int = DEFAULT_MIN_SIZE, maxLevels: Int = DEF
  * Mean squared difference between [reference] at the points of a regular grid with spacing [step] inside
  * [region] and [frame] at the points [transform] maps them to, both planes on the pyramid level the transform is
  * for, of full-size planes [full] (width to height). Squared rather than absolute so the cost is a parabola near its
- * minimum and the sub-pixel fit ([parabola]) is unbiased. Infinity when fewer than half the points land in the frame.
+ * minimum for [TileAligner]'s sub-pixel fit ([parabola]), whose candidates all share one fractional offset; across
+ * fractional offsets it is biased when the frames differ in noise or sharpness (see [GaussNewton]). Infinity when
+ * fewer than half the points land in the frame.
  */
 internal fun meanSquaredDiff(
     reference: Plane,

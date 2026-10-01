@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.abs
+import kotlin.random.Random
 
 class FrameAlignerTest {
     private val width = 400
@@ -50,6 +51,34 @@ class FrameAlignerTest {
         val truth = Similarity(scale = 0.991f, dx = -2.2f, dy = 5.6f)
         val frame = scene.render(width, height, truth, blur = 2.5f)
         assertGlobal(truth, aligner.align(frame).global, 0.25f, 1e-3f)
+    }
+
+    /** [p] plus near-Gaussian noise (a sum of 12 uniforms) of standard deviation [sigma]. */
+    private fun noisy(p: Plane, sigma: Float, seed: Int): Plane {
+        val r = Random(seed)
+        return Plane(
+            p.width,
+            p.height,
+            FloatArray(p.data.size) { p.data[it] + sigma * (List(12) { r.nextFloat() }.sum() - 6f) },
+        )
+    }
+
+    @Test
+    fun fr17_noisyStillFramesAlignToIdentity() {
+        // Two exposures of a still scene differ only by noise (σ 4 on a scene spread of 17.6). Bilinear sampling
+        // averages the noise down between pixels, so a cost-based sub-pixel fit came out 0.39 % of scale off here.
+        val result = FrameAligner(noisy(reference, 4f, 1)).align(noisy(reference, 4f, 2))
+        assertGlobal(Similarity(), result.global, 0.03f, 3e-4f)
+    }
+
+    @Test
+    fun fr33_sharpFrameAgainstABlurredReference() {
+        // The other way round from fr33_blurredFrameOfAFocusStack: in a bracket the reference is the blurred one
+        // wherever another frame is in focus. A cost-based fit came out 0.11-0.13 % of scale off for these two.
+        val blurredReference = FrameAligner(scene.render(width, height, blur = 2f))
+        assertGlobal(Similarity(), blurredReference.align(reference).global, 0.03f, 3e-4f)
+        val truth = Similarity(dx = 3f, dy = -2f)
+        assertGlobal(truth, blurredReference.align(scene.render(width, height, truth)).global, 0.03f, 3e-4f)
     }
 
     @Test

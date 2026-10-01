@@ -7,9 +7,10 @@ import kotlin.math.ceil
 /**
  * Whole-frame alignment: the scale and shift that best map the reference onto the frame (ADR-0015, shared by
  * FR-17 and FR-33). Coarse to fine on both pyramids: an exhaustive search over shift and scale on the top level,
- * then ±1 pixel and a halved scale step on each level below, then sub-pixel refinement on level 0 by fitting a
- * parabola through the costs on each side. A least-squares fit: a subject moving on its own pulls it a little,
- * and [TileAligner] takes up the difference tile by tile. Cost is the mean squared difference (see [meanSquaredDiff]).
+ * then ±1 pixel and a halved scale step on each level below (cost: the mean squared difference, [meanSquaredDiff]),
+ * then sub-pixel refinement on level 0 by [GaussNewton], which a cost-based fit would bias (see there). A
+ * least-squares fit: a subject moving on its own pulls it a little, and [TileAligner] takes up the difference tile
+ * by tile.
  */
 class GlobalAligner(private val options: AlignOptions = AlignOptions()) {
     fun align(reference: Pyramid, frame: Pyramid): Similarity {
@@ -22,7 +23,8 @@ class GlobalAligner(private val options: AlignOptions = AlignOptions()) {
             scaleStep /= 2
             best = searchAround(reference, frame, level, full, best, scaleStep)
         }
-        return refine(reference[0], frame[0], full, best, scaleStep)
+        val region = Region.inner(reference[0].width, reference[0].height, options.margin)
+        return GaussNewton(reference[0], region, options.sampleStep).refine(frame[0], best)
     }
 
     private fun searchTop(reference: Pyramid, frame: Pyramid, full: Pair<Int, Int>): Similarity {
@@ -78,55 +80,10 @@ class GlobalAligner(private val options: AlignOptions = AlignOptions()) {
         return best
     }
 
-    /**
-     * Sub-pixel shift and finer scale on level 0: for each parameter a parabola through its neighbours, starting one
-     * pixel (and the last scale step) apart and halving each round.
-     */
-    private fun refine(
-        reference: Plane,
-        frame: Plane,
-        full: Pair<Int, Int>,
-        start: Similarity,
-        scaleStep: Float,
-    ): Similarity {
-        val region = Region.inner(reference.width, reference.height, options.margin)
-        val cost = { s: Similarity ->
-            meanSquaredDiff(
-                reference,
-                frame,
-                s.atLevel(0),
-                region,
-                options.sampleStep,
-                full,
-            )
-        }
-        var best = start
-        var shiftStep = 1f
-        var sStep = scaleStep
-        repeat(REFINE_ROUNDS) {
-            best = best.nudge(cost, shiftStep) { s, d -> s.copy(dx = s.dx + d) }
-            best = best.nudge(cost, shiftStep) { s, d -> s.copy(dy = s.dy + d) }
-            best = best.nudge(cost, sStep) { s, d -> s.copy(scale = s.scale + d) }
-            shiftStep /= 2
-            sStep /= 2
-        }
-        return best
-    }
-
-    private fun Similarity.nudge(
-        cost: (Similarity) -> Float,
-        step: Float,
-        move: (Similarity, Float) -> Similarity,
-    ): Similarity = move(this, parabola(cost(move(this, -step)), cost(this), cost(move(this, step)), step))
-
     private fun cost(reference: Pyramid, frame: Pyramid, level: Int, full: Pair<Int, Int>, s: Similarity): Float {
         val ref = reference[level]
         val region = Region.inner(ref.width, ref.height, options.margin)
         return meanSquaredDiff(ref, frame[level], s.atLevel(level), region, options.sampleStep, full)
-    }
-
-    private companion object {
-        const val REFINE_ROUNDS = 3
     }
 }
 
