@@ -6,7 +6,7 @@
 | --- | --- |
 | 裝置 | Pixel 10 Pro，代號 `blazer`，Tensor G5 |
 | 系統 | Android 17，SDK 37.1，build `CP3A.260905.009`，安全性修補 2026-09-05 |
-| 工具 | `:tools:probe`（schema `anomalops-probe/3`，含 5 秒感測器取樣與鏡頭內參） |
+| 工具 | `:tools:probe`（schema `anomalops-probe/3`，含 5 秒感測器取樣與鏡頭內參；2026-10-01 起 `anomalops-probe/4` 加上 GPU 與 NNAPI，見第 6 節） |
 | 原始報告 | `tools/probe/results/blazer-20260928.json`（約 220 KB，請用 python / jq 查詢，不要整份讀取） |
 
 **「查詢層級」的意思**：這次只讀取了 `CameraCharacteristics`，並向 HAL 詢問輸出組合能否使用（`isSessionConfigurationSupported`），沒有實際串流或拍照。實際行為在 G1 驗證。
@@ -104,5 +104,40 @@
 | ADR-0006：螢幕固定、通知、崩潰重啟等平台行為 | M0 的下一步 |
 | ADR-0007：Pixel 6 Pro 的 Android 版本 | 需要那支手機 |
 | ADR-0010：Play Billing 的授權與合併後 manifest 的權限 | M0，加入 `play` flavor 的相依之後 |
+| ADR-0017：NNAPI 各裝置的功能等級 | 要用 NDK（`ANeuralNetworksDevice_getFeatureLevel`）才查得到，待維護者決定 |
 
 2026-09-28 補充（M2）：`isSessionConfigurationSupported` 的回答不可靠。「預覽 + JPEG\_R + JPEG」與「預覽 + JPEG\_R + RAW + JPEG」回報支援，實際建立工作階段卻失敗，並使相機 HAL 程序重啟；「預覽 + JPEG\_R + RAW」與「預覽 + JPEG」在鏡頭 2、3、9 實際建立成功。見 [m2-stream-combos.md](m2-stream-combos.md)。
+
+## 6. GPU 與 NNAPI（ADR-0017 第 1 步，2026-10-01）
+
+原始報告 `tools/probe/results/blazer-20261001.json` 的 `gpu` 區段；能力表的 `capabilities.gpu`、`capabilities.nnapi` 由 `probe_to_profile.py` 產生。鏡頭與感測器部分和 09-28 的報告相同。
+
+| 項目 | 結果 |
+| --- | --- |
+| GPU | Imagination PowerVR D-Series DXT-48-1536，驅動 `25.3@6908880` |
+| OpenGL ES | 3.2（含 Android extension pack），GLSL ES 3.20，EGL 1.5 |
+| Vulkan | 1.4.0，level 1，支援 compute；dEQP 等級 2026-03-01 |
+| 工作群組 | 每軸最多 1024、合計 1024 個呼叫；群組數每軸 65535 |
+| 共享記憶體 | 32 KiB |
+| 運算著色器資源 | 影像 24 個、紋理單元 24 個、SSBO 35 個 |
+| 最大紋理 | 32768 × 32768 |
+| mediump | 尾數 10 位元、指數 ±15（片段著色器的回報；運算著色器不能查詢），即真正的半精度 |
+| NNAPI | 執行環境功能等級 7；HAL 裝置 `google-edgetpu`（APP 內執行 `service list` 取得） |
+
+格式測試：16 × 16 紋理，運算著色器寫入後以 `texelFetch` 讀回比對，數值 0.3–4078.3（12 位元 RAW 範圍）。
+
+| 格式 | `imageStore` 寫入 | 同一張讀寫 | 當顏色輸出 |
+| --- | --- | --- | --- |
+| R16F | 不支援（編譯失敗：Unsupported image format） | 不支援 | 可 |
+| RGBA16F | 可，往零捨入（見下） | 不支援 | 可 |
+| R32F | 可，完全相同 | 可，完全相同 | 可 |
+| RGBA32F | 可，完全相同 | 不支援 | 可 |
+
+R16UI 以 `GL_UNSIGNED_SHORT` 上傳（RAW 路徑），256 個值讀回全部正確。
+
+發現：
+
+1. **寫入半精度是往零捨入，不是四捨五入。** RGBA16F 的 256 個值，全部等於「往零捨入」的結果，和四捨五入（round-to-nearest-even）不同。最大誤差 1.29 個 RAW 單位，平均 −0.58（一律偏小）。ADR-0017 第 3 節「最亮處的捨入約 1 個 RAW 單位」是照四捨五入估的；往零捨入時 2048–4095 之間最多將近 2 個單位，而且有固定的負偏差。只測了 `imageStore`；以 `glTexSubImage2D` 上傳成半精度、片段著色器輸出成半精度都沒測。推測：相對偏差平均約 0.03%，單次存放看不出來；每存一次半精度就偏一次，多層金字塔或多次存放會累積。第 3 步和 CPU 版比對時一併評估。
+2. **只有 R32F 能在同一張影像上讀寫。** GLES 3.1 規格本來就如此（r32f、r32i、r32ui 以外要標 `readonly` 或 `writeonly`），已實測確認。逐張累加的總和與權重若放 RGBA32F，要兩張輪流（ping-pong）、拆成多張 R32F，或改用 SSBO。
+3. **32 位元浮點紋理不能線性內插**（沒有 `GL_OES_texture_float_linear`）；半精度可以（`GL_OES_texture_half_float_linear`）。重新取樣要用硬體雙線性內插，來源得是半精度；用 32 位元就要在著色器裡自己內插。
+4. **單通道半精度不能當 `imageStore` 目標。** 亮度平面若要半精度，可用 RGBA16F（空間 4 倍）、R32F、片段著色器輸出到 R16F，或 SSBO 搭配 `packHalf2x16`。

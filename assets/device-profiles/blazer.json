@@ -6,8 +6,8 @@
     "socModel": "Tensor G5"
   },
   "source": {
-    "probeSchema": "anomalops-probe/3",
-    "probedAt": "2026-09-28T16:03:36.701451+08:00",
+    "probeSchema": "anomalops-probe/4",
+    "probedAt": "2026-10-01T23:57:39.330556+08:00",
     "buildId": "CP3A.260905.009",
     "sdkIntFull": 3700001
   },
@@ -923,6 +923,51 @@
         "available": true,
         "maxDelayUs": 1000000
       }
+    },
+    "gpu": {
+      "renderer": "PowerVR D-Series DXT-48-1536",
+      "glesVersion": "3.2",
+      "vulkanVersion": "1.4.0",
+      "maxTextureSize": 32768,
+      "maxComputeWorkGroupSize": [
+        1024,
+        1024,
+        1024
+      ],
+      "maxComputeWorkGroupInvocations": 1024,
+      "maxComputeSharedMemoryBytes": 32768,
+      "maxComputeImageUniforms": 24,
+      "mediumpFloatBits": 10,
+      "imageStoreFormats": [
+        "RGBA16F",
+        "R32F",
+        "RGBA32F"
+      ],
+      "imageReadWriteFormats": [
+        "R32F"
+      ],
+      "colorRenderableFormats": [
+        "R16F",
+        "RGBA16F",
+        "R32F",
+        "RGBA32F"
+      ],
+      "halfRounding": "TOWARD_ZERO",
+      "r16uiUpload": true,
+      "extensions": {
+        "GL_EXT_color_buffer_float": true,
+        "GL_EXT_color_buffer_half_float": true,
+        "GL_OES_texture_float_linear": false,
+        "GL_OES_texture_half_float_linear": true,
+        "GL_EXT_texture_norm16": true,
+        "GL_KHR_shader_subgroup": true
+      }
+    },
+    "nnapi": {
+      "runtimeFeatureLevel": 7,
+      "halDevices": [
+        "google-edgetpu"
+      ]
     }
   },
   "presetLenses": {
