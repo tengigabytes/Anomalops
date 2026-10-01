@@ -103,6 +103,29 @@ class FocusStackTest {
     }
 
     @Test
+    fun perFrameAccumulatorMatchesMerge() {
+        val channels = bracket.map { luma -> listOf(Filters.map(luma) { 2 * it + 10 }) }
+        candidates.forEach { stack ->
+            val all = stack.merge(bracket, channels)
+            val accumulator = stack.accumulator()
+            bracket.indices.forEach { accumulator.add(bracket[it], channels[it]) }
+            val streamed = accumulator.finish()
+            assertTrue(stack.name, all.indices.all { all[it].data.contentEquals(streamed[it].data) })
+        }
+    }
+
+    @Test
+    fun guardSessionMatchesMerge() {
+        val all = StackGuard(LaplacianPyramidStack()).merge(bracket, bracket.map { listOf(it) }, reference = 2)
+        val session = StackGuard(LaplacianPyramidStack()).start(bracket[2], listOf(bracket[2]))
+        bracket.forEach { session.add(it, listOf(it)) }
+        val streamed = session.finish()
+        assertEquals(all.merged, streamed.merged)
+        assertEquals(all.bestFrame, streamed.bestFrame)
+        assertTrue(all.channels.single().data.contentEquals(streamed.channels.single().data))
+    }
+
+    @Test
     fun guardKeepsAGoodMerge() {
         val result = StackGuard(GuidedWeightStack()).merge(bracket, bracket.map { listOf(it) })
         assertTrue("merge ${result.sharpness} against best single ${result.bestSingle}", result.merged)

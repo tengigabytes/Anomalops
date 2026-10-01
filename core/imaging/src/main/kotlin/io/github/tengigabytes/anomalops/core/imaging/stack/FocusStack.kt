@@ -14,6 +14,9 @@ interface FocusStack {
     val name: String
 
     fun merge(luma: List<Plane>, channels: List<List<Plane>> = luma.map { listOf(it) }): List<Plane>
+
+    /** The per-frame form; by default it keeps every frame until the end (see [CollectingAccumulator]). */
+    fun accumulator(): FocusAccumulator = CollectingAccumulator(this)
 }
 
 /**

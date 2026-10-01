@@ -16,13 +16,18 @@ internal class OffsetField(private val alignment: Alignment, private val width: 
     /** [frame] resampled onto the reference grid; NaN where the aligned position falls outside it. */
     fun warp(frame: Plane): Plane {
         val out = Plane(width, height)
+        forEachPosition { i, fx, fy -> out.data[i] = frame.sample(fx, fy) }
+        return out
+    }
+
+    /** Calls [visit] with each reference pixel's index (row-major) and where that pixel lies in the frame. */
+    fun forEachPosition(visit: (index: Int, x: Float, y: Float) -> Unit) {
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val (u, v) = residual(x, y)
-                out[x, y] = frame.sample(global.mapX(x.toFloat(), width) + u, global.mapY(y.toFloat(), height) + v)
+                visit(y * width + x, global.mapX(x.toFloat(), width) + u, global.mapY(y.toFloat(), height) + v)
             }
         }
-        return out
     }
 
     private fun residual(x: Int, y: Int): Pair<Float, Float> {
