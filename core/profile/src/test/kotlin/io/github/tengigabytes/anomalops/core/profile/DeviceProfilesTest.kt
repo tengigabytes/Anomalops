@@ -75,6 +75,30 @@ class DeviceProfilesTest {
         assertNull(profile.calibrationFor("2", key.copy(depthBand = DepthBand.MID)))
     }
 
+    @Test
+    fun t4_blazerCarriesTheFocusFitsOfTheTestRecord() {
+        // docs/test/m9-macro-land.md, section 5: main 1.012 x + 0.056, worst residual 0.056 D.
+        val main = requireNotNull(blazer.focusCalibrationFor("2"))
+        assertEquals(1.012, main.slope, 1e-3)
+        assertEquals(0.056, main.offsetDiopters, 1e-3)
+        assertEquals(0.056, main.residualMaxDiopters, 1e-3)
+        assertEquals(FocusDistanceCalibration.APPROXIMATE, main.calibration)
+        assertNotNull(blazer.focusCalibrationFor("4"))
+        assertNotNull(blazer.focusCalibrationFor("6"))
+        assertNull(blazer.focusCalibrationFor("3"))
+    }
+
+    @Test
+    fun validatorFlagsAFocusTableMeasuredOnAnotherMinimumFocus() {
+        val main = requireNotNull(blazer.focusCalibrationFor("2"))
+        val stale = blazer.copy(focusCalibration = listOf(main.copy(minFocusDiopters = 10.0)))
+        assertTrue(ProfileValidator.validate(stale).any { "minimum focus" in it })
+        val twice = blazer.copy(focusCalibration = listOf(main, main))
+        assertTrue(ProfileValidator.validate(twice).any { "duplicate" in it })
+        val unknown = blazer.copy(focusCalibration = listOf(main.copy(physicalId = "99")))
+        assertTrue(ProfileValidator.validate(unknown).any { "unknown physical camera" in it })
+    }
+
     private fun calibrationEntry() = CalibrationEntry(
         physicalId = "2",
         depthBand = DepthBand.SHALLOW,

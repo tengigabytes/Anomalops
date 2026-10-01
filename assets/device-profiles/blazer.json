@@ -1020,5 +1020,64 @@
         "depthM": 0.0
       }
     }
+  ],
+  "focusCalibration": [
+    {
+      "physicalId": "2",
+      "slope": 1.0121,
+      "offsetDiopters": 0.0558,
+      "fittedRangeDiopters": [
+        1.567,
+        3.183
+      ],
+      "residualMaxDiopters": 0.0561,
+      "residualRmsDiopters": 0.0366,
+      "points": 6,
+      "calibration": "APPROXIMATE",
+      "minFocusDiopters": 9.5238,
+      "source": {
+        "date": "2026-10-01",
+        "method": "T4: tape-measured 30-60 cm, sharpest RAW fine scan",
+        "record": "docs/test/m9-macro-land.md section 5"
+      }
+    },
+    {
+      "physicalId": "4",
+      "slope": 1.0132,
+      "offsetDiopters": 0.0667,
+      "fittedRangeDiopters": [
+        1.582,
+        3.2
+      ],
+      "residualMaxDiopters": 0.0435,
+      "residualRmsDiopters": 0.0221,
+      "points": 6,
+      "calibration": "APPROXIMATE",
+      "minFocusDiopters": 3.3333,
+      "source": {
+        "date": "2026-10-01",
+        "method": "T4: tape-measured 30-60 cm, sharpest RAW fine scan",
+        "record": "docs/test/m9-macro-land.md section 5"
+      }
+    },
+    {
+      "physicalId": "6",
+      "slope": 1.0154,
+      "offsetDiopters": 0.0759,
+      "fittedRangeDiopters": [
+        1.558,
+        3.188
+      ],
+      "residualMaxDiopters": 0.0344,
+      "residualRmsDiopters": 0.0197,
+      "points": 6,
+      "calibration": "APPROXIMATE",
+      "minFocusDiopters": 3.3333,
+      "source": {
+        "date": "2026-10-01",
+        "method": "T4: tape-measured 30-60 cm, sharpest RAW fine scan",
+        "record": "docs/test/m9-macro-land.md section 5"
+      }
+    }
   ]
 }

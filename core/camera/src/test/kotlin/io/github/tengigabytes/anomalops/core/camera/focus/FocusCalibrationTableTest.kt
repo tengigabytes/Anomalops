@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.core.camera.focus
 
+import io.github.tengigabytes.anomalops.core.profile.DeviceProfiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -58,6 +59,23 @@ class FocusCalibrationTableTest {
         assertTrue(table.appliesTo(FocusCalibration.APPROXIMATE, 9.5238f))
         assertFalse(table.appliesTo(FocusCalibration.CALIBRATED, 9.5238f))
         assertFalse(table.appliesTo(FocusCalibration.APPROXIMATE, 10f))
+    }
+
+    @Test
+    fun theProfileTableIsTheSameFit() {
+        val profile = requireNotNull(DeviceProfiles.load("blazer"))
+        val stored = FocusCalibrationTable.fromProfile(requireNotNull(profile.focusCalibrationFor("4")))
+        val fitted = fit(tele4Sharpest, 3.3333f)
+        assertEquals(fitted.slope, stored.slope, 1e-4f)
+        assertEquals(fitted.offsetDiopters, stored.offsetDiopters, 1e-4f)
+        assertEquals(fitted.residualMaxDiopters, stored.residualMaxDiopters, 1e-4f)
+        assertEquals(fitted.fittedRange, stored.fittedRange)
+        assertTrue(
+            stored.appliesTo(
+                FocusCalibration.APPROXIMATE,
+                profile.physicalCamera("4")!!.minFocusDistanceDiopters.toFloat(),
+            ),
+        )
     }
 
     @Test(expected = IllegalArgumentException::class)

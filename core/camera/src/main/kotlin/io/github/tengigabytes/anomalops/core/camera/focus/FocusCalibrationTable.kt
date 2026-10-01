@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.core.camera.focus
 
+import io.github.tengigabytes.anomalops.core.profile.FocusCalibrationEntry
 import kotlin.math.abs
 import kotlin.math.sqrt
 
@@ -52,6 +53,17 @@ data class FocusCalibrationTable(
         const val SAME_DIOPTERS = 1e-3f
         private const val QUARTERS = 4
         private const val MIN_POINTS = 3
+
+        /** The table stored in the device profile (`focusCalibration`, ADR-0014). */
+        fun fromProfile(entry: FocusCalibrationEntry): FocusCalibrationTable = FocusCalibrationTable(
+            slope = entry.slope.toFloat(),
+            offsetDiopters = entry.offsetDiopters.toFloat(),
+            fittedRange = entry.fittedRangeDiopters[0].toFloat()..entry.fittedRangeDiopters[1].toFloat(),
+            residualMaxDiopters = entry.residualMaxDiopters.toFloat(),
+            residualRmsDiopters = entry.residualRmsDiopters.toFloat(),
+            calibration = FocusCalibration.valueOf(entry.calibration.name),
+            minFocusDiopters = entry.minFocusDiopters.toFloat(),
+        )
 
         /** Least-squares fit of true on reported diopters; needs [MIN_POINTS] points at two or more distances. */
         fun fit(
