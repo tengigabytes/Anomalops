@@ -1,11 +1,11 @@
 # SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Charts E-I of scripts/make_charts.py: tools to cut, fold or overlay rather than targets to photograph flat,
+"""Charts F-I of scripts/make_charts.py: tools to cut, fold or overlay rather than targets to photograph flat,
 and the zip of the whole print kit."""
 import os
 import zipfile
 
-from chart_parts import Circle, Rectangle, dead_leaves, mm_scale, page
+from chart_parts import Circle, Rectangle, mm_scale, page
 
 FOLD = dict(color="black", lw=0.5, ls=(0, (4, 2)))
 CUT = dict(color="black", lw=0.4, ls=(0, (1, 1.5)))
@@ -14,38 +14,6 @@ CUT = dict(color="black", lw=0.4, ls=(0, (1, 1.5)))
 def grid(mm):
     """A 1 mm grid line, heavier every 5 mm."""
     return dict(color="black", lw=0.35) if mm % 5 == 0 else dict(color="0.3", lw=0.15)
-
-
-def staircase(ax, x, y, width, tread, riser, steps, dpi, seed):
-    """A strip that folds into [steps] treads of [tread] mm, each [riser] mm below the last; numbered 1 (top)."""
-    length = steps * tread + (steps - 1) * riser
-    ax.add_patch(Rectangle((x, y), width, length, fill=False, **CUT))
-    top = y + length
-    for k in range(steps):
-        t0 = top - k * (tread + riser) - tread
-        ax.imshow(dead_leaves(width - 10, tread - 2, dpi, seed=seed + k), cmap="gray", vmin=0, vmax=1,
-                  extent=(x + 8, x + width - 2, t0 + 1, t0 + tread - 1), interpolation="nearest")
-        ax.text(x + 4, t0 + tread / 2, str(k + 1), fontsize=9, fontweight="bold", ha="center", va="center")
-        if k < steps - 1:
-            r0 = t0 - riser
-            ax.add_patch(Rectangle((x, r0), width, riser, color="0.9", lw=0))
-            ax.plot([x, x + width], [t0, t0], **FOLD)
-            ax.plot([x, x + width], [r0, r0], **FOLD)
-            # Step 1 is highest and nearest: each tread's far edge folds down (mountain), the riser's foot up (valley).
-            ax.text(x + width + 2, t0, "山", fontsize=5, va="center")
-            ax.text(x + width + 2, r0, "谷", fontsize=5, va="center")
-    return length
-
-
-def chart_e(dpi):
-    fig, ax = page(
-        "E 階梯景深靶（剪下摺成階梯）",
-        "印在厚紙上，沿點線剪下，在虛線依「山／谷」摺成階梯，背面以膠帶或紙盒撐住。鏡頭從斜上方看向階梯，第 1 階最近。\n"
-        "左：每階低 5 mm（主鏡頭、望遠）；右：每階低 3 mm（超廣角近距）。已知每階深度，焦點包圍與合成可對答案（T12）。",
-    )
-    staircase(ax, 25, 40, 70, tread=18, riser=5, steps=8, dpi=dpi, seed=40)
-    staircase(ax, 120, 80, 60, tread=12, riser=3, steps=10, dpi=dpi, seed=60)
-    return fig
 
 
 def chart_f():
