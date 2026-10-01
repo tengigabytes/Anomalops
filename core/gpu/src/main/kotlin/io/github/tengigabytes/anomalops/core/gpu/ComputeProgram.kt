@@ -28,9 +28,9 @@ class ComputeProgram(source: String) : AutoCloseable {
     fun uniform(name: String, x: Int, y: Int, z: Int, w: Int): ComputeProgram =
         apply { GLES20.glUniform4i(location(name), x, y, z, w) }
 
-    /** Runs [groupsX] x [groupsY] work groups; the program must be in use. */
-    fun dispatch(groupsX: Int, groupsY: Int = 1) {
-        GLES31.glDispatchCompute(groupsX, groupsY, 1)
+    /** Runs [groupsX] x [groupsY] x [groupsZ] work groups; the program must be in use. */
+    fun dispatch(groupsX: Int, groupsY: Int = 1, groupsZ: Int = 1) {
+        GLES31.glDispatchCompute(groupsX, groupsY, groupsZ)
         checkGl("glDispatchCompute")
     }
 

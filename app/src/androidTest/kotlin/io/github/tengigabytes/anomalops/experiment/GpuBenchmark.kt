@@ -4,7 +4,10 @@ package io.github.tengigabytes.anomalops.experiment
 
 import android.opengl.GLES20
 import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import io.github.tengigabytes.anomalops.core.gpu.GlesContext
 import io.github.tengigabytes.anomalops.core.gpu.GpuPlane
 import io.github.tengigabytes.anomalops.core.gpu.MeanSquaredDiffKernel
@@ -25,7 +28,9 @@ import kotlin.random.Random
  * ADR-0017 step 3: the first GPU kernels of `:core:gpu` against their `:core:imaging` CPU functions, timed in one
  * process on 2040 x 1536 planes (the half-size plane of a 12.5 MP RAW). Each step runs once to warm up (shader
  * compile, first allocation), then [RUNS] times; logs `GPUBENCH` lines under [TAG] with the median and the
- * fastest, GPU times after glFinish. Time it as a non-debuggable app, like [ImagingBenchmark].
+ * fastest, GPU times after glFinish. Time it as a non-debuggable app, like [ImagingBenchmark]. `-e foreground true`
+ * keeps an activity of this process resumed while the GPU runs, as the camera screen would be: the GPU clock
+ * stayed mostly at its lowest steps, with or without one (docs/test/m9-gpu-fr17.md).
  */
 @RunWith(AndroidJUnit4::class)
 class GpuBenchmark {
@@ -48,6 +53,21 @@ class GpuBenchmark {
     }
     private val full = width to height
 
+    /** GlobalAligner's search around the best shift on level 0: 3 scales x 3 x 3 shifts, every second pixel. */
+    private val frame0 = texture(dx = 1.3f, dy = -0.7f)
+    private val region0 = Region.inner(width, height, MARGIN)
+    private val around = (-1..1).flatMap { s ->
+        (-1..1).flatMap { j ->
+            (-1..1).map {
+                Similarity(
+                    1f + s * 0.0025f,
+                    1f + it,
+                    j - 1f,
+                )
+            }
+        }
+    }
+
     @Test
     fun cpuKernels() {
         val aligner = FrameAligner(plane)
@@ -56,10 +76,42 @@ class GpuBenchmark {
         cpu("meanSquaredDiff ${candidates.size} candidates, level $LEVEL") {
             candidates.map { meanSquaredDiff(refLevel, frameLevel, it.atLevel(LEVEL), region, 1, full) }
         }
+        cpu("meanSquaredDiff ${around.size} candidates, level 0, step $STEP0") {
+            around.map { meanSquaredDiff(plane, frame0, it.atLevel(0), region0, STEP0, full) }
+        }
     }
+
+    private val foreground = InstrumentationRegistry.getArguments().getString("foreground") == "true"
 
     @Test
     fun gpuKernels() {
+        if (foreground) ActivityScenario.launch(ComponentActivity::class.java).use { runGpu() } else runGpu()
+    }
+
+    /** GlobalAligner's level-0 search repeated for a few seconds, to see the GPU's sustained speed and clock. */
+    @Test
+    fun sustainedMeanSquaredDiff() {
+        val body = {
+            GlesContext.create().use {
+                PlaneTransfer().use { transfer ->
+                    MeanSquaredDiffKernel().use { mse ->
+                        val ref = transfer.upload(plane, PlaneFormat.FLOAT32)
+                        val frame = transfer.upload(frame0, PlaneFormat.FLOAT32)
+                        repeat(SUSTAINED_ROUNDS) { round ->
+                            gpu("sustained round $round, ${around.size} candidates, level 0") {
+                                mse.evaluate(ref, frame, around, 0, region0, STEP0, full)
+                            }
+                        }
+                        ref.close()
+                        frame.close()
+                    }
+                }
+            }
+        }
+        if (foreground) ActivityScenario.launch(ComponentActivity::class.java).use { body() } else body()
+    }
+
+    private fun runGpu() {
         GlesContext.create().use {
             val transfer = PlaneTransfer()
             val kernels = PlaneKernels()
@@ -85,7 +137,11 @@ class GpuBenchmark {
         gpu("meanSquaredDiff ${candidates.size} candidates, level $LEVEL, $format") {
             mse.evaluate(ref, frame, candidates, LEVEL, region, 1, full)
         }
-        listOf(input, ref, frame).forEach { it.close() }
+        val frameGpu = transfer.upload(frame0, format)
+        gpu("meanSquaredDiff ${around.size} candidates, level 0, step $STEP0, $format") {
+            mse.evaluate(input, frameGpu, around, 0, region0, STEP0, full)
+        }
+        listOf(input, ref, frame, frameGpu).forEach { it.close() }
     }
 
     private fun <T> cpu(label: String, block: () -> T) = measure("CPU $label", gpu = false, block)
@@ -130,6 +186,8 @@ class GpuBenchmark {
         const val MARGIN = 0.1f
         const val SEARCH = 4
         const val LEVEL = 2
+        const val STEP0 = 2
+        const val SUSTAINED_ROUNDS = 8
         const val COARSE_W = 400
         const val COARSE_H = 300
         const val RANGE = 4000f

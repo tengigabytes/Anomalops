@@ -12,13 +12,18 @@ import java.nio.ByteOrder
 
 /**
  * `meanSquaredDiff` of `:core:imaging` for a batch of candidate transforms in one dispatch, as the whole-frame
- * search tries many per pyramid level (ADR-0017 step 3). Each work group sums its grid points' squared differences
- * in shared memory; the per-group sums are added on the CPU in double. Needs a current [GlesContext].
+ * search tries many per pyramid level (ADR-0017 steps 3 and 4). Each invocation sums [ROWS] grid points, each
+ * work group sums its invocations in shared memory, and the per-group sums are added on the CPU in double.
+ * Needs a current [GlesContext].
  */
 class MeanSquaredDiffKernel : AutoCloseable {
+    private val local = LOCAL
+    private val rows = ROWS
+    private val group = local * local
+
     private val program = ComputeProgram(
         """
-        layout(local_size_x = $GROUP) in;
+        layout(local_size_x = $local, local_size_y = $local) in;
         layout(binding = 0) uniform highp sampler2D ref;
         layout(binding = 1) uniform highp sampler2D frame;
         layout(std430, binding = 0) readonly buffer Candidates { highp vec4 candidates[]; };
@@ -27,31 +32,37 @@ class MeanSquaredDiffKernel : AutoCloseable {
         uniform int spacing;
         uniform ivec2 grid;
         uniform vec2 centre;
-        shared float sums[$GROUP];
-        shared float counts[$GROUP];
+        shared float sums[$group];
+        shared float counts[$group];
         ${Glsl.SAMPLE}
         void main() {
-            uint lid = gl_LocalInvocationID.x;
-            int i = int(gl_GlobalInvocationID.x);
-            vec4 c = candidates[gl_WorkGroupID.y];
+            uint lid = gl_LocalInvocationIndex;
+            vec4 c = candidates[gl_WorkGroupID.z];
+            ivec2 size = textureSize(frame, 0);
+            int gx = int(gl_GlobalInvocationID.x);
             float s = 0.0;
             float n = 0.0;
-            if (i < grid.x * grid.y) {
-                int x = region.x + (i % grid.x) * spacing;
-                int y = region.y + (i / grid.x) * spacing;
-                precise vec2 q = centre + c.x * (vec2(x, y) - centre) + c.yz;
-                float v;
-                if (sampleAt(frame, textureSize(frame, 0), q, v)) {
-                    float d = texelFetch(ref, ivec2(x, y), 0).r - v;
-                    s = d * d;
-                    n = 1.0;
+            if (gx < grid.x) {
+                int x = region.x + gx * spacing;
+                // Each invocation walks $rows grid rows, so the reduction below is shared by $rows points.
+                for (int k = 0; k < $rows; k++) {
+                    int gy = (int(gl_WorkGroupID.y) * $local + int(gl_LocalInvocationID.y)) * $rows + k;
+                    if (gy >= grid.y) break;
+                    int y = region.y + gy * spacing;
+                    precise vec2 q = centre + c.x * (vec2(x, y) - centre) + c.yz;
+                    float v;
+                    if (sampleAt(frame, size, q, v)) {
+                        float d = texelFetch(ref, ivec2(x, y), 0).r - v;
+                        s += d * d;
+                        n += 1.0;
+                    }
                 }
             }
             sums[lid] = s;
             counts[lid] = n;
             memoryBarrierShared();
             barrier();
-            for (uint o = ${GROUP / 2}u; o > 0u; o >>= 1u) {
+            for (uint o = ${group / 2}u; o > 0u; o >>= 1u) {
                 if (lid < o) {
                     sums[lid] += sums[lid + o];
                     counts[lid] += counts[lid + o];
@@ -60,7 +71,9 @@ class MeanSquaredDiffKernel : AutoCloseable {
                 barrier();
             }
             if (lid == 0u) {
-                partials[gl_WorkGroupID.y * gl_NumWorkGroups.x + gl_WorkGroupID.x] = vec2(sums[0], counts[0]);
+                uint group = (gl_WorkGroupID.z * gl_NumWorkGroups.y + gl_WorkGroupID.y) * gl_NumWorkGroups.x
+                    + gl_WorkGroupID.x;
+                partials[group] = vec2(sums[0], counts[0]);
             }
         }
         """,
@@ -83,7 +96,9 @@ class MeanSquaredDiffKernel : AutoCloseable {
     ): FloatArray {
         val nx = (region.right - region.left + step - 1) / step
         val ny = (region.bottom - region.top + step - 1) / step
-        val groups = (nx * ny + GROUP - 1) / GROUP
+        val groupsX = (nx + local - 1) / local
+        val groupsY = (ny + local * rows - 1) / (local * rows)
+        val groups = groupsX * groupsY
         val buffers = IntArray(2).also { GLES20.glGenBuffers(2, it, 0) }
         try {
             upload(buffers[0], candidates, level, full)
@@ -99,7 +114,7 @@ class MeanSquaredDiffKernel : AutoCloseable {
                 .uniform("spacing", step)
                 .uniform("grid", nx, ny)
                 .uniform("centre", centre.centreX, centre.centreY)
-                .dispatch(groups, candidates.size)
+                .dispatch(groupsX, groupsY, candidates.size)
             GLES31.glMemoryBarrier(GLES31.GL_BUFFER_UPDATE_BARRIER_BIT)
             return reduce(partialBytes, candidates.size, groups, nx * ny)
         } finally {
@@ -140,7 +155,14 @@ class MeanSquaredDiffKernel : AutoCloseable {
     }
 
     private companion object {
-        const val GROUP = 256
+        /**
+         * Work-group edge; 16 x 16 with 8 rows per invocation was the fastest of the shapes tried
+         * (docs/test/m9-gpu-fr17.md).
+         */
+        const val LOCAL = 16
+
+        /** Grid rows per invocation. */
+        const val ROWS = 8
         const val VEC4_BYTES = 16
     }
 }

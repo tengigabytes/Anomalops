@@ -8,5 +8,5 @@
 | 依賴 | `:core:imaging`（共用 `Plane`、`Similarity`、`Region` 與 CPU 參考函式） |
 | 被誰使用 | 尚未接上；之後由 `:app` 使用 |
 | 對應需求 | FR-17、FR-33（ADR-0015、ADR-0017） |
-| 內容 | `GlesContext`（無畫面的 EGL 環境，建立它的執行緒才能用）、`ComputeProgram`（編譯、uniform、dispatch）、`GpuPlane` 與 `PlaneFormat`（`FLOAT32` 為 R32F；`HALF` 暫存在 RGBA16F 的紅色通道，因為 R16F 不能當寫入目標）、`PlaneTransfer`（上傳先進 32 位元紋理、在 GPU 上轉半精度；下載經儲存緩衝）、`PlaneKernels`（`half` 對應 `Plane.half`、`warp` 對應 `FrameAligner.warp`、`warpFiltered` 改用硬體雙線性）、`MeanSquaredDiffKernel`（一次算一批候選變換的 `meanSquaredDiff`，每個工作群組在共享記憶體加總，CPU 以 double 合計） |
+| 內容 | `GlesContext`（無畫面的 EGL 環境，建立它的執行緒才能用）、`ComputeProgram`（編譯、uniform、dispatch）、`GpuPlane` 與 `PlaneFormat`（`FLOAT32` 為 R32F；`HALF` 暫存在 RGBA16F 的紅色通道，因為 R16F 不能當寫入目標）、`PlaneTransfer`（上傳先進 32 位元紋理、在 GPU 上轉半精度；下載經儲存緩衝）、`PlaneKernels`（`half` 對應 `Plane.half`、`warp` 對應 `FrameAligner.warp`、`warpFiltered` 改用硬體雙線性）、`MeanSquaredDiffKernel`（一次算一批候選變換的 `meanSquaredDiff`；每個執行緒走 8 列、每個工作群組在共享記憶體加總，CPU 以 double 合計，見 [m9-gpu-fr17.md](../../docs/test/m9-gpu-fr17.md)） |
 | 測試 | 只有實機測試（要 GPU）：`PlaneKernelsTest`，2040 × 1536 的合成平面（12 位元 RAW 範圍），三個核心各與 CPU 版比對兩種格式的誤差並記錄 GPU 時間；誤差上限是提議值。執行：`gradlew :core:gpu:connectedDebugAndroidTest`，結果看 logcat 的 `PlaneKernelsTest` |
