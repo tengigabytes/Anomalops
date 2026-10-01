@@ -33,7 +33,8 @@ import org.junit.runner.RunWith
  * - T9 recheck: a 6-frame bracket around the target, sent one distance per frame, then each distance held for 2 and
  *   3 frames; for every kept frame, the sharp band, to compare with the held mapping.
  *
- * `-e lenses 4,6` picks the lenses (default main and both tele). Logs under [TAG]; nothing is saved.
+ * `-e lenses 4,6` picks the lenses (default main and both tele). Logs under [TAG]; nothing is saved;
+ * `scripts/ruler_report.py` turns the log into tables.
  */
 @RunWith(AndroidJUnit4::class)
 class SlantedRulerExperiment {
@@ -63,7 +64,13 @@ class SlantedRulerExperiment {
             val step = minOf(MAX_STEP, lens.hyperfocalDiopters)
             val steps = generateSequence(centre - HALF_SPAN) { it + step }.takeWhile { it <= centre + HALF_SPAN }
                 .filter { it in 0f..lens.minDiopters }.toList()
-            Log.i(TAG, "T7 targetCm=$targetCm lens=$id step=%.4f steps=${steps.size}".format(step))
+            Log.i(
+                TAG,
+                "T7 targetCm=$targetCm lens=$id step=%.4f hyperfocal=%.4f steps=${steps.size}".format(
+                    step,
+                    lens.hyperfocalDiopters,
+                ),
+            )
             if (steps.isEmpty()) return@forEach
             runCatching {
                 rig.withLens(id, RAW_IMAGES) { session ->
