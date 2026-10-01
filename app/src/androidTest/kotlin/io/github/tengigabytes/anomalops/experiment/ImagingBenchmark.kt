@@ -34,7 +34,9 @@ import kotlin.random.Random
  * planes of a 4080 x 3072 RAW (2040 x 1536), as `StackTool` uses them, luma only (see the test). Logs `BENCH` lines
  * under [TAG] with the time of each step and the Java heap and PSS after it; each step runs once after one warm-up
  * of the aligner. Time it as a non-debuggable app: a debuggable one ran the aligner about ten times slower
- * (docs/test/m9-imaging-phone.md). `-e frames N` sets the focus-stack frames.
+ * (docs/test/m9-imaging-phone.md). `-e frames N` sets the focus-stack frames, `-e mergeFrames N` FR-17's.
+ * FR-17 and candidate B are fed one frame at a time (ADR-0017): each frame is made just before it is added and
+ * dropped after, as camera frames would arrive, and only the time spent adding is counted.
  */
 @RunWith(AndroidJUnit4::class)
 class ImagingBenchmark {
@@ -42,8 +44,11 @@ class ImagingBenchmark {
     private val height = 1536
     private val base = texture()
 
-    /** `-e frames N`: frames per focus stack (default 6, which does not fit the heap; see above). */
+    /** `-e frames N`: frames per focus stack (default 6; A and C keep every frame and do not fit the heap). */
     private val stackFrames = InstrumentationRegistry.getArguments().getString("frames")?.toIntOrNull() ?: STACK
+
+    /** `-e mergeFrames N`: frames per FR-17 burst (default 5). */
+    private val mergeFrames = InstrumentationRegistry.getArguments().getString("mergeFrames")?.toIntOrNull() ?: MERGE
 
     // One step per test, so each starts with the previous one's planes collectable. Luma only: six frames of four
     // planes (R, G, B, luma) are 300 MB, past this process's 256 MB heap (2026-10-01, OutOfMemoryError).
@@ -59,15 +64,35 @@ class ImagingBenchmark {
 
     @Test
     fun b_lowLightMerge() {
-        val luma = frames(MERGE)
-        timed("FR-17 low-light merge $MERGE frames, luma only") { LowLightMerge().merge(luma) }
+        val reference = frames(1).single()
+        streamed("FR-17 low-light merge $mergeFrames frames, luma only, per frame") { add ->
+            lateinit var merge: LowLightMerge.Accumulator
+            add { merge = LowLightMerge().start(reference) }
+            for (k in 1 until mergeFrames) {
+                val frame = frameAt(k)
+                add { merge.add(frame, listOf(frame)) }
+            }
+            add { merge.finish() }
+        }
     }
 
     @Test
     fun c_stackA() = stack("A", ContrastSelectStack())
 
     @Test
-    fun d_stackB() = stack("B", LaplacianPyramidStack())
+    fun d_stackB() {
+        val reference = frames(1).single()
+        streamed("FR-33 stack B $stackFrames frames, luma only, per frame") { add ->
+            lateinit var session: StackGuard.Session
+            add { session = StackGuard(LaplacianPyramidStack()).start(reference, listOf(reference)) }
+            add { session.add(reference, listOf(reference)) }
+            for (k in 1 until stackFrames) {
+                val frame = frameAt(k)
+                add { session.add(frame, listOf(frame)) }
+            }
+            add { session.finish() }
+        }
+    }
 
     @Test
     fun e_stackC() = stack("C", GuidedWeightStack())
@@ -128,7 +153,37 @@ class ImagingBenchmark {
     @Suppress("ExplicitGarbageCollectionCall") // So a step's time does not include collecting the last one's.
     private fun frames(count: Int): List<Plane> {
         System.gc()
-        return List(count) { k -> frame(dx = 1.3f * k, dy = -0.7f * k) }.also { memory("${it.size} frames") }
+        return List(count) { frameAt(it) }.also { memory("${it.size} frames") }
+    }
+
+    private fun frameAt(k: Int) = frame(dx = 1.3f * k, dy = -0.7f * k)
+
+    /**
+     * Runs [body], which wraps each per-frame step in the function it is given; logs the sum of those steps' times
+     * (frame making excluded) with the collector's work during them, the largest live heap after a step (an
+     * explicit collection after each step, outside the timing: what the merge holds, not its garbage), and the
+     * memory at the end.
+     */
+    @Suppress("ExplicitGarbageCollectionCall")
+    private fun streamed(label: String, body: (add: (() -> Unit) -> Unit) -> Unit) {
+        var ns = 0L
+        var gcRuns = 0L
+        var gcMs = 0L
+        var peak = 0L
+        val runtime = Runtime.getRuntime()
+        body { step ->
+            val runs = gcStat("art.gc.gc-count")
+            val time = gcStat("art.gc.gc-time")
+            val t0 = System.nanoTime()
+            step()
+            ns += System.nanoTime() - t0
+            gcRuns += gcStat("art.gc.gc-count") - runs
+            gcMs += gcStat("art.gc.gc-time") - time
+            System.gc()
+            peak = maxOf(peak, runtime.totalMemory() - runtime.freeMemory())
+        }
+        Log.i(TAG, "BENCH $label: ${ns / NS_PER_MS} ms (GC $gcRuns runs, $gcMs ms), peak live heap ${peak / MB} MB")
+        memory("after $label")
     }
 
     /** A smooth random texture, twice the frame size so shifted frames stay inside it. */

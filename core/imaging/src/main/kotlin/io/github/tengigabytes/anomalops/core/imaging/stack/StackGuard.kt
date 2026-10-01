@@ -18,20 +18,54 @@ class StackGuard(private val stack: FocusStack) {
         val channels: List<Plane>,
     )
 
-    /** [luma] and [channels] as for [FocusStack.merge]; missing pixels (NaN from alignment) filled from [reference]. */
-    fun merge(luma: List<Plane>, channels: List<List<Plane>>, reference: Int = 0): Result {
-        val filledLuma = fillMissing(luma, reference)
-        val filledChannels = channels[0].indices.map { c -> fillMissing(channels.map { it[c] }, reference) }
-            .let { perChannel -> luma.indices.map { k -> perChannel.map { it[k] } } }
-        val singles = filledLuma.map { sharpness(it) }
-        val best = singles.indices.maxBy { singles[it] }
-        // Luma rides along as one more channel, so the merge that is scored is the one that is returned.
-        val merged = stack.merge(filledLuma, filledChannels.mapIndexed { k, c -> c + filledLuma[k] })
-        val score = sharpness(merged.last())
-        return if (score >= singles[best]) {
-            Result(true, best, score, singles[best], merged.dropLast(1))
-        } else {
-            Result(false, best, score, singles[best], filledChannels[best])
+    /**
+     * All frames at once: [luma] and [channels] as for [FocusStack.merge]; missing pixels (NaN from alignment) filled
+     * from [reference]. The same as [start] with the reference, then [Session.add] of every frame in order.
+     */
+    fun merge(luma: List<Plane>, channels: List<List<Plane>>, reference: Int = 0): Result =
+        start(luma[reference], channels[reference]).apply { luma.indices.forEach { add(luma[it], channels[it]) } }
+            .finish()
+
+    /**
+     * One frame at a time (ADR-0017). The reference is given first, to fill other frames' missing pixels, and is
+     * also added at its place in the bracket like any other frame. Besides the stack's own state, the session holds
+     * the reference and the sharpest frame so far (the fallback).
+     */
+    fun start(referenceLuma: Plane, referenceChannels: List<Plane>): Session = Session(referenceLuma, referenceChannels)
+
+    inner class Session internal constructor(
+        private val referenceLuma: Plane,
+        private val referenceChannels: List<Plane>,
+    ) {
+        private val accumulator = stack.accumulator()
+        private var frames = 0
+        private var bestFrame = -1
+        private var bestSingle = Double.NaN
+        private var bestChannels: List<Plane> = emptyList()
+
+        fun add(luma: Plane, channels: List<Plane>) {
+            val filledLuma = fill(luma, referenceLuma)
+            val filledChannels = channels.mapIndexed { c, p -> fill(p, referenceChannels[c]) }
+            val single = sharpness(filledLuma)
+            // Strictly better, so ties keep the earlier frame.
+            if (bestFrame < 0 || bestSingle < single) {
+                bestFrame = frames
+                bestSingle = single
+                bestChannels = filledChannels
+            }
+            // Luma rides along as one more channel, so the merge that is scored is the one that is returned.
+            accumulator.add(filledLuma, filledChannels + filledLuma)
+            frames++
+        }
+
+        fun finish(): Result {
+            val merged = accumulator.finish()
+            val score = sharpness(merged.last())
+            return if (score >= bestSingle) {
+                Result(true, bestFrame, score, bestSingle, merged.dropLast(1))
+            } else {
+                Result(false, bestFrame, score, bestSingle, bestChannels)
+            }
         }
     }
 
@@ -62,8 +96,9 @@ class StackGuard(private val stack: FocusStack) {
         }
 
         /** Each frame with its NaN pixels (outside the aligned area) replaced by [reference]'s. */
-        fun fillMissing(frames: List<Plane>, reference: Int): List<Plane> = frames.map { f ->
-            Filters.zip(f, frames[reference]) { v, r -> if (v.isNaN()) r else v }
-        }
+        fun fillMissing(frames: List<Plane>, reference: Int): List<Plane> = frames.map { fill(it, frames[reference]) }
+
+        private fun fill(frame: Plane, reference: Plane): Plane =
+            Filters.zip(frame, reference) { v, r -> if (v.isNaN()) r else v }
     }
 }

@@ -25,8 +25,9 @@ class LowLightMerge(private val options: AlignOptions = AlignOptions(), private 
     class Result(val channels: List<Plane>, val alignments: List<Alignment?>)
 
     /**
-     * [luma] and [channels] per frame, frame [reference] (default the first) kept as is; [noiseSigma] the
-     * reference luma's noise standard deviation (from the sensor's noise profile, or [estimateNoise]).
+     * All frames at once: [luma] and [channels] per frame, frame [reference] (default the first) kept as is;
+     * [noiseSigma] the reference luma's noise standard deviation (from the sensor's noise profile, or
+     * [estimateNoise]). The same as [start] with the reference followed by [Accumulator.add] of the others in order.
      */
     fun merge(
         luma: List<Plane>,
@@ -34,47 +35,59 @@ class LowLightMerge(private val options: AlignOptions = AlignOptions(), private 
         noiseSigma: Float = estimateNoise(luma[0]),
         reference: Int = 0,
     ): Result {
-        val aligner = FrameAligner(luma[reference], options)
-        val sums = channels[reference].map { it.data.copyOf() }
-        val weightSum = FloatArray(luma[reference].data.size) { 1f }
-        val alignments = luma.indices.map { k ->
-            if (k == reference) {
-                null
-            } else {
-                aligner.align(
-                    luma[k],
-                ).also { add(it, luma[reference], luma[k], channels[k], noiseSigma, sums, weightSum) }
-            }
-        }
-        val ref = luma[reference]
-        val merged = sums.map { sum -> Plane(ref.width, ref.height, FloatArray(sum.size) { sum[it] / weightSum[it] }) }
-        return Result(merged, alignments)
+        val accumulator = start(luma[reference], channels[reference], noiseSigma)
+        val alignments = luma.indices.map { k -> if (k == reference) null else accumulator.add(luma[k], channels[k]) }
+        return Result(accumulator.finish(), alignments)
     }
 
-    @Suppress("LongParameterList") // One frame's contribution into the running sums.
-    private fun add(
-        alignment: Alignment,
-        refLuma: Plane,
-        frameLuma: Plane,
-        frameChannels: List<Plane>,
-        sigma: Float,
-        sums: List<FloatArray>,
-        weightSum: FloatArray,
+    /**
+     * One frame at a time (ADR-0017): only the reference, the running sums and the frame being added are held, so
+     * memory does not grow with the burst. [noiseSigma] as for [merge].
+     */
+    fun start(
+        referenceLuma: Plane,
+        referenceChannels: List<Plane> = listOf(referenceLuma),
+        noiseSigma: Float = estimateNoise(referenceLuma),
+    ): Accumulator = Accumulator(referenceLuma, referenceChannels, noiseSigma)
+
+    /** Running weighted sums of one burst; the reference counts with weight 1 everywhere. */
+    inner class Accumulator internal constructor(
+        private val refLuma: Plane,
+        referenceChannels: List<Plane>,
+        private val sigma: Float,
     ) {
-        val field = OffsetField(alignment, refLuma.width, refLuma.height)
-        val warpedLuma = field.warp(frameLuma)
-        val diff = Plane(refLuma.width, refLuma.height)
-        for (i in diff.data.indices) diff.data[i] = warpedLuma.data[i] - refLuma.data[i]
-        val localDiff = mean3(diff)
-        val allowance = robustness * sigma * sigma
-        val warped = frameChannels.map { field.warp(it) }
-        for (i in localDiff.data.indices) {
-            // NaN (outside the aligned frame) fails every comparison, so such pixels add nothing.
-            val d = localDiff.data[i]
-            val w = exp(-d * d / allowance)
-            if (w >= MIN_WEIGHT && warped.none { it.data[i].isNaN() }) {
-                weightSum[i] += w
-                for (c in sums.indices) sums[c][i] += w * warped[c].data[i]
+        private val aligner = FrameAligner(refLuma, options)
+        private val sums = referenceChannels.map { it.data.copyOf() }
+        private val weightSum = FloatArray(refLuma.data.size) { 1f }
+
+        /** Aligns one frame to the reference and adds it; returns the alignment. */
+        fun add(luma: Plane, channels: List<Plane>): Alignment {
+            require(channels.size == sums.size) { "${channels.size} channels, the reference has ${sums.size}" }
+            return aligner.align(luma).also { accumulate(it, luma, channels) }
+        }
+
+        /** The merged channels; the accumulator should not be used afterwards. */
+        fun finish(): List<Plane> =
+            sums.map { sum -> Plane(refLuma.width, refLuma.height, FloatArray(sum.size) { sum[it] / weightSum[it] }) }
+
+        private fun accumulate(alignment: Alignment, frameLuma: Plane, frameChannels: List<Plane>) {
+            val field = OffsetField(alignment, refLuma.width, refLuma.height)
+            val diff = field.warp(frameLuma)
+            for (i in diff.data.indices) diff.data[i] = diff.data[i] - refLuma.data[i]
+            val localDiff = mean3(diff)
+            val allowance = robustness * sigma * sigma
+            val values = FloatArray(frameChannels.size)
+            field.forEachPosition { i, x, y ->
+                // NaN (outside the aligned frame) fails every comparison, so such pixels add nothing.
+                val d = localDiff.data[i]
+                val w = exp(-d * d / allowance)
+                if (w >= MIN_WEIGHT) {
+                    for (c in values.indices) values[c] = frameChannels[c].sample(x, y)
+                    if (values.none { it.isNaN() }) {
+                        weightSum[i] += w
+                        for (c in sums.indices) sums[c][i] += w * values[c]
+                    }
+                }
             }
         }
     }

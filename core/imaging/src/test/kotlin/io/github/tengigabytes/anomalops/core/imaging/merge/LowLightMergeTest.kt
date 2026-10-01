@@ -99,6 +99,15 @@ class LowLightMergeTest {
         assertTrue("channel drifted by $worst", worst < 1e-2f)
     }
 
+    @Test
+    fun perFrameAccumulatorMatchesTheListMerge() {
+        val burst = shakes.map { noisy(scene.render(width, height, it)) }
+        val all = LowLightMerge().merge(burst, noiseSigma = NOISE).channels.single()
+        val accumulator = LowLightMerge().start(burst[0], noiseSigma = NOISE)
+        burst.drop(1).forEach { accumulator.add(it, listOf(it)) }
+        assertTrue(all.data.contentEquals(accumulator.finish().single().data))
+    }
+
     private companion object {
         const val NOISE = 6f
     }
