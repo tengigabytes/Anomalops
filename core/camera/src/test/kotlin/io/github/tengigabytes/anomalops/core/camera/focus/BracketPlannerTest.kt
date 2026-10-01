@@ -16,6 +16,10 @@ class BracketPlannerTest {
     private val main = BracketLens(9.5238f, 0.169f, FocusCalibration.CALIBRATED, focalLengthMm = 6.9f)
     private val planner = BracketPlanner()
 
+    /** A table for [lens] with true = [slope] x reported + [offset] and a worst residual of [residual]. */
+    private fun table(lens: BracketLens, offset: Float, slope: Float = 1f, residual: Float = 0f) =
+        FocusCalibrationTable(slope, offset, 1.5f..3.5f, residual, residual, lens.calibration, lens.minFocusDiopters)
+
     private fun gapsWithin(plan: BracketPlan, maxGap: Float) =
         plan.requestedDiopters.zipWithNext().all { (a, b) -> a > b && a - b <= maxGap + 1e-5f }
 
@@ -44,23 +48,43 @@ class BracketPlannerTest {
         val calibrated = planner.plan(main.copy(calibration = FocusCalibration.CALIBRATED), 30f, 40f)!!
         val approximate = planner.plan(main.copy(calibration = FocusCalibration.APPROXIMATE), 30f, 40f)!!
         assertEquals(calibrated.requestedDiopters.size + 1, approximate.requestedDiopters.size)
-        val measured = main.copy(calibration = FocusCalibration.APPROXIMATE, hasCalibrationTable = true)
-        assertEquals(calibrated.requestedDiopters.size, planner.plan(measured, 30f, 40f)!!.requestedDiopters.size)
+        val approx = main.copy(calibration = FocusCalibration.APPROXIMATE)
+        // T4 main lens: worst residual 0.056 D, within a quarter of its depth of field (0.0845 D).
+        val precise = approx.copy(table = table(approx, 0.056f, residual = 0.056f))
+        assertEquals(calibrated.requestedDiopters.size, planner.plan(precise, 30f, 40f)!!.requestedDiopters.size)
+        // A table that misses the mark still converts, but the extra frame stays.
+        val rough = approx.copy(table = table(approx, 0.056f, residual = 0.09f))
+        assertEquals(approximate.requestedDiopters.size, planner.plan(rough, 30f, 40f)!!.requestedDiopters.size)
     }
 
     @Test
     fun uncalibratedLensWithoutATableCannotBePlanned() {
         val lens = main.copy(calibration = FocusCalibration.UNCALIBRATED)
         assertNull(planner.plan(lens, 30f, 40f))
-        assertNotNull(planner.plan(lens.copy(hasCalibrationTable = true), 30f, 40f))
+        assertNotNull(planner.plan(lens.copy(table = table(lens, 0f)), 30f, 40f))
+    }
+
+    @Test
+    fun tableMeasuredUnderOtherLensReportsIsIgnored() {
+        val approx = main.copy(calibration = FocusCalibration.APPROXIMATE)
+        val stale = table(approx, 0.07f).copy(minFocusDiopters = 10f)
+        val plain = planner.plan(approx, 40f, 41f)!!
+        assertEquals(plain, planner.plan(approx.copy(table = stale), 40f, 41f))
+        val uncalibrated = main.copy(calibration = FocusCalibration.UNCALIBRATED)
+        assertNull(planner.plan(uncalibrated.copy(table = table(approx, 0f)), 30f, 40f))
     }
 
     @Test
     fun measuredOffsetShiftsWhatIsRequested() {
         // T4: the lenses read about 0.07 D too far, true = reported + 0.07, so ask for 0.07 D less.
         val plain = planner.plan(main, 40f, 41f)!!
-        val corrected = planner.plan(main.copy(offsetDiopters = 0.07f), 40f, 41f)!!
+        val corrected = planner.plan(main.copy(table = table(main, 0.07f)), 40f, 41f)!!
         plain.requestedDiopters.zip(corrected.requestedDiopters).forEach { (p, c) -> assertEquals(p - 0.07f, c, 1e-4f) }
+        // With a slope, the request is (true - offset) / slope.
+        val sloped = planner.plan(main.copy(table = table(main, 0.056f, slope = 1.012f)), 40f, 41f)!!
+        plain.requestedDiopters.zip(sloped.requestedDiopters).forEach { (p, c) ->
+            assertEquals((p - 0.056f) / 1.012f, c, 1e-4f)
+        }
     }
 
     @Test
