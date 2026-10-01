@@ -42,6 +42,11 @@ internal class ProbeReport(private val context: Context) {
                 "sensors" to SensorProbe.probe(context),
                 "sensorSamples" to SensorSampler(context.getSystemService(SensorManager::class.java))
                     .sample(SAMPLE_MS, Handler(cameraThread.looper)),
+                "gpu" to jsonOf(
+                    "features" to GpuFeatureProbe.probe(context),
+                    "gles" to GlesProbe.probe(),
+                    "nnapi" to NnapiProbe.probe(),
+                ),
             )
             val file = write(report)
             Log.i(TAG, "Probe report written to ${file.absolutePath}")
@@ -96,6 +101,7 @@ internal class ProbeReport(private val context: Context) {
         } else {
             appendLine("sessions: skipped (CAMERA permission not granted)")
         }
+        appendGpu(report.getJSONObject("gpu"))
         val samples = report.getJSONArray("sensorSamples")
         for (i in 0 until samples.length()) {
             val s = samples.getJSONObject(i)
@@ -107,8 +113,15 @@ internal class ProbeReport(private val context: Context) {
         }
     }
 
+    private fun StringBuilder.appendGpu(gpu: JSONObject) {
+        val gles = gpu.getJSONObject("gles")
+        appendLine("GLES: ${gles.optString("version", gles.optString("error"))}")
+        appendLine("Vulkan: ${gpu.getJSONObject("features").opt("vulkanVersion")}")
+        appendLine("NNAPI HAL: ${gpu.getJSONObject("nnapi").opt("halDevices")}")
+    }
+
     private companion object {
-        const val SCHEMA = "anomalops-probe/3"
+        const val SCHEMA = "anomalops-probe/4"
         const val SAMPLE_MS = 5_000L
         const val BYTES_PER_KIB = 1024
         const val TAG = "AnomalopsProbe"

@@ -4,7 +4,7 @@
 
 | 檔案 | 用途 |
 | --- | --- |
-| [probe_to_profile.py](probe_to_profile.py) | 從偵測報告產生 `assets/device-profiles/<device>.json` 的能力區段，保留手寫區段；`--check` 在不一致時結束碼為 1（ADR-0003） |
+| [probe_to_profile.py](probe_to_profile.py) | 從偵測報告產生 `assets/device-profiles/<device>.json` 的能力區段，保留手寫區段；`--check` 在不一致時結束碼為 1（ADR-0003）；GPU 與 NNAPI 區段在 [probe_gpu.py](probe_gpu.py)（ADR-0017） |
 | [check_flavor_manifests.py](check_flavor_manifests.py) | 檢查兩個 flavor 合併後 manifest 的權限（NFR-8、ADR-0010）；預設檢查 debug 變體，要先建置 |
 | [check_module_deps.py](check_module_deps.py) | 依 ADR-0007 檢查各模組建置檔裡的 `project(":...")` 依賴；出現不允許的依賴時結束碼為 1 |
 | [check_dive_log.py](check_dive_log.py) | FR-45 驗收：檢查一個潛水場次目錄（從手機以 adb 拉回，不進 repo）的四個檔案、`sensors.csv` 時間戳遞增、列數 ≥ 應有的 98%（`--minutes 90` 以 5400 列為準），並列出最長間隔 |

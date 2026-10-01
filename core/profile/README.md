@@ -8,6 +8,6 @@
 | 依賴 | 無 |
 | 被誰使用 | `:core:camera`、`:app`、`:tools:probe`（共用 schema） |
 | 對應需求 | NFR-9、FR-21、FR-24、FR-25 |
-| 內容 | `DeviceProfile`（資料模型即 schema，嚴格解析）、`DeviceProfiles.load(Build.DEVICE)`、`ProfileValidator`、`calibrationFor(physicalId, CalibrationKey)` 白平衡查表、`FocusCalibrationEntry` 與 `focusCalibrationFor(physicalId)` 對焦校正表（ADR-0014） |
+| 內容 | `DeviceProfile`（資料模型即 schema，嚴格解析）、`DeviceProfiles.load(Build.DEVICE)`、`ProfileValidator`、`calibrationFor(physicalId, CalibrationKey)` 白平衡查表、`FocusCalibrationEntry` 與 `focusCalibrationFor(physicalId)` 對焦校正表（ADR-0014）、`GpuCapabilities` 與 `NnapiCapabilities` 多幀運算的 GPU 與 NNAPI 能力（ADR-0017） |
 | 資料 | `assets/device-profiles/*.json`，以 resource 形式打包 |
-| 測試 | `DeviceProfilesTest`：blazer 載入與驗證（NFR-9）、預設鏡頭（FR-11）、微距對焦（FR-31）、嚴格解析與驗證器的負面測試、校正查表與重複鍵 |
+| 測試 | `DeviceProfilesTest`：blazer 載入與驗證（NFR-9）、預設鏡頭（FR-11）、微距對焦（FR-31）、嚴格解析與驗證器的負面測試、校正查表與重複鍵、GPU 能力（ADR-0017） |

@@ -12,6 +12,8 @@ import os
 import re
 import sys
 
+from probe_gpu import gpu, nnapi
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SCHEMA_VERSION = 1
 OUTPUT_FORMATS = ("JPEG", "JPEG_R", "RAW_SENSOR", "YUV_420_888")
@@ -93,7 +95,8 @@ def capabilities(report):
     for key, string_type in SENSOR_TYPES.items():
         found = [s for s in report["sensors"]["sensors"] if s["stringType"] == string_type]
         sensors[key] = {"available": bool(found), "maxDelayUs": found[0]["maxDelayUs"] if found else None}
-    return {"logicalCameras": logicals, "physicalCameras": physicals, "sensors": sensors}
+    return {"logicalCameras": logicals, "physicalCameras": physicals, "sensors": sensors,
+            "gpu": gpu(report), "nnapi": nnapi(report)}
 
 
 def build(device, existing):

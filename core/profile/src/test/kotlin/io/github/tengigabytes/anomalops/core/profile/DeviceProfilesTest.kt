@@ -35,6 +35,15 @@ class DeviceProfilesTest {
     }
 
     @Test
+    fun adr0017_blazerGpuRunsTheMultiFramePath() {
+        val gpu = blazer.capabilities.gpu
+        assertTrue("GLES ${gpu.glesVersion}", gpu.glesVersion.toDouble() >= GLES_COMPUTE)
+        assertTrue(gpu.imageStoreFormats.containsAll(listOf("RGBA16F", "RGBA32F")))
+        assertTrue("R32F" in gpu.imageReadWriteFormats)
+        assertTrue(gpu.r16uiUpload)
+    }
+
+    @Test
     fun unknownDeviceReturnsNull() {
         assertNull(DeviceProfiles.load("no-such-device"))
     }
@@ -123,5 +132,6 @@ class DeviceProfilesTest {
 
     private companion object {
         const val FIVE_CM = 0.05
+        const val GLES_COMPUTE = 3.1
     }
 }

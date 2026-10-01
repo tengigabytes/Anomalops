@@ -45,6 +45,8 @@ data class Capabilities(
     val logicalCameras: List<LogicalCamera>,
     val physicalCameras: List<PhysicalCamera>,
     val sensors: Map<String, SensorInfo>,
+    val gpu: GpuCapabilities,
+    val nnapi: NnapiCapabilities,
 )
 
 @Serializable
