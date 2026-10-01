@@ -62,3 +62,5 @@ Pixel 10 Pro 後置 6 個實體 ID 都是 `APPROXIMATE`（[m4-af-timeline.md](..
 2026-10-01 T4 結果（[m9-macro-land.md](../test/m9-macro-land.md) 第 5 節，30–60 cm 六點）：主鏡頭與望遠的 APPROXIMATE 讀數都比實際遠約 0.06–0.08 D，斜率幾乎是 1，一個常數偏移就能修正大部分。修正後望遠仍有約 0.02 D 的殘差（受捲尺精度限制），與其景深 0.049 D 相比不可忽略，因此第 2 節「APPROXIMATE 多疊一張」的做法保留。AF 鎖定的位置（主鏡頭 50 cm 時偏 0.24 D）不能當距離量測用，第 4 節的校正流程維持以細掃取峰值。
 
 2026-10-01 補註：第 3 節的包圍步進已實作為 `:core:camera` 的 `focus/BracketPlanner`（純邏輯，JVM 測試 8 個）。近距修正寫成景深（屈光度）＝ 2 × 超焦距屈光度 ÷（1 + m），m ＝ f ÷（s − f），由薄透鏡推導，放大倍率越大、以屈光度計的景深越窄，與第 3 節「上式高估景深」一致。APPROXIMATE 且沒有校正表時多一張、UNCALIBRATED 且沒有校正表時不規劃、校正偏移（T4 的約 0.07 D）以「實際 ＝ 回報 ＋ 偏移」換算、主體近於最近對焦時從極限起拍並標示、超過張數上限時涵蓋主體中段並標示 truncated。尚未接上介面與相機。
+
+2026-10-01 補註（維護者同意撰寫者的提議）：校正表照第 1 節放在 `assets/device-profiles/` 的 `focusCalibration` 區段（手寫，`probe_to_profile.py` 重新產生時保留）。blazer 已放入 T4 的三筆擬合（鏡頭 2、4、6；30–60 cm 六點），並記錄量測時的校準類型與最近對焦；`ProfileValidator` 檢查最近對焦與能力表一致。`:core:camera` 以 `FocusCalibrationTable.fromProfile` 讀取；望遠兩筆未達 T4 門檻，包圍照樣多疊一張。尚未接上相機。

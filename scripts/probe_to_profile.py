@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Generate the capabilities section of assets/device-profiles/<device>.json from a probe report (ADR-0003).
 
-Hand-written sections (presetLenses, calibration) of an existing profile are preserved.
+Hand-written sections (presetLenses, calibration, focusCalibration) of an existing profile are preserved.
 Usage: python scripts/probe_to_profile.py <device>          write assets/device-profiles/<device>.json
        python scripts/probe_to_profile.py <device> --check  exit 1 if the committed profile is out of date
 """
@@ -107,6 +107,7 @@ def build(device, existing):
         "capabilities": capabilities(report),
         "presetLenses": existing.get("presetLenses", {}),
         "calibration": existing.get("calibration", []),
+        "focusCalibration": existing.get("focusCalibration", []),
     }
 
 

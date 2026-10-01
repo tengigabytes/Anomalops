@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
  * One device model's capability and calibration table (ADR-0003), stored as
  * `assets/device-profiles/<Build.DEVICE>.json`. The Kotlin model is the schema: decoding is strict, so an
  * unknown or missing field fails loudly. `capabilities` is generated from a probe report by
- * `scripts/probe_to_profile.py`; `presetLenses` and `calibration` are written by hand.
+ * `scripts/probe_to_profile.py`; `presetLenses`, `calibration` and `focusCalibration` are written by hand.
  */
 @Serializable
 data class DeviceProfile(
@@ -18,6 +18,7 @@ data class DeviceProfile(
     val capabilities: Capabilities,
     val presetLenses: PresetLenses,
     val calibration: List<CalibrationEntry>,
+    val focusCalibration: List<FocusCalibrationEntry>,
 ) {
     fun physicalCamera(id: String): PhysicalCamera? = capabilities.physicalCameras.firstOrNull { it.id == id }
 
@@ -27,6 +28,10 @@ data class DeviceProfile(
     /** ADR-0002: the white-balance calibration for a camera under the given conditions, or null if none exists. */
     fun calibrationFor(physicalId: String, key: CalibrationKey): CalibrationEntry? =
         calibration.firstOrNull { it.matches(physicalId, key) }
+
+    /** ADR-0014: the measured focus correction of a camera, or null if it has none. */
+    fun focusCalibrationFor(physicalId: String): FocusCalibrationEntry? =
+        focusCalibration.firstOrNull { it.physicalId == physicalId }
 }
 
 @Serializable

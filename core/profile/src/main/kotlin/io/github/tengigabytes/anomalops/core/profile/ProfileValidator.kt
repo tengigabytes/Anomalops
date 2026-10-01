@@ -2,11 +2,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.core.profile
 
+import kotlin.math.abs
+
 /** Consistency rules a device profile must satisfy beyond parsing (ADR-0003). Returns human-readable problems. */
 object ProfileValidator {
     const val SUPPORTED_SCHEMA = 1
     private const val GAIN_COUNT = 4
     private const val MATRIX_SIZE = 9
+    private const val MIN_FOCUS_POINTS = 3
+    private const val SAME_DIOPTERS = 1e-3
 
     fun validate(profile: DeviceProfile): List<String> = buildList {
         if (profile.schemaVersion != SUPPORTED_SCHEMA) add("schemaVersion ${profile.schemaVersion} is not supported")
@@ -14,6 +18,7 @@ object ProfileValidator {
         addAll(ranges(profile))
         addAll(presets(profile))
         addAll(calibration(profile))
+        addAll(focusCalibration(profile))
     }
 
     private fun cameraLinks(profile: DeviceProfile): List<String> = buildList {
@@ -60,6 +65,33 @@ object ProfileValidator {
             .filterValues { it.size > 1 }
             .keys
             .forEach { add("calibration: duplicate entries for $it") }
+    }
+
+    /** ADR-0014: tables for existing cameras, one each, measured against the minimum focus the camera reports. */
+    private fun focusCalibration(profile: DeviceProfile): List<String> = buildList {
+        profile.focusCalibration.forEach { entry ->
+            val where = "focusCalibration ${entry.physicalId}"
+            val camera = profile.physicalCamera(entry.physicalId)
+            when {
+                camera == null -> add("$where: unknown physical camera")
+
+                abs(camera.minFocusDistanceDiopters - entry.minFocusDiopters) > SAME_DIOPTERS ->
+                    add(
+                        "$where: measured at minimum focus ${entry.minFocusDiopters}, camera reports ${camera.minFocusDistanceDiopters}",
+                    )
+            }
+            if (entry.slope <= 0.0) add("$where: slope must be positive")
+            if (!entry.fittedRangeDiopters.isAscendingPair()) add("$where: bad fittedRangeDiopters")
+            if (entry.residualMaxDiopters < entry.residualRmsDiopters || entry.residualRmsDiopters < 0.0) {
+                add("$where: residuals must be 0 <= RMS <= max")
+            }
+            if (entry.points < MIN_FOCUS_POINTS) add("$where: fewer than $MIN_FOCUS_POINTS points")
+        }
+        profile.focusCalibration
+            .groupBy { it.physicalId }
+            .filterValues { it.size > 1 }
+            .keys
+            .forEach { add("focusCalibration: duplicate entries for $it") }
     }
 
     private fun <T : Comparable<T>> List<T>.isAscendingPair() = size == 2 && this[0] <= this[1]
