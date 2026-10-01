@@ -44,9 +44,11 @@ class MeanSquaredDiffKernel : AutoCloseable {
             float n = 0.0;
             if (gx < grid.x) {
                 int x = region.x + gx * spacing;
-                // Each invocation walks $rows grid rows, so the reduction below is shared by $rows points.
+                // Each invocation walks $rows grid rows, so the reduction below is shared by $rows points. The rows
+                // are $local apart, so on every pass the group reads $local neighbouring rows: walking adjacent
+                // rows instead was twice as slow (texture cache, docs/test/m9-gpu-fr17.md).
                 for (int k = 0; k < $rows; k++) {
-                    int gy = (int(gl_WorkGroupID.y) * $local + int(gl_LocalInvocationID.y)) * $rows + k;
+                    int gy = (int(gl_WorkGroupID.y) * $rows + k) * $local + int(gl_LocalInvocationID.y);
                     if (gy >= grid.y) break;
                     int y = region.y + gy * spacing;
                     precise vec2 q = centre + c.x * (vec2(x, y) - centre) + c.yz;
