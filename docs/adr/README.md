@@ -27,6 +27,7 @@
 | [0014](0014-focus-distance-calibration.md) | 對焦距離校準與包圍步進 | 提議 | FR-33、FR-36、NFR-9 |
 | [0015](0015-focus-stacking-algorithm.md) | 景深合成演算法 | 提議（演算法待定） | FR-33、FR-63、NFR-8 |
 | [0016](0016-imaging-module.md) | 多幀影像處理放在新模組 `:core:imaging` | 已採納 | FR-17、FR-33 |
+| [0017](0017-gpu-multiframe.md) | 多幀運算在手機上走 GPU：OpenGL ES 運算著色器、逐張累加 | 提議 | FR-17、FR-33、NFR-9 |
 
 ## 範本
 
