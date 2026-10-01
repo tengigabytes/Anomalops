@@ -13,8 +13,9 @@ PROJECT_REF = re.compile(r'project\(\s*"(:[a-z:]+)"\s*\)')
 
 # docs/adr/0007-stack-and-modules.md: which project modules each module may depend on.
 ALLOWED = {
-    ":app": {":core:camera", ":core:imaging", ":core:profile", ":core:store", ":core:telemetry"},
+    ":app": {":core:camera", ":core:gpu", ":core:imaging", ":core:profile", ":core:store", ":core:telemetry"},
     ":core:camera": {":core:profile"},
+    ":core:gpu": {":core:imaging"},  # ADR-0017
     ":core:imaging": set(),  # ADR-0016
     ":core:profile": set(),
     ":core:store": {":core:camera"},

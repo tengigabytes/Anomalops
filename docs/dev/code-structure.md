@@ -13,7 +13,7 @@ Anomalops/
 ├─ LICENSE  NOTICE.md   授權（GPL-3.0-or-later + 附加許可）
 ├─ docs/                所有文件，見 docs/README.md
 ├─ app/                 :app，UI、潛水鎖定、flavor 相關程式（ADR-0007、0010）
-├─ core/                :core:camera、:core:imaging、:core:profile、:core:store、:core:telemetry
+├─ core/                :core:camera、:core:gpu、:core:imaging、:core:profile、:core:store、:core:telemetry
 ├─ tools/probe/         :tools:probe 能力偵測工具；results/ 放原始偵測報告
 ├─ assets/device-profiles/  各型號能力表與校正表（ADR-0003），由 :core:profile 打包
 ├─ scripts/             開發用腳本：check_limits.py、check_module_deps.py 等
