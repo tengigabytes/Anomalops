@@ -86,18 +86,29 @@ internal class RawRig(private val manager: CameraManager, private val handler: H
     ) {
         /**
          * AF off, focus at [diopters]; the RAW reader is a target only when [withRaw]. [aeLock] holds the exposure,
-         * so a focus sweep compares frames of the same gain.
+         * so a focus sweep compares frames of the same gain. [shadingMap] asks for the lens shading map in the result
+         * (what `DngCreator` stores as gain maps).
          */
-        fun request(diopters: Float, withRaw: Boolean, aeLock: Boolean = false): CaptureRequest =
-            device.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE, setOf(id)).apply {
-                addTarget(preview.surface)
-                if (withRaw) addTarget(raw.surface)
-                set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
-                set(CaptureRequest.CONTROL_AE_LOCK, aeLock)
-                // As CaptureRequestWriter does: a physical stream follows the physical key, not the logical one.
-                set(CaptureRequest.LENS_FOCUS_DISTANCE, diopters)
-                setPhysicalCameraKey(CaptureRequest.LENS_FOCUS_DISTANCE, diopters, id)
-            }.build()
+        fun request(
+            diopters: Float,
+            withRaw: Boolean,
+            aeLock: Boolean = false,
+            shadingMap: Boolean = false,
+        ): CaptureRequest = device.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE, setOf(id)).apply {
+            addTarget(preview.surface)
+            if (withRaw) addTarget(raw.surface)
+            set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF)
+            set(CaptureRequest.CONTROL_AE_LOCK, aeLock)
+            if (shadingMap) {
+                val on = CaptureRequest.STATISTICS_LENS_SHADING_MAP_MODE_ON
+                set(CaptureRequest.STATISTICS_LENS_SHADING_MAP_MODE, on)
+                // Only allowed when the key is among the physical camera's request keys.
+                runCatching { setPhysicalCameraKey(CaptureRequest.STATISTICS_LENS_SHADING_MAP_MODE, on, id) }
+            }
+            // As CaptureRequestWriter does: a physical stream follows the physical key, not the logical one.
+            set(CaptureRequest.LENS_FOCUS_DISTANCE, diopters)
+            setPhysicalCameraKey(CaptureRequest.LENS_FOCUS_DISTANCE, diopters, id)
+        }.build()
 
         /** AF AUTO on the preview; [trigger] starts one scan (T0). */
         fun autoFocus(trigger: Boolean): CaptureRequest =
