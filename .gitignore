@@ -35,3 +35,6 @@ keystore.properties
 # Python bytecode
 __pycache__/
 *.pyc
+
+# Git Bash crash dumps (msys) left in the working directory
+*.stackdump
