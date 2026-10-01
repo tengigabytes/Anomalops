@@ -960,7 +960,8 @@
         "GL_OES_texture_float_linear": false,
         "GL_OES_texture_half_float_linear": true,
         "GL_EXT_texture_norm16": true,
-        "GL_KHR_shader_subgroup": true
+        "GL_KHR_shader_subgroup": true,
+        "GL_EXT_gpu_shader5": true
       }
     },
     "nnapi": {

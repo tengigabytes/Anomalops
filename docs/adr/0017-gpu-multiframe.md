@@ -94,3 +94,7 @@ ADR-0016 的 `:core:imaging` 是 CPU 版的參考實作，並約定「手機上�
 2026-10-02 維護者決定：候選 A 改成兩輪（結果不變）；半精度往零捨入先不處理，第 3 步與 CPU 版比對誤差後再決定是否補償。
 
 2026-10-02 補註：候選 A 已改成兩輪（`FocusAccumulator.passes`、`StackGuard.Session.endPass`），結果與改之前逐位元相同；手機上 3、6、8 張的存活記憶體都是 98 MB（[m9-imaging-phone.md](../test/m9-imaging-phone.md) 第 4 節）。GPU 版的 A 第二輪要再上傳並重新取樣每張，對齊結果沿用第一輪。
+
+2026-10-02 補註（第 3 步）：`:core:gpu` 已建立，減半、重新取樣、均方差三支著色器完成（[m9-gpu-trial.md](../test/m9-gpu-trial.md)）。用 `precise`（`GL_EXT_gpu_shader5`）後，32 位元版與 CPU 逐位元相同；單通道的半精度（放在 RGBA16F）比 32 位元慢又不準。速度：重新取樣快 3.6 倍，均方差只快 1.9 倍，第 4 步要先最佳化均方差。GLES 路線在正確性上可行；速度能否達到 FR-17 的 3 s 要到第 4 步才知道。
+
+2026-10-02 維護者決定：GPU 上的平面先全部用 32 位元（R32F），半精度到第 4 步做顏色時以 4 通道一起放的形式重新評估；接受 `GL_EXT_gpu_shader5`（或 GLES 3.2）的需求，Pixel 6–9 在 M11 以 `:tools:probe` 確認。

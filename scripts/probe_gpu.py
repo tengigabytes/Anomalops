@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """GPU and NNAPI parts of the capabilities section (ADR-0017), used by probe_to_profile.py."""
 
-GL_EXTENSIONS = (  # ADR-0017: float render targets and filtering, 16-bit normalized textures, subgroups
+GL_EXTENSIONS = (  # ADR-0017: float targets and filtering, norm16 textures, subgroups, `precise` (:core:gpu)
     "GL_EXT_color_buffer_float", "GL_EXT_color_buffer_half_float", "GL_OES_texture_float_linear",
-    "GL_OES_texture_half_float_linear", "GL_EXT_texture_norm16", "GL_KHR_shader_subgroup",
+    "GL_OES_texture_half_float_linear", "GL_EXT_texture_norm16", "GL_KHR_shader_subgroup", "GL_EXT_gpu_shader5",
 )
 HALF_MAX_REL_ERROR = 2 ** -10  # one half-float ULP: allows round-toward-zero as well as round-to-nearest
 

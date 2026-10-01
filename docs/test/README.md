@@ -25,4 +25,5 @@
 | [macro-stacking-test-plan.md](macro-stacking-test-plan.md) | 微距景深合成待測清單（FR-33、FR-36、FR-37）：已由 repo 資料確認的值、17 項估算或未知數值的方法與通過標準、順序，2026-09-30 |
 | [m9-macro-land.md](m9-macro-land.md) | M9 前置的微距陸上實測：T0 以 AF 估目標距離、T1 望遠實體串流與手動對焦（通過）、T3 46 cm 一點細掃、T9 焦點包圍時間（約 170 ms，但每張對焦位置未確認），2026-09-30 |
 | [m9-imaging-phone.md](m9-imaging-phone.md) | `:core:imaging` 在手機上的速度與記憶體（合成影像，非 debug 版）：debug 版慢約 10 倍；對齊一張約 1.4 s、FR-17 五張只算亮度 11.8 s、FR-33 四張以上超出 256 MB 記憶體，2026-10-01 |
+| [m9-gpu-trial.md](m9-gpu-trial.md) | ADR-0017 第 3 步 GPU 試作：減半、重新取樣、均方差三支著色器與 CPU 版比較；加 `precise` 後 32 位元逐位元相同，半精度往零捨入；速度只快 1–3.6 倍，2026-10-02 |
 | [m7-logical-zoom.md](m7-logical-zoom.md) | ADR-0011 第一、二階段：logical 取景的串流組合、0.51–10× 連續變焦的換鏡頭時機與掉幀、各倍率照片尺寸；錄影串流 30 / 60 fps、錄影中拍照；60 fps 與全尺寸照片串流不能並存，2026-10-01 |

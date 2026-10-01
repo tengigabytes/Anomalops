@@ -30,7 +30,7 @@ class Pyramid(base: Plane, minSize: Int = DEFAULT_MIN_SIZE, maxLevels: Int = DEF
  * fractional offsets it is biased when the frames differ in noise or sharpness (see [GaussNewton]). Infinity when
  * fewer than half the points land in the frame.
  */
-internal fun meanSquaredDiff(
+fun meanSquaredDiff(
     reference: Plane,
     frame: Plane,
     transform: Similarity.LevelTransform,

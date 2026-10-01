@@ -17,7 +17,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PROFILE_DIR = os.path.join(ROOT, "assets", "device-profiles")
-PRODUCT_MODULES = ["app", "core/camera", "core/profile", "core/store", "core/telemetry"]
+PRODUCT_MODULES = ["app", "core/camera", "core/gpu", "core/profile", "core/store", "core/telemetry"]
 TEST_SOURCE_SETS = {"test", "androidTest", "testFixtures"}
 SUFFIXES = (".kt", ".kts", ".xml", ".java")
 
