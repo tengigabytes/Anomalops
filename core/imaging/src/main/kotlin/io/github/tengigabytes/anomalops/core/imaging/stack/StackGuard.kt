@@ -22,14 +22,20 @@ class StackGuard(private val stack: FocusStack) {
      * All frames at once: [luma] and [channels] as for [FocusStack.merge]; missing pixels (NaN from alignment) filled
      * from [reference]. The same as [start] with the reference, then [Session.add] of every frame in order.
      */
-    fun merge(luma: List<Plane>, channels: List<List<Plane>>, reference: Int = 0): Result =
-        start(luma[reference], channels[reference]).apply { luma.indices.forEach { add(luma[it], channels[it]) } }
-            .finish()
+    fun merge(luma: List<Plane>, channels: List<List<Plane>>, reference: Int = 0): Result {
+        val session = start(luma[reference], channels[reference])
+        repeat(session.passes) { pass ->
+            luma.indices.forEach { session.add(luma[it], channels[it]) }
+            if (pass < session.passes - 1) session.endPass()
+        }
+        return session.finish()
+    }
 
     /**
      * One frame at a time (ADR-0017). The reference is given first, to fill other frames' missing pixels, and is
-     * also added at its place in the bracket like any other frame. Besides the stack's own state, the session holds
-     * the reference and the sharpest frame so far (the fallback).
+     * also added at its place in the bracket like any other frame. Every frame is added [Session.passes] times, in
+     * the same order, with [Session.endPass] between passes. Besides the stack's own state, the session holds the
+     * reference and the sharpest frame so far (the fallback).
      */
     fun start(referenceLuma: Plane, referenceChannels: List<Plane>): Session = Session(referenceLuma, referenceChannels)
 
@@ -43,19 +49,31 @@ class StackGuard(private val stack: FocusStack) {
         private var bestSingle = Double.NaN
         private var bestChannels: List<Plane> = emptyList()
 
+        private var pass = 0
+
+        /** How many times the bracket has to be added (the stack's [FocusAccumulator.passes]). */
+        val passes: Int get() = accumulator.passes
+
         fun add(luma: Plane, channels: List<Plane>) {
             val filledLuma = fill(luma, referenceLuma)
             val filledChannels = channels.mapIndexed { c, p -> fill(p, referenceChannels[c]) }
-            val single = sharpness(filledLuma)
-            // Strictly better, so ties keep the earlier frame.
-            if (bestFrame < 0 || bestSingle < single) {
-                bestFrame = frames
-                bestSingle = single
-                bestChannels = filledChannels
+            if (pass == 0) {
+                val single = sharpness(filledLuma)
+                // Strictly better, so ties keep the earlier frame.
+                if (bestFrame < 0 || bestSingle < single) {
+                    bestFrame = frames
+                    bestSingle = single
+                    bestChannels = filledChannels
+                }
+                frames++
             }
             // Luma rides along as one more channel, so the merge that is scored is the one that is returned.
             accumulator.add(filledLuma, filledChannels + filledLuma)
-            frames++
+        }
+
+        fun endPass() {
+            accumulator.endPass()
+            pass++
         }
 
         fun finish(): Result {

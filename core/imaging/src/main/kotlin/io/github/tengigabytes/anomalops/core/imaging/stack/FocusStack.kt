@@ -20,20 +20,6 @@ interface FocusStack {
 }
 
 /**
- * Candidate A, local-contrast selection: per pixel, the frame whose Laplacian energy (squared, averaged over
- * [focusRadius]) is highest; the one-hot choice maps are box-smoothed over [blendRadius] and used as weights.
- */
-class ContrastSelectStack(private val focusRadius: Int = 4, private val blendRadius: Int = 6) : FocusStack {
-    override val name = "A contrast select"
-
-    override fun merge(luma: List<Plane>, channels: List<List<Plane>>): List<Plane> {
-        val choice = winners(focusMeasures(luma, focusRadius))
-        val weights = oneHot(choice, luma.size, luma[0]).map { Filters.box(it, blendRadius) }
-        return weighted(weights, channels)
-    }
-}
-
-/**
  * Candidate C, weight map refined by a guided filter: the same one-hot choice as [ContrastSelectStack], but each
  * frame's map is smoothed with a guided filter led by that frame, so the weights follow the subject's edges
  * instead of spilling over them (a simplified single-scale form of Li, Kang and Hu's guided-filter fusion).
