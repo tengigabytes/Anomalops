@@ -35,8 +35,8 @@ import kotlin.random.Random
  * under [TAG] with the time of each step and the Java heap and PSS after it; each step runs once after one warm-up
  * of the aligner. Time it as a non-debuggable app: a debuggable one ran the aligner about ten times slower
  * (docs/test/m9-imaging-phone.md). `-e frames N` sets the focus-stack frames, `-e mergeFrames N` FR-17's.
- * FR-17 and candidate B are fed one frame at a time (ADR-0017): each frame is made just before it is added and
- * dropped after, as camera frames would arrive, and only the time spent adding is counted.
+ * FR-17 and candidates A and B are fed one frame at a time (ADR-0017; A in two passes): each frame is made just
+ * before it is added and dropped after, as camera frames would arrive, and only the time spent adding is counted.
  */
 @RunWith(AndroidJUnit4::class)
 class ImagingBenchmark {
@@ -77,22 +77,10 @@ class ImagingBenchmark {
     }
 
     @Test
-    fun c_stackA() = stack("A", ContrastSelectStack())
+    fun c_stackA() = streamedStack("A", ContrastSelectStack())
 
     @Test
-    fun d_stackB() {
-        val reference = frames(1).single()
-        streamed("FR-33 stack B $stackFrames frames, luma only, per frame") { add ->
-            lateinit var session: StackGuard.Session
-            add { session = StackGuard(LaplacianPyramidStack()).start(reference, listOf(reference)) }
-            add { session.add(reference, listOf(reference)) }
-            for (k in 1 until stackFrames) {
-                val frame = frameAt(k)
-                add { session.add(frame, listOf(frame)) }
-            }
-            add { session.finish() }
-        }
-    }
+    fun d_stackB() = streamedStack("B", LaplacianPyramidStack())
 
     @Test
     fun e_stackC() = stack("C", GuidedWeightStack())
@@ -140,6 +128,24 @@ class ImagingBenchmark {
                 repeat(LOOP_PASSES) { for (i in data.indices) sum += data[i] * 1.0001f }
                 sum
             }
+        }
+    }
+
+    /** Every frame made again for each pass, as a second pass would read the RAW buffer or the DNGs again. */
+    private fun streamedStack(key: String, stack: FocusStack) {
+        val reference = frames(1).single()
+        streamed("FR-33 stack $key $stackFrames frames, luma only, per frame") { add ->
+            lateinit var session: StackGuard.Session
+            add { session = StackGuard(stack).start(reference, listOf(reference)) }
+            repeat(session.passes) { pass ->
+                add { session.add(reference, listOf(reference)) }
+                for (k in 1 until stackFrames) {
+                    val frame = frameAt(k)
+                    add { session.add(frame, listOf(frame)) }
+                }
+                if (pass < session.passes - 1) add { session.endPass() }
+            }
+            add { session.finish() }
         }
     }
 

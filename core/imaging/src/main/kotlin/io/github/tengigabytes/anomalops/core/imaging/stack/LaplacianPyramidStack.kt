@@ -19,7 +19,7 @@ class LaplacianPyramidStack(
     override val name = "B Laplacian pyramid"
 
     override fun merge(luma: List<Plane>, channels: List<List<Plane>>): List<Plane> =
-        accumulator().apply { luma.indices.forEach { add(luma[it], channels[it]) } }.finish()
+        accumulator().mergeAll(luma, channels)
 
     /**
      * Per band level, the best score so far and each channel's coefficient from that frame (ties keep the earlier

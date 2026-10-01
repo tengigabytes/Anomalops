@@ -108,7 +108,10 @@ class FocusStackTest {
         candidates.forEach { stack ->
             val all = stack.merge(bracket, channels)
             val accumulator = stack.accumulator()
-            bracket.indices.forEach { accumulator.add(bracket[it], channels[it]) }
+            repeat(accumulator.passes) { pass ->
+                bracket.indices.forEach { accumulator.add(bracket[it], channels[it]) }
+                if (pass < accumulator.passes - 1) accumulator.endPass()
+            }
             val streamed = accumulator.finish()
             assertTrue(stack.name, all.indices.all { all[it].data.contentEquals(streamed[it].data) })
         }
@@ -116,13 +119,18 @@ class FocusStackTest {
 
     @Test
     fun guardSessionMatchesMerge() {
-        val all = StackGuard(LaplacianPyramidStack()).merge(bracket, bracket.map { listOf(it) }, reference = 2)
-        val session = StackGuard(LaplacianPyramidStack()).start(bracket[2], listOf(bracket[2]))
-        bracket.forEach { session.add(it, listOf(it)) }
-        val streamed = session.finish()
-        assertEquals(all.merged, streamed.merged)
-        assertEquals(all.bestFrame, streamed.bestFrame)
-        assertTrue(all.channels.single().data.contentEquals(streamed.channels.single().data))
+        listOf(ContrastSelectStack(), LaplacianPyramidStack()).forEach { stack ->
+            val all = StackGuard(stack).merge(bracket, bracket.map { listOf(it) }, reference = 2)
+            val session = StackGuard(stack).start(bracket[2], listOf(bracket[2]))
+            repeat(session.passes) { pass ->
+                bracket.forEach { session.add(it, listOf(it)) }
+                if (pass < session.passes - 1) session.endPass()
+            }
+            val streamed = session.finish()
+            assertEquals(stack.name, all.merged, streamed.merged)
+            assertEquals(stack.name, all.bestFrame, streamed.bestFrame)
+            assertTrue(stack.name, all.channels.single().data.contentEquals(streamed.channels.single().data))
+        }
     }
 
     @Test
