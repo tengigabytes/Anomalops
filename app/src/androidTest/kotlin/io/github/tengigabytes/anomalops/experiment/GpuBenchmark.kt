@@ -29,8 +29,8 @@ import kotlin.random.Random
  * process on 2040 x 1536 planes (the half-size plane of a 12.5 MP RAW). Each step runs once to warm up (shader
  * compile, first allocation), then [RUNS] times; logs `GPUBENCH` lines under [TAG] with the median and the
  * fastest, GPU times after glFinish. Time it as a non-debuggable app, like [ImagingBenchmark]. `-e foreground true`
- * keeps an activity of this process resumed while the GPU runs, as the camera screen would be: the GPU clock
- * stayed mostly at its lowest steps, with or without one (docs/test/m9-gpu-fr17.md).
+ * keeps an activity of this process resumed while the GPU runs, as the camera screen would be (the GPU clock
+ * itself is measured by [GpuClockExperiment]).
  */
 @RunWith(AndroidJUnit4::class)
 class GpuBenchmark {
