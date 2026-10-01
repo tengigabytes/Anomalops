@@ -12,6 +12,8 @@ package io.github.tengigabytes.anomalops.core.imaging.develop
  * UNVERIFIED(G0): that the Pixel's RAW_SENSOR output has no shading applied (Camera2 leaves RAW uncorrected and
  * DNGs carry the map as a gain-map opcode), and that the map spans the RAW image of a 2x-crop physical stream
  * rather than the whole sensor. The request must set `STATISTICS_LENS_SHADING_MAP_MODE_ON` to get the map.
+ * 2026-10-01 (docs/test/m9-macro-land.md, section 7): all six back lenses return a 33 x 25 map, and the 2x-crop
+ * streams' maps fall off far less at the corners, as they would if each covered its own RAW image.
  */
 class ShadingMap(val columns: Int, val rows: Int, val gains: FloatArray) {
     init {
