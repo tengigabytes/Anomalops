@@ -1,6 +1,6 @@
 # ADR-0017 多幀運算在手機上走 GPU：OpenGL ES 運算著色器、逐張累加
 
-2026-10-01 · 狀態：提議
+2026-10-01 · 狀態：已採納（維護者 2026-10-01 同意）
 
 ## 背景
 
@@ -20,7 +20,7 @@ ADR-0016 的 `:core:imaging` 是 CPU 版的參考實作，並約定「手機上�
 
 另外查到（2026-10-01，adb）：手機的 NNAPI 有一個 `google-edgetpu` 裝置（TPU）。
 
-## 決策（提議）
+## 決策
 
 **1. 用 OpenGL ES 3.1 的運算著色器（compute shader），由 Kotlin 呼叫**
 
@@ -43,7 +43,7 @@ ADR-0016 的 `:core:imaging` 是 CPU 版的參考實作，並約定「手機上�
 **4. 模組**
 
 - 新增 Android 函式庫 `:core:gpu`：依賴 `:core:imaging`（共用資料型別與 CPU 參考版），`:app` 依賴它。`:core:imaging` 維持純 JVM。
-- 採納時以本 ADR 補註 ADR-0007 的模組表與 ADR-0016，並更新 `scripts/check_module_deps.py`。
+- 已補註 ADR-0007 的模組表與 ADR-0016；`scripts/check_module_deps.py` 已加入規則（模組在第 3 步建立）。
 
 **5. 驗證方式**
 
@@ -55,7 +55,7 @@ ADR-0016 的 `:core:imaging` 是 CPU 版的參考實作，並約定「手機上�
 - 理由見「不採用的選項」。在 `:tools:probe` 加一項：列出 NNAPI 的裝置與功能等級，寫進能力表（NFR-9）。
 - FR-19a（2× 超解析模型）、FR-26（色偏還原模型）、FR-97（物種辨識）、FR-69 的主體偵測做到時，再另寫 ADR 決定要不要用 TPU。
 
-## 實作順序（提議）
+## 實作順序
 
 1. **能力偵測**（不需擺設）：GLES 版本、運算著色器的上限（工作群組大小、共享記憶體、影像格式、半精度與 32 位元浮點紋理能否當輸出）、最大紋理尺寸、Vulkan 版本、NNAPI 裝置。寫進 probe 報告與能力表。
 2. **CPU 參考版改成逐張累加**：`LowLightMerge`、候選 A、B 先改；JVM 測試確認結果與現在相同；`ImagingBenchmark` 確認 6 張不再記憶體不足。
