@@ -1,14 +1,13 @@
 # SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Printable A4 test charts for the macro land tests (docs/test/macro-stacking-test-plan.md).
-
 Print at 100 % (actual size) and check each sheet's 100 mm bar first.
   A  平行對焦靶   flat target facing the camera: dead-leaves texture, Siemens star, mm scales (T3, T4, T6, T12)
   B  斜放景深尺   lay at an angle to the camera: texture band with a mm ladder, 0 at the middle (T7, T10, T9)
   C  距離尺       three strips to cut and join, 0-72 cm, for lens-to-target distance (T3, T4)
   D  灰階與解析度 uniform patches (T16 noise) and line pairs 0.5-4 lp/mm (ADR-0011 check 3)
-  E-I (chart_tools.py) depth staircase (T12), distance cards, dot grid (T10), colour patches, screen overlay (FR-55)
-Writes one PDF per chart, one with all, and a zip of them with print-kit-README.txt.
+  E1, E2 (chart_stairs.py) staircase paper models (T12); F-I (chart_tools.py) distance cards, dot grid,
+colour patches, screen overlay. Writes one PDF per chart, one with all, and a zip with print-kit-README.txt.
 Usage: python scripts/make_charts.py [--out build/charts] [--dpi 400]
 """
 import argparse
@@ -17,7 +16,8 @@ import sys
 
 # scripts/ is on the path when this file runs as a script.
 from chart_parts import A4_W, Circle, PdfPages, Rectangle, dead_leaves, line_pairs, mm_scale, page, plt, siemens_star
-from chart_tools import chart_e, chart_f, chart_g, chart_h, chart_i, write_kit
+from chart_stairs import chart_e1, chart_e2
+from chart_tools import chart_f, chart_g, chart_h, chart_i, write_kit
 
 
 def chart_a(dpi):
@@ -128,7 +128,8 @@ def main():
         "B-slanted-depth": lambda: chart_b(args.dpi),
         "C-distance-strips": chart_c,
         "D-grey-resolution": chart_d,
-        "E-depth-staircase": lambda: chart_e(args.dpi),
+        "E1-staircase-5mm": lambda: chart_e1(args.dpi),
+        "E2-staircase-3mm": lambda: chart_e2(args.dpi),
         "F-distance-cards": chart_f,
         "G-dot-grid": chart_g,
         "H-colour-patches": chart_h,
