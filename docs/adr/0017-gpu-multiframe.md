@@ -43,7 +43,7 @@ ADR-0016 的 `:core:imaging` 是 CPU 版的參考實作，並約定「手機上�
 **4. 模組**
 
 - 新增 Android 函式庫 `:core:gpu`：依賴 `:core:imaging`（共用資料型別與 CPU 參考版），`:app` 依賴它。`:core:imaging` 維持純 JVM。
-- 已補註 ADR-0007 的模組表與 ADR-0016；`scripts/check_module_deps.py` 已加入規則（模組在第 3 步建立）。
+- 已補註 ADR-0007 的模組表與 ADR-0016；`scripts/check_module_deps.py` 的規則在第 3 步建立模組時一起加入（腳本要求模組存在）。
 
 **5. 驗證方式**
 
