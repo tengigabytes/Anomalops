@@ -8,17 +8,23 @@ enum class FocusCalibration { CALIBRATED, APPROXIMATE, UNCALIBRATED }
 /**
  * What the planner needs of one lens, all read at run time from `CameraCharacteristics` (ADR-0014):
  * `LENS_INFO_MINIMUM_FOCUS_DISTANCE`, `LENS_INFO_HYPERFOCAL_DISTANCE`, the focal length (for the magnification
- * correction; 0 leaves it out) and the calibration. [offsetDiopters] is a measured correction from the device
- * profile, true = reported + offset; [hasCalibrationTable] says whether the profile has such a measurement.
+ * correction; 0 leaves it out) and the calibration. [table] is the lens's measured correction (T4), if any; it is
+ * ignored when the lens no longer reports what it reported when measured ([FocusCalibrationTable.appliesTo]).
  */
 data class BracketLens(
     val minFocusDiopters: Float,
     val hyperfocalDiopters: Float,
     val calibration: FocusCalibration,
     val focalLengthMm: Float = 0f,
-    val offsetDiopters: Float = 0f,
-    val hasCalibrationTable: Boolean = false,
-)
+    val table: FocusCalibrationTable? = null,
+) {
+    /** [table] if it still applies to this lens. */
+    val validTable: FocusCalibrationTable? get() = table?.takeIf { it.appliesTo(calibration, minFocusDiopters) }
+
+    fun trueDiopters(reported: Float): Float = validTable?.trueDiopters(reported) ?: reported
+
+    fun reportedFor(trueDiopters: Float): Float = validTable?.reportedFor(trueDiopters) ?: trueDiopters
+}
 
 /**
  * A focus bracket for FR-33: [requestedDiopters] are the `LENS_FOCUS_DISTANCE` values to send, nearest first.
@@ -36,8 +42,9 @@ data class BracketPlan(
 /**
  * Plans FR-33's focus bracket in diopters (ADR-0014, section 3): each frame is sharp over about
  * 2 x hyperfocal / (1 + m) diopters (thin lens; m the magnification at that distance), frames step by [overlap]
- * of that, from the subject's near end to its far end. An APPROXIMATE lens without a measured table gets one more
- * frame of overlap; an UNCALIBRATED lens without one cannot be planned in distances at all (returns null).
+ * of that, from the subject's near end to its far end. An APPROXIMATE lens gets one more frame of overlap unless
+ * its table is [FocusCalibrationTable.precise]; an UNCALIBRATED lens without a table cannot be planned in distances
+ * at all (returns null).
  */
 class BracketPlanner(val maxFrames: Int = DEFAULT_MAX_FRAMES, private val overlap: Float = DEFAULT_OVERLAP) {
     init {
@@ -48,19 +55,21 @@ class BracketPlanner(val maxFrames: Int = DEFAULT_MAX_FRAMES, private val overla
     /** A bracket over the subject from [nearCm] to [farCm] (true distances, nearest first), or null if unplannable. */
     fun plan(lens: BracketLens, nearCm: Float, farCm: Float): BracketPlan? {
         require(nearCm > 0f && farCm >= nearCm) { "subject $nearCm-$farCm cm" }
-        if (lens.calibration == FocusCalibration.UNCALIBRATED && !lens.hasCalibrationTable) return null
-        val reach = lens.minFocusDiopters + lens.offsetDiopters
+        val table = lens.validTable
+        if (lens.calibration == FocusCalibration.UNCALIBRATED && table == null) return null
+        val reach = lens.trueDiopters(lens.minFocusDiopters)
         val nearD = CM_PER_M / nearCm
         val farD = CM_PER_M / farCm
         val tooClose = nearD > reach
         val start = minOf(nearD, reach)
-        val extra = if (lens.calibration == FocusCalibration.APPROXIMATE && !lens.hasCalibrationTable) 1 else 0
+        val precise = table?.precise(lens.hyperfocalDiopters) == true
+        val extra = if (lens.calibration == FocusCalibration.APPROXIMATE && !precise) 1 else 0
         val natural = centres(lens, start, farD)
         val wanted = (natural.size + extra).coerceAtLeast(1)
         val count = minOf(wanted, maxFrames)
         val truncated = wanted > maxFrames
         val centres = if (count == natural.size && !truncated) natural else spread(lens, start, farD, count, truncated)
-        val requested = centres.map { (it - lens.offsetDiopters).coerceIn(0f, lens.minFocusDiopters) }
+        val requested = centres.map { lens.reportedFor(it).coerceIn(0f, lens.minFocusDiopters) }
         val first = centres.first() + depth(lens, centres.first()) / 2
         val last = centres.last() - depth(lens, centres.last()) / 2
         return BracketPlan(requested, first.coerceAtMost(reach)..last.coerceAtLeast(0f), truncated, tooClose)
