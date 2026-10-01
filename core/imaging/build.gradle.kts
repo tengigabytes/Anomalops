@@ -23,3 +23,13 @@ kotlin {
 dependencies {
     testImplementation(libs.junit)
 }
+
+// T12's desktop runner (src/test/.../tool/StackTool.kt): DNGs from the phone through the three FR-33 candidates.
+// gradlew :core:imaging:stackTool --args="<out dir> <a.dng> <b.dng> ... [--full] [--lowlight]"
+tasks.register<JavaExec>("stackTool") {
+    description = "Merges DNGs with each focus-stacking candidate and writes PNGs (T12)."
+    group = "verification"
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("io.github.tengigabytes.anomalops.core.imaging.tool.StackToolKt")
+    maxHeapSize = "8g"
+}
