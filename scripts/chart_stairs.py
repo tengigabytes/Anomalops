@@ -1,19 +1,24 @@
 # SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Chart E of scripts/make_charts.py: a paper-model net that folds into a staircase block with known step depths.
+"""Chart E of scripts/make_charts.py: a one-piece paper-model net that folds into a staircase block with known
+step depths.
 
 The block's side profile: a front wall the full height, then treads stepping down by one riser each away from the
-front, then a short back wall; the bottom stays open. One strip (front wall, treads, risers, back wall) carries
-glue tabs on both long edges and wraps around two side panels cut to the profile. Seen from straight above, each
-tread is one riser farther from the camera than the one before: a focus bracket's ground truth for T12.
+front, then a short back wall; the bottom stays open. The strip (front wall, treads, risers, back wall) runs down
+the page; the two side panels hang off tread 1's long edges, so the whole net is cut as one piece. The strip's
+other long edges carry glue tabs, each kept clear of the panel beside it. Seen from straight above, each tread is
+one riser farther from the camera than the one before: a focus bracket's ground truth for T12.
 """
+import math
+
 from matplotlib.patches import Polygon, Rectangle
 
-from chart_parts import dead_leaves, page
+from chart_parts import A4_W, dead_leaves, page
 
 FOLD = dict(color="black", lw=0.5, ls=(0, (4, 2)))
 CUT = dict(color="black", lw=0.5)
 TAB = 6.0
+MIN_TAB = 1.5
 
 
 def segments(steps, tread, riser):
@@ -27,12 +32,30 @@ def segments(steps, tread, riser):
     return out
 
 
+def tab_height(depth, steps, tread, riser):
+    """The glue tab that fits beside a strip segment starting [depth] mm below tread 1's top fold.
+
+    A side panel lies beside the strip from that fold down to its own back edge; at step k it stands k risers off
+    the strip, and a tab reaching it shares its cut line. 0 means tread 1 itself, the panels' hinge.
+    """
+    if depth < 0 or depth > steps * tread:
+        return TAB
+    gap = math.floor((depth + 0.5) / tread) * riser
+    return min(TAB, gap)
+
+
 def strip(ax, x, top, width, steps, tread, riser, dpi, seed):
-    """The strip, top to bottom, with tabs; folds marked 山 (outward corner) and 谷 (inward corner)."""
+    """The strip, top to bottom, with tabs; folds marked 山 (outward corner) and 谷 (inward corner).
+
+    Returns the y of tread 1's top fold, where the side panels hang.
+    """
     y = top
+    hinge = None
     parts = segments(steps, tread, riser)
     for i, (kind, length, label) in enumerate(parts):
         y0 = y - length
+        if label == "1":
+            hinge = y
         ax.add_patch(Rectangle((x, y0), width, length, fill=False, lw=0.3, color="0.6"))
         if kind == "tread":
             ax.imshow(dead_leaves(width - 12, length - 2, dpi, seed=seed + i), cmap="gray", vmin=0, vmax=1,
@@ -40,54 +63,54 @@ def strip(ax, x, top, width, steps, tread, riser, dpi, seed):
             ax.text(x + 5, y0 + length / 2, label, fontsize=9, fontweight="bold", ha="center", va="center")
         elif label:
             ax.text(x + width / 2, y0 + length / 2, label, fontsize=8, ha="center", va="center")
+        tab = tab_height(-1 if hinge is None else hinge - y, steps, tread, riser)
         for side in (-1, 1):
             edge = x if side < 0 else x + width
-            inset = min(1.0, length / 3)
-            ax.add_patch(Polygon([(edge, y0), (edge + side * TAB, y0 + inset), (edge + side * TAB, y - inset),
-                                  (edge, y)], closed=True, fill=False, **CUT))
+            if tab >= MIN_TAB:
+                inset = min(1.0, length / 3)
+                ax.add_patch(Polygon([(edge, y0), (edge + side * tab, y0 + inset), (edge + side * tab, y - inset),
+                                      (edge, y)], closed=True, fill=False, **CUT))
+            ax.plot([edge, edge], [y0, y], **(FOLD if tab >= MIN_TAB or tab == 0 else CUT))
         if i < len(parts) - 1:
             # Front→tread and tread→riser turn outward (mountain); riser→tread turns inward (valley).
-            fold = "谷" if kind == "riser" else "山"
             ax.plot([x, x + width], [y0, y0], **FOLD)
-            ax.text(x + width + TAB + 1.5, y0, fold, fontsize=5, va="center")
+            ax.text(x + 1, y0, "谷" if kind == "riser" else "山", fontsize=5, va="center")
         y = y0
-    ax.plot([x, x], [y, top], **FOLD)
-    ax.plot([x + width, x + width], [y, top], **FOLD)
     ax.plot([x, x + width], [top, top], **CUT)
     ax.plot([x, x + width], [y, y], **CUT)
-    return top - y
+    return hinge
 
 
-def side_panel(ax, x, top, steps, tread, riser, mirror):
-    """The block's side profile, depth running down the page from [top], height across from [x]."""
-    profile = [(0.0, 0.0), (0.0, steps * riser)]
+def side_panel(ax, hinge_x, hinge_y, steps, tread, riser, side):
+    """The side profile hanging off tread 1's edge at [hinge_x]: depth down the page, height falling away from
+    the strip on [side] (-1 left, 1 right). The hinge itself is the strip's fold line."""
+    height = steps * riser
+    profile = [(0.0, 0.0), (0.0, height)]
     for k in range(steps):
         h = (steps - k) * riser
         profile += [(k * tread, h), ((k + 1) * tread, h)]
         if k < steps - 1:
             profile.append(((k + 1) * tread, h - riser))
     profile += [(steps * tread, riser), (steps * tread, 0.0)]
-    width = steps * riser
-    points = [(x + (width - h if mirror else h), top - d) for d, h in profile]
-    ax.add_patch(Polygon(points, closed=True, fill=False, **CUT))
-    ax.text(x + width / 2, top - steps * tread / 2, "側板" + ("（右）" if mirror else "（左）"), fontsize=7,
-            rotation=90, ha="center", va="center")
-    ax.text(x + (width - 2 if mirror else 2), top + 2, "正面", fontsize=5, ha="right" if mirror else "left")
+    # From the hinge's far end round the steps, the back, the bottom and the front back to the hinge.
+    outline = profile[3:] + profile[:2]
+    ax.plot([hinge_x + side * (height - h) for _, h in outline], [hinge_y - d for d, _ in outline], **CUT)
+    ax.text(hinge_x + side * 2.5, hinge_y - tread / 2, "山", fontsize=6, ha="center", va="center")
+    ax.text(hinge_x + side * (height + riser) / 2, hinge_y - 1.5 * tread, "側板" + ("（左）" if side < 0 else "（右）"),
+            fontsize=7, ha="center", va="center")
 
 
 def stair_chart(dpi, steps, tread, riser, width, title):
     fig, ax = page(
         title,
-        "厚紙印，實線剪下（含兩側小三角黏貼片），虛線摺：「山」向外摺、「谷」向內摺，黏貼片全部向內摺。"
-        "長條沿兩片側板的輪廓\n繞一圈，黏貼片貼在側板內側；底部不封。手機在正上方往下拍：第 1 階最近，"
-        f"之後每階遠 {riser:g} mm（T12 景深合成可對答案）。",
+        "厚紙印，沿實線剪下整片（含小梯形黏貼片），虛線摺：「山」向外摺、「谷」向內摺，黏貼片全部向內摺。"
+        "兩片側板沿第 1 階\n兩邊往下摺，長條沿側板輪廓繞下去，黏貼片貼在側板內側；底部不封。手機在正上方往下拍：第 1 階最近，"
+        f"之後每階遠 {riser:g} mm（T12）。",
     )
-    top = 262.0
-    strip(ax, 22.0, top, width, steps, tread, riser, dpi, seed=40 + steps)
-    panel = steps * riser
-    x = 22.0 + width + 2 * TAB + 14
-    side_panel(ax, x, top, steps, tread, riser, mirror=False)
-    side_panel(ax, x + panel + 12, top, steps, tread, riser, mirror=True)
+    x = (A4_W - width) / 2
+    hinge = strip(ax, x, 262.0, width, steps, tread, riser, dpi, seed=40 + steps)
+    side_panel(ax, x, hinge, steps, tread, riser, side=-1)
+    side_panel(ax, x + width, hinge, steps, tread, riser, side=1)
     return fig
 
 
