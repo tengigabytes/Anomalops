@@ -31,3 +31,7 @@ keystore.properties
 
 # Local scratch output of Claude Code sessions
 /.claude-tmp/
+
+# Python bytecode
+__pycache__/
+*.pyc
