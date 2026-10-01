@@ -78,5 +78,6 @@ T1、T2 排在最前面：長焦微距與包圍步進都依賴實體鏡頭存取
 
 - `t7_t10_heldFocus`：目標 ±0.5 D 逐步停住對焦，記錄每步清晰的帶（T7 景深），並比較最遠與最近兩步的列剖面縮放（T10 對焦呼吸）。
 - `t9_bracketModes`：目標附近 6 個距離的包圍，分「一張換一個距離」「每個距離停 2 幀」「停 3 幀」三種，記錄每張清晰的帶與鏡頭狀態，對照 `t7` 的停住結果（T9 重驗）。
+- 結果：logcat 存檔後執行 `python scripts/ruler_report.py <log>`，產生 T7、T10、T9 重驗的表格（2026-10-01 以合成 log 驗證過：設定的各帶對焦位置與清晰寬度都能還原）。
 - 執行：`am instrument -w -e targetCm <尺中間的距離> [-e lenses 2,4,6] -e class ...SlantedRulerExperiment ...`。之後是 T6、T16（T5 已於 2026-10-01 完成）。
 
