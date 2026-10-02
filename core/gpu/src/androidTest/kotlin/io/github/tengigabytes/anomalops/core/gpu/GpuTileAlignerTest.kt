@@ -91,16 +91,24 @@ class GpuTileAlignerTest {
         }
     }
 
+    /**
+     * The mean residual of the tiles that land wholly inside the moved region of the frame. The region is in frame
+     * coordinates, so a tile is tested where the whole-frame transform puts it; tiles that only partly overlap it
+     * mix moved and still content (counting by reference position gave (3.13, -2.01) for (3.4, -2.2)).
+     */
     private fun movedMean(field: TileField): String {
         var sx = 0.0
         var sy = 0.0
         var n = 0
+        val w = AlignScene.WIDTH
+        val h = AlignScene.HEIGHT
         for (row in 0 until field.rows) {
             for (col in 0 until field.cols) {
-                val x = col * field.tileSize
-                val y = row * field.tileSize
-                val inside = x >= moved.left && x + field.tileSize <= moved.right &&
-                    y >= moved.top && y + field.tileSize <= moved.bottom
+                val x = (col * field.tileSize).toFloat()
+                val y = (row * field.tileSize).toFloat()
+                val size = field.tileSize
+                val inside = truth.mapX(x, w) >= moved.left && truth.mapX(x + size, w) <= moved.right &&
+                    truth.mapY(y, h) >= moved.top && truth.mapY(y + size, h) <= moved.bottom
                 if (inside) {
                     sx += field.dx[field.index(col, row)]
                     sy += field.dy[field.index(col, row)]
