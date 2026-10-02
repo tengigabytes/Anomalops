@@ -108,3 +108,5 @@ ADR-0016 的 `:core:imaging` 是 CPU 版的參考實作，並約定「手機上�
 2026-10-02 補註（第 5 步）：FR-33 候選 A、B 上 GPU（`GpuContrastSelect`、`GpuLaplacianPyramid`，逐張加入，A 兩輪）。盒狀平均在 GPU 上是 float 加總（CPU 是 double 的累加表），合成結果與 CPU 的相對差 ≤ 4 × 10⁻⁷，測試資料中沒有選到不同張的像素。6 張 2040 × 1536、亮度加 3 個色版：A 0.45–0.56 s、B 0.44–0.48 s，不含對齊與 `StackGuard`（[m9-gpu-fr33.md](../test/m9-gpu-fr33.md)）。
 
 2026-10-02 補註（第 5 步，`StackGuard` 與整段）：`GpuStackGuard` 上 GPU，保留或退回的判定與 CPU 相同（含一個退回的情況）。照 `StackTool` 的流程（解碼、整張對齊、重新取樣、`StackGuard`、輸出），6 張 12.5 MP RAW 到 ARGB：A 0.68–0.86 s、B 0.85–0.96 s（[m9-gpu-fr33.md](../test/m9-gpu-fr33.md) 第 4 節）。
+
+2026-10-02 補註（第 6 步，T11）：開著預覽、FR-62 RAW 緩衝滿載時，GPU 合成的記憶體最高是 FR-33 候選 B 八張：PSS 485.6 MB（其中 GPU 375.6 MB）加相機 dma-buf 189.5 MB；FR-33 A 約 634 MB、FR-17 約 514 MB（合計）。沒有崩潰也沒有被系統終止。RAW 是在 CPU 上產生的（實際會直接來自緩衝），對齊的金字塔沒有算進來（[m9-gpu-memory.md](../test/m9-gpu-memory.md)）。
