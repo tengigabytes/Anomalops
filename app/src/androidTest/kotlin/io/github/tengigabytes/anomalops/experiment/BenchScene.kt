@@ -4,6 +4,8 @@ package io.github.tengigabytes.anomalops.experiment
 
 import io.github.tengigabytes.anomalops.core.imaging.align.Plane
 import io.github.tengigabytes.anomalops.core.imaging.align.Similarity
+import io.github.tengigabytes.anomalops.core.imaging.develop.CfaLayout
+import io.github.tengigabytes.anomalops.core.imaging.develop.RawFrame
 import kotlin.random.Random
 
 /**
@@ -17,12 +19,37 @@ internal object BenchScene {
     private const val RANGE = 4000f
     private const val GRID_SEED = 10
     private const val PAD = 4
+    const val ROW_STRIDE = 4096
+    private const val WHITE = 4095f
+    private const val BRIGHTNESS = 1.15f
+    private val BLACK = floatArrayOf(64f, 66f, 63f, 65f)
+    private val COLOUR_GAINS = floatArrayOf(0.55f, 1.0f, 0.7f)
     private val cells = intArrayOf(256, 64, 16, 4)
     private val grids = cells.mapIndexed { k, c ->
         val r = Random(GRID_SEED + k)
         val gw = WIDTH / c + 2 * PAD
         val gh = HEIGHT / c + 2 * PAD
         Plane(gw, gh, FloatArray(gw * gh) { r.nextFloat() })
+    }
+
+    /**
+     * A RAW_SENSOR frame of the scene seen through [view], as `RawScene` in `:core:gpu`'s tests makes it: GBRG,
+     * twice [WIDTH] x [HEIGHT] with rows padded to [ROW_STRIDE] samples, a black level per cell position, white
+     * 4095, colour gains per photosite colour, each photosite from its 2 x 2 cell's value of [render].
+     */
+    fun raw(view: Similarity, noise: Float, noiseSeed: Int): RawFrame {
+        val plane = render(view, noise, noiseSeed)
+        val layout = CfaLayout.GBRG
+        val samples = ShortArray(ROW_STRIDE * 2 * HEIGHT)
+        for (y in 0 until 2 * HEIGHT) {
+            for (x in 0 until 2 * WIDTH) {
+                val k = (y and 1) * 2 + (x and 1)
+                val scene = plane[x / 2, y / 2] * BRIGHTNESS * COLOUR_GAINS[layout.colourAt(x, y)]
+                val v = (BLACK[k] + scene * (WHITE - BLACK[k]) / WHITE).coerceIn(0f, WHITE)
+                samples[y * ROW_STRIDE + x] = v.toInt().toShort()
+            }
+        }
+        return RawFrame(samples, 2 * WIDTH, 2 * HEIGHT, ROW_STRIDE, layout, BLACK.copyOf(), WHITE)
     }
 
     /** The scene seen through [view] (`frame(view.map(p)) = scene(p)`) with uniform noise of ±[noise]. */
