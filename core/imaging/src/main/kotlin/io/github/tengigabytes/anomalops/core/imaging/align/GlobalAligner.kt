@@ -11,79 +11,85 @@ import kotlin.math.ceil
  * then sub-pixel refinement on level 0 by [GaussNewton], which a cost-based fit would bias (see there). A
  * least-squares fit: a subject moving on its own pulls it a little, and [TileAligner] takes up the difference tile
  * by tile.
+ *
+ * The search itself is shared by every backend (ADR-0017): the second [align] takes the costs and the normal
+ * equations as functions, which `:core:gpu` computes on the GPU.
  */
 class GlobalAligner(private val options: AlignOptions = AlignOptions()) {
     fun align(reference: Pyramid, frame: Pyramid): Similarity {
         require(reference.levels.size == frame.levels.size) { "pyramids of different depth" }
-        val full = reference[0].width to reference[0].height
-        val top = reference.top
-        var best = searchTop(reference, frame, full)
+        val base = reference[0]
+        val full = base.width to base.height
+        val sums = GradientSums(base, Region.inner(base.width, base.height, options.margin), options.sampleStep)
+        return align(
+            reference.top,
+            costs = { level, candidates ->
+                val ref = reference[level]
+                val region = Region.inner(ref.width, ref.height, options.margin)
+                FloatArray(candidates.size) {
+                    meanSquaredDiff(ref, frame[level], candidates[it].atLevel(level), region, options.sampleStep, full)
+                }
+            },
+            equations = { sums.at(frame[0], it) },
+        )
+    }
+
+    /**
+     * The search with pyramids of [top] + 1 levels: [costs] gives the [meanSquaredDiff] of each candidate on a
+     * level, over [Region.inner] of that level with [AlignOptions.margin] and grid spacing [AlignOptions.sampleStep];
+     * [equations] gives [GaussNewton]'s normal equations on level 0 over the same region. Ties keep the earlier
+     * candidate, as the costs are compared in order.
+     */
+    fun align(
+        top: Int,
+        costs: (Int, List<Similarity>) -> FloatArray,
+        equations: (Similarity) -> NormalEquations,
+    ): Similarity {
+        val first = topCandidates(top)
+        var best = pick(Similarity(), Float.POSITIVE_INFINITY, first, costs(top, first))
         var scaleStep = options.scaleStep
         for (level in top - 1 downTo 0) {
             scaleStep /= 2
-            best = searchAround(reference, frame, level, full, best, scaleStep)
+            val around = around(best, (1 shl level).toFloat(), scaleStep)
+            val all = costs(level, listOf(best) + around)
+            best = pick(best, all[0], around, all.copyOfRange(1, all.size))
         }
-        val region = Region.inner(reference[0].width, reference[0].height, options.margin)
-        return GaussNewton(reference[0], region, options.sampleStep).refine(frame[0], best)
+        return GaussNewton().refine(best, equations)
     }
 
-    private fun searchTop(reference: Pyramid, frame: Pyramid, full: Pair<Int, Int>): Similarity {
-        val level = reference.top
-        val factor = 1 shl level
+    /** The exhaustive grid of the top level, scale outermost and x innermost. */
+    private fun topCandidates(top: Int): List<Similarity> {
+        val factor = 1 shl top
         val radius = ceil(options.maxShiftPx.toFloat() / factor).toInt()
         val scaleCount = ceil(options.maxScaleDelta / options.scaleStep).toInt()
-        var best = Similarity()
-        var bestCost = Float.POSITIVE_INFINITY
-        for (k in -scaleCount..scaleCount) {
+        return (-scaleCount..scaleCount).flatMap { k ->
             val scale = 1f + k * options.scaleStep
-            for (dy in -radius..radius) {
-                for (dx in -radius..radius) {
-                    val candidate = Similarity(scale, (dx * factor).toFloat(), (dy * factor).toFloat())
-                    val cost = cost(reference, frame, level, full, candidate)
-                    if (cost < bestCost) {
-                        bestCost = cost
-                        best = candidate
-                    }
-                }
+            (-radius..radius).flatMap { dy ->
+                (-radius..radius).map { dx -> Similarity(scale, (dx * factor).toFloat(), (dy * factor).toFloat()) }
             }
         }
-        return best
     }
 
-    private fun searchAround(
-        reference: Pyramid,
-        frame: Pyramid,
-        level: Int,
-        full: Pair<Int, Int>,
-        start: Similarity,
-        scaleStep: Float,
-    ): Similarity {
-        val factor = (1 shl level).toFloat()
-        var best = start
-        var bestCost = cost(reference, frame, level, full, start)
-        for (ds in -1..1) {
-            for (dy in -1..1) {
-                for (dx in -1..1) {
-                    val candidate = Similarity(
-                        start.scale + ds * scaleStep,
-                        start.dx + dx * factor,
-                        start.dy + dy * factor,
-                    )
-                    val cost = cost(reference, frame, level, full, candidate)
-                    if (cost < bestCost) {
-                        bestCost = cost
-                        best = candidate
-                    }
-                }
+    /** ±1 [factor]-pixel step in x and y and ±[scaleStep] around [start], scale outermost and x innermost. */
+    private fun around(start: Similarity, factor: Float, scaleStep: Float): List<Similarity> = (-1..1).flatMap { ds ->
+        (-1..1).flatMap { dy ->
+            (-1..1).map { dx ->
+                Similarity(start.scale + ds * scaleStep, start.dx + dx * factor, start.dy + dy * factor)
             }
         }
-        return best
     }
 
-    private fun cost(reference: Pyramid, frame: Pyramid, level: Int, full: Pair<Int, Int>, s: Similarity): Float {
-        val ref = reference[level]
-        val region = Region.inner(ref.width, ref.height, options.margin)
-        return meanSquaredDiff(ref, frame[level], s.atLevel(level), region, options.sampleStep, full)
+    /** The first of [candidates] whose cost is below every earlier one and [bestCost]; [best] if none is. */
+    private fun pick(best: Similarity, bestCost: Float, candidates: List<Similarity>, costs: FloatArray): Similarity {
+        var chosen = best
+        var lowest = bestCost
+        candidates.forEachIndexed { i, candidate ->
+            if (costs[i] < lowest) {
+                lowest = costs[i]
+                chosen = candidate
+            }
+        }
+        return chosen
     }
 }
 
