@@ -95,7 +95,7 @@ class GpuContrastSelect(private val focusRadius: Int = 4, private val blendRadiu
     }
 
     companion object {
-        /** Image units used by the blend: one sum per channel. */
-        const val MAX_CHANNELS = 3
+        /** Image units used by the blend: one sum per channel (R, G, B and the luma riding along for the guard). */
+        const val MAX_CHANNELS = 4
     }
 }
