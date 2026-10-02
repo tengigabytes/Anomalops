@@ -82,6 +82,24 @@ class PlaneKernelsTest {
     }
 
     @Test
+    fun uploadIntoAReusedPlaneMatchesANewOne() {
+        val other = texture(WIDTH, HEIGHT, seed = 2)
+        PlaneFormat.entries.forEach { format ->
+            val fresh = transfer.upload(plane, format)
+            val reused = transfer.upload(other, format)
+            val returned = transfer.upload(plane, format, into = reused)
+            val a = transfer.download(fresh).data
+            val b = transfer.download(reused).data
+            val mismatches = a.indices.count { a[it] != b[it] && !(a[it].isNaN() && b[it].isNaN()) }
+            log("upload into a reused plane $format: $mismatches values differ from a new plane")
+            assertTrue("upload returns the given plane", returned === reused)
+            assertTrue("upload reused $format: $mismatches", mismatches == 0)
+            fresh.close()
+            reused.close()
+        }
+    }
+
+    @Test
     fun warpIntoAReusedPlaneMatchesTheCpu() {
         val global = Similarity(scale = 1.004f, dx = 3.3f, dy = -2.7f)
         val cpu = FrameAligner(plane).warp(plane, global)

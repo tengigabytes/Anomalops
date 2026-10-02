@@ -41,9 +41,18 @@ class PlaneTransfer : AutoCloseable {
         """,
     )
     private var staging: ByteBuffer = ByteBuffer.allocateDirect(0)
+    private var floatPlane: GpuPlane? = null
 
-    fun upload(plane: Plane, format: PlaneFormat): GpuPlane {
-        val float = GpuPlane(plane.width, plane.height, PlaneFormat.FLOAT32)
+    /**
+     * [plane] in a GPU plane of [format]: [into] when given (the same size and format), otherwise a new one.
+     * Reusing a plane saves allocating a texture per frame, which is slow (docs/test/m9-gpu-fr17.md).
+     */
+    fun upload(plane: Plane, format: PlaneFormat, into: GpuPlane? = null): GpuPlane {
+        val out = into ?: GpuPlane(plane.width, plane.height, format)
+        require(out.width == plane.width && out.height == plane.height && out.format == format) {
+            "plane ${plane.width}x${plane.height} $format into ${out.width}x${out.height} ${out.format}"
+        }
+        val float = if (format == PlaneFormat.FLOAT32) out else floatStaging(plane.width, plane.height)
         val buffer = staging(plane.data.size)
         buffer.asFloatBuffer().put(plane.data)
         float.bindSampler(0)
@@ -59,14 +68,12 @@ class PlaneTransfer : AutoCloseable {
             buffer,
         )
         checkGl("upload")
-        if (format == PlaneFormat.FLOAT32) return float
-        return GpuPlane(plane.width, plane.height, PlaneFormat.HALF).also { half ->
-            float.bindSampler(0)
-            half.bindImage(0, GLES31.GL_WRITE_ONLY)
-            toHalf.use().dispatch(GpuPlane.groups(plane.width), GpuPlane.groups(plane.height))
-            GLES31.glMemoryBarrier(GLES31.GL_TEXTURE_FETCH_BARRIER_BIT or GLES31.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
-            float.close()
-        }
+        if (format == PlaneFormat.FLOAT32) return out
+        float.bindSampler(0)
+        out.bindImage(0, GLES31.GL_WRITE_ONLY)
+        toHalf.use().dispatch(GpuPlane.groups(plane.width), GpuPlane.groups(plane.height))
+        GLES31.glMemoryBarrier(GLES31.GL_TEXTURE_FETCH_BARRIER_BIT or GLES31.GL_SHADER_IMAGE_ACCESS_BARRIER_BIT)
+        return out
     }
 
     fun download(plane: GpuPlane): Plane {
@@ -96,6 +103,14 @@ class PlaneTransfer : AutoCloseable {
     override fun close() {
         toHalf.close()
         readBack.close()
+        floatPlane?.close()
+    }
+
+    /** The 32-bit plane a [PlaneFormat.HALF] upload goes through, kept for the next one of the same size. */
+    private fun floatStaging(width: Int, height: Int): GpuPlane {
+        floatPlane?.takeIf { it.width == width && it.height == height }?.let { return it }
+        floatPlane?.close()
+        return GpuPlane(width, height, PlaneFormat.FLOAT32).also { floatPlane = it }
     }
 
     private fun staging(floats: Int): ByteBuffer {

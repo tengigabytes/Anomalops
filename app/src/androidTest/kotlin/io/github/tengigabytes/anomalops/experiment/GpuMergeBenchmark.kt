@@ -9,6 +9,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.tengigabytes.anomalops.core.gpu.GlesContext
 import io.github.tengigabytes.anomalops.core.gpu.GpuLowLightMerge
+import io.github.tengigabytes.anomalops.core.gpu.GpuPlane
 import io.github.tengigabytes.anomalops.core.gpu.PlaneFormat
 import io.github.tengigabytes.anomalops.core.gpu.PlaneTransfer
 import io.github.tengigabytes.anomalops.core.imaging.align.Plane
@@ -20,10 +21,10 @@ import org.junit.runner.RunWith
 /**
  * ADR-0017 step 4: FR-17's merge of a 5-frame burst on the GPU ([GpuLowLightMerge]): per frame the luma aligns
  * and weights, and three colour planes (R, G, B, here derived from the luma) are merged, all [BenchScene] planes.
- * Frames arrive one at a time: each is uploaded (luma and three colours), then added. With an activity in the
- * foreground; the burst runs [BURSTS] times, the first to warm up (shader compile). Logs `MERGEBENCH` lines under
- * [TAG]: start, each frame's upload and add (after glFinish), finish, and the burst's total. Colour conversion,
- * RAW decoding and output are not in it yet. Time it as a non-debuggable app, like [ImagingBenchmark].
+ * Frames arrive one at a time: each is uploaded (luma and three colours; after the reference into the same four
+ * planes), then added. With an activity in the foreground; the burst runs [BURSTS] times, the first to warm up
+ * (shader compile). Logs `MERGEBENCH` lines under [TAG]: start, each frame's upload and add (after glFinish),
+ * finish, and the burst's total. RAW decoding and output are in [GpuRawPipelineBenchmark]. Time it as a non-debuggable app, like [ImagingBenchmark].
  */
 @RunWith(AndroidJUnit4::class)
 class GpuMergeBenchmark {
@@ -42,30 +43,34 @@ class GpuMergeBenchmark {
         GlesContext.create().use {
             val transfer = PlaneTransfer()
             val merge = GpuLowLightMerge()
-            repeat(BURSTS) { burst(it, transfer, merge) }
+            val framePlanes = List(PLANES) { GpuPlane(lumas[0].width, lumas[0].height, PlaneFormat.FLOAT32) }
+            repeat(BURSTS) { burst(it, transfer, merge, framePlanes) }
+            framePlanes.forEach { it.close() }
             listOf(merge, transfer).forEach { it.close() }
         }
     }
 
-    private fun burst(index: Int, transfer: PlaneTransfer, merge: GpuLowLightMerge) {
+    /** One burst; the reference gets new planes (it lives through the burst), later frames reuse [framePlanes]. */
+    private fun burst(index: Int, transfer: PlaneTransfer, merge: GpuLowLightMerge, framePlanes: List<GpuPlane>) {
         var total = 0.0
-        val upload = { k: Int ->
-            val planes = colours(lumas[k])
-            val (gpu, ms) = timed { (planes + lumas[k]).map { transfer.upload(it, PlaneFormat.FLOAT32) } }
-            log(index, "frame $k upload 4 planes", ms)
+        val upload = { k: Int, into: List<GpuPlane>? ->
+            val planes = colours(lumas[k]) + lumas[k]
+            val (gpu, ms) = timed {
+                planes.mapIndexed { i, p -> transfer.upload(p, PlaneFormat.FLOAT32, into = into?.get(i)) }
+            }
+            log(index, "frame $k upload 4 planes" + if (into == null) " (new planes)" else " (reused planes)", ms)
             total += ms
             gpu
         }
-        val reference = upload(0)
+        val reference = upload(0, null)
         val (accumulator, startMs) = timed { merge.start(reference.last(), reference.dropLast(1), sigma) }
         log(index, "start", startMs)
         total += startMs
         for (k in 1 until views.size) {
-            val frame = upload(k)
+            val frame = upload(k, framePlanes)
             val (alignment, ms) = timed { accumulator.add(frame.last(), frame.dropLast(1)) }
             log(index, "frame $k add (aligned ${alignment.global})", ms)
             total += ms
-            frame.forEach { it.close() }
         }
         val (merged, finishMs) = timed { accumulator.finish() }
         log(index, "finish", finishMs)
@@ -94,6 +99,7 @@ class GpuMergeBenchmark {
     private companion object {
         const val TAG = "GpuMergeBenchmark"
         const val BURSTS = 3
+        const val PLANES = 4
         const val NOISE = 40f
         const val NS_PER_MS = 1e6
         val COLOUR_GAINS = floatArrayOf(0.5f, 1f, 0.3f)
