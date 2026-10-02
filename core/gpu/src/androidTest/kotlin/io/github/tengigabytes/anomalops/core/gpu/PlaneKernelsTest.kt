@@ -82,6 +82,24 @@ class PlaneKernelsTest {
     }
 
     @Test
+    fun warpIntoAReusedPlaneMatchesTheCpu() {
+        val global = Similarity(scale = 1.004f, dx = 3.3f, dy = -2.7f)
+        val cpu = FrameAligner(plane).warp(plane, global)
+        val format = PlaneFormat.FLOAT32
+        val input = transfer.upload(plane, format)
+        val out = GpuPlane(WIDTH, HEIGHT, format)
+        // A first warp with another transform leaves different values and NaN edges for the second to overwrite.
+        kernels.warp(input, Similarity(scale = 0.99f, dx = -5f, dy = 4f), into = out)
+        val returned = kernels.warp(input, global, into = out)
+        val error = compare(cpu, transfer.download(out))
+        log("warp into a reused plane $format: $error")
+        assertTrue("warp returns the given plane", returned === out)
+        assertTrue("warp reused $format: $error", error.maxRel <= maxRel(format) && error.maskMismatches == 0)
+        input.close()
+        out.close()
+    }
+
+    @Test
     fun meanSquaredDiffMatchesTheCpu() {
         val other = texture(WIDTH, HEIGHT, seed = 1, dx = 1.3f, dy = -0.7f)
         val level = 2

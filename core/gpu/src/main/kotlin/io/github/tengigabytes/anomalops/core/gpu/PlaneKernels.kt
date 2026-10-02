@@ -9,16 +9,18 @@ import io.github.tengigabytes.anomalops.core.imaging.align.Similarity
 /**
  * ADR-0017 step 3: the first kernels, each the GPU form of one `:core:imaging` function — [half] (`Plane.half`)
  * and [warp] (`FrameAligner.warp`). [warpFiltered] uses the texture unit's own bilinear filter instead, to see
- * what it costs in accuracy. The output format is the input's. Needs a current [GlesContext].
+ * what it costs in accuracy. The output format is the input's. Each kernel writes into a new plane, or into `into`
+ * when given (the same size and format as the output, and not the input), so callers can reuse one plane instead of
+ * allocating a texture per call. Needs a current [GlesContext].
  */
 class PlaneKernels : AutoCloseable {
     private val halves = HashMap<PlaneFormat, ComputeProgram>()
     private val warps = HashMap<Pair<PlaneFormat, Boolean>, ComputeProgram>()
 
     /** 2 x 2 means, half size; an odd last row or column is dropped. */
-    fun half(src: GpuPlane): GpuPlane {
+    fun half(src: GpuPlane, into: GpuPlane? = null): GpuPlane {
         require(src.width >= 2 && src.height >= 2) { "cannot halve ${src.width}x${src.height}" }
-        val dst = GpuPlane(src.width / 2, src.height / 2, src.format)
+        val dst = output(src, src.width / 2, src.height / 2, into)
         src.bindSampler(0)
         dst.bindImage(0, GLES31.GL_WRITE_ONLY)
         halves.getOrPut(src.format) { halfProgram(src.format) }.use()
@@ -28,19 +30,20 @@ class PlaneKernels : AutoCloseable {
     }
 
     /** [frame] resampled onto the reference grid with only the whole-frame transform; NaN where it has no data. */
-    fun warp(frame: GpuPlane, global: Similarity): GpuPlane = warp(frame, global, filtered = false)
+    fun warp(frame: GpuPlane, global: Similarity, into: GpuPlane? = null): GpuPlane =
+        warp(frame, global, filtered = false, into)
 
     /**
      * As [warp], but with the texture unit's bilinear filter ([PlaneFormat.HALF] only: 32-bit float textures
      * cannot be filtered on the phones tested).
      */
-    fun warpFiltered(frame: GpuPlane, global: Similarity): GpuPlane {
+    fun warpFiltered(frame: GpuPlane, global: Similarity, into: GpuPlane? = null): GpuPlane {
         require(frame.format == PlaneFormat.HALF) { "hardware filtering needs HALF, not ${frame.format}" }
-        return warp(frame, global, filtered = true)
+        return warp(frame, global, filtered = true, into)
     }
 
-    private fun warp(frame: GpuPlane, global: Similarity, filtered: Boolean): GpuPlane {
-        val dst = GpuPlane(frame.width, frame.height, frame.format)
+    private fun warp(frame: GpuPlane, global: Similarity, filtered: Boolean, into: GpuPlane?): GpuPlane {
+        val dst = output(frame, frame.width, frame.height, into)
         frame.bindSampler(0, if (filtered) GLES20.GL_LINEAR else GLES20.GL_NEAREST)
         dst.bindImage(0, GLES31.GL_WRITE_ONLY)
         val level = LevelUniforms(global, 0, frame.width, frame.height)
@@ -52,6 +55,16 @@ class PlaneKernels : AutoCloseable {
         barrier()
         if (filtered) frame.bindSampler(0)
         return dst
+    }
+
+    /** [into] after checking it fits, or a new [width] x [height] plane in [src]'s format. */
+    private fun output(src: GpuPlane, width: Int, height: Int, into: GpuPlane?): GpuPlane {
+        if (into == null) return GpuPlane(width, height, src.format)
+        require(into !== src) { "output must not be the input" }
+        require(into.width == width && into.height == height && into.format == src.format) {
+            "output ${into.width}x${into.height} ${into.format}, need ${width}x$height ${src.format}"
+        }
+        return into
     }
 
     override fun close() {
