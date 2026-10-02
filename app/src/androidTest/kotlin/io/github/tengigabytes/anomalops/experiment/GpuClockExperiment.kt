@@ -12,6 +12,7 @@ import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import io.github.tengigabytes.anomalops.core.gpu.GlesContext
+import io.github.tengigabytes.anomalops.core.gpu.GpuPlane
 import io.github.tengigabytes.anomalops.core.gpu.MeanSquaredDiffKernel
 import io.github.tengigabytes.anomalops.core.gpu.PlaneFormat
 import io.github.tengigabytes.anomalops.core.gpu.PlaneKernels
@@ -29,8 +30,8 @@ import kotlin.random.Random
  * Why the GPU clock stays low during merge work (docs/test/m9-gpu-fr17.md). Each scenario runs a few seconds of
  * kernels with an activity in the foreground and logs `CLOCK` lines under [TAG]: time per call and, when the app
  * may read it, how long the GPU spent at each frequency (the devfreq `trans_stat`, before against after).
- * Scenarios: waiting for the GPU after every call or only at the end, and each with an ADPF hint session that
- * reports the work as slower than its target. The devfreq path is this phone's; an experiment, not product code.
+ * Scenarios: the warp into a new plane per call or into one reused plane, waiting for the GPU after every call or
+ * only at the end, and each with an ADPF hint session that reports the work as slower than its target. The devfreq path is this phone's; an experiment, not product code.
  */
 @RunWith(AndroidJUnit4::class)
 class GpuClockExperiment {
@@ -54,19 +55,28 @@ class GpuClockExperiment {
             val mse = MeanSquaredDiffKernel()
             val ref = transfer.upload(plane, PlaneFormat.FLOAT32)
             val frame = transfer.upload(other, PlaneFormat.FLOAT32)
+            val out = GpuPlane(width, height, PlaneFormat.FLOAT32)
             for (hinted in listOf(false, true)) {
                 val label = if (hinted) "ADPF" else "no hint"
-                scenario("warp, wait every call, $label", WARPS, hinted, syncEach = true) {
-                    kernels.warp(ref, global).close()
-                }
-                scenario("warp, wait at the end, $label", WARPS, hinted, syncEach = false) {
-                    kernels.warp(ref, global).close()
-                }
+                warpScenarios(kernels, ref, out, hinted, label)
                 scenario("meanSquaredDiff 27 candidates (reads back), $label", MSE_CALLS, hinted, syncEach = true) {
                     mse.evaluate(ref, frame, around, 0, region, 2, width to height)
                 }
             }
-            listOf<AutoCloseable>(ref, frame, mse, kernels, transfer).forEach { it.close() }
+            listOf<AutoCloseable>(ref, frame, out, mse, kernels, transfer).forEach { it.close() }
+        }
+    }
+
+    /** The warp into a new plane per call and into [out], each waiting after every call and only at the end. */
+    private fun warpScenarios(kernels: PlaneKernels, ref: GpuPlane, out: GpuPlane, hinted: Boolean, label: String) {
+        for (syncEach in listOf(true, false)) {
+            val wait = if (syncEach) "wait every call" else "wait at the end"
+            scenario("warp new plane, $wait, $label", WARPS, hinted, syncEach) {
+                kernels.warp(ref, global).close()
+            }
+            scenario("warp reused plane, $wait, $label", WARPS, hinted, syncEach) {
+                kernels.warp(ref, global, into = out)
+            }
         }
     }
 

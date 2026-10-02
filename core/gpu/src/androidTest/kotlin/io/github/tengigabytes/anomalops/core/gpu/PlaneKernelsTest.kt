@@ -82,6 +82,42 @@ class PlaneKernelsTest {
     }
 
     @Test
+    fun uploadIntoAReusedPlaneMatchesANewOne() {
+        val other = texture(WIDTH, HEIGHT, seed = 2)
+        PlaneFormat.entries.forEach { format ->
+            val fresh = transfer.upload(plane, format)
+            val reused = transfer.upload(other, format)
+            val returned = transfer.upload(plane, format, into = reused)
+            val a = transfer.download(fresh).data
+            val b = transfer.download(reused).data
+            val mismatches = a.indices.count { a[it] != b[it] && !(a[it].isNaN() && b[it].isNaN()) }
+            log("upload into a reused plane $format: $mismatches values differ from a new plane")
+            assertTrue("upload returns the given plane", returned === reused)
+            assertTrue("upload reused $format: $mismatches", mismatches == 0)
+            fresh.close()
+            reused.close()
+        }
+    }
+
+    @Test
+    fun warpIntoAReusedPlaneMatchesTheCpu() {
+        val global = Similarity(scale = 1.004f, dx = 3.3f, dy = -2.7f)
+        val cpu = FrameAligner(plane).warp(plane, global)
+        val format = PlaneFormat.FLOAT32
+        val input = transfer.upload(plane, format)
+        val out = GpuPlane(WIDTH, HEIGHT, format)
+        // A first warp with another transform leaves different values and NaN edges for the second to overwrite.
+        kernels.warp(input, Similarity(scale = 0.99f, dx = -5f, dy = 4f), into = out)
+        val returned = kernels.warp(input, global, into = out)
+        val error = compare(cpu, transfer.download(out))
+        log("warp into a reused plane $format: $error")
+        assertTrue("warp returns the given plane", returned === out)
+        assertTrue("warp reused $format: $error", error.maxRel <= maxRel(format) && error.maskMismatches == 0)
+        input.close()
+        out.close()
+    }
+
+    @Test
     fun meanSquaredDiffMatchesTheCpu() {
         val other = texture(WIDTH, HEIGHT, seed = 1, dx = 1.3f, dy = -0.7f)
         val level = 2

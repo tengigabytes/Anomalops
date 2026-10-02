@@ -13,13 +13,16 @@ import java.nio.ByteOrder
 /**
  * `meanSquaredDiff` of `:core:imaging` for a batch of candidate transforms in one dispatch, as the whole-frame
  * search tries many per pyramid level (ADR-0017 steps 3 and 4). Each invocation sums [ROWS] grid points, each
- * work group sums its invocations in shared memory, and the per-group sums are added on the CPU in double.
- * Needs a current [GlesContext].
+ * work group sums its invocations in shared memory, and the per-group sums are added on the CPU in double. The two
+ * storage buffers are kept and reused across calls. Needs a current [GlesContext].
  */
 class MeanSquaredDiffKernel : AutoCloseable {
     private val local = LOCAL
     private val rows = ROWS
     private val group = local * local
+    private val buffers = IntArray(2).also { GLES20.glGenBuffers(2, it, 0) }
+    private var candidateCapacity = 0
+    private var partialCapacity = 0
 
     private val program = ComputeProgram(
         """
@@ -101,31 +104,33 @@ class MeanSquaredDiffKernel : AutoCloseable {
         val groupsX = (nx + local - 1) / local
         val groupsY = (ny + local * rows - 1) / (local * rows)
         val groups = groupsX * groupsY
-        val buffers = IntArray(2).also { GLES20.glGenBuffers(2, it, 0) }
-        try {
-            upload(buffers[0], candidates, level, full)
-            GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, buffers[1])
-            val partialBytes = candidates.size * groups * 2 * Float.SIZE_BYTES
+        upload(buffers[0], candidates, level, full)
+        GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, buffers[1])
+        val partialBytes = candidates.size * groups * 2 * Float.SIZE_BYTES
+        if (partialBytes > partialCapacity) {
             GLES20.glBufferData(GLES31.GL_SHADER_STORAGE_BUFFER, partialBytes, null, GLES30.GL_STREAM_READ)
-            GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 1, buffers[1])
-            reference.bindSampler(0)
-            frame.bindSampler(1)
-            val centre = LevelUniforms(Similarity(), level, full.first, full.second)
-            program.use()
-                .uniform("region", region.left, region.top, region.right, region.bottom)
-                .uniform("spacing", step)
-                .uniform("grid", nx, ny)
-                .uniform("centre", centre.centreX, centre.centreY)
-                .dispatch(groupsX, groupsY, candidates.size)
-            GLES31.glMemoryBarrier(GLES31.GL_BUFFER_UPDATE_BARRIER_BIT)
-            return reduce(partialBytes, candidates.size, groups, nx * ny)
-        } finally {
-            GLES20.glDeleteBuffers(2, buffers, 0)
+            partialCapacity = partialBytes
         }
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 1, buffers[1])
+        reference.bindSampler(0)
+        frame.bindSampler(1)
+        val centre = LevelUniforms(Similarity(), level, full.first, full.second)
+        program.use()
+            .uniform("region", region.left, region.top, region.right, region.bottom)
+            .uniform("spacing", step)
+            .uniform("grid", nx, ny)
+            .uniform("centre", centre.centreX, centre.centreY)
+            .dispatch(groupsX, groupsY, candidates.size)
+        GLES31.glMemoryBarrier(GLES31.GL_BUFFER_UPDATE_BARRIER_BIT)
+        return reduce(partialBytes, candidates.size, groups, nx * ny)
     }
 
-    override fun close() = program.close()
+    override fun close() {
+        program.close()
+        GLES20.glDeleteBuffers(2, buffers, 0)
+    }
 
+    /** The candidates into [buffer], which grows when needed and is otherwise rewritten in place. */
     private fun upload(buffer: Int, candidates: List<Similarity>, level: Int, full: Pair<Int, Int>) {
         val data = ByteBuffer.allocateDirect(candidates.size * VEC4_BYTES).order(ByteOrder.nativeOrder())
         candidates.forEach { s ->
@@ -134,7 +139,12 @@ class MeanSquaredDiffKernel : AutoCloseable {
         }
         data.flip()
         GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, buffer)
-        GLES20.glBufferData(GLES31.GL_SHADER_STORAGE_BUFFER, data.capacity(), data, GLES20.GL_STATIC_DRAW)
+        if (data.capacity() > candidateCapacity) {
+            GLES20.glBufferData(GLES31.GL_SHADER_STORAGE_BUFFER, data.capacity(), data, GLES20.GL_DYNAMIC_DRAW)
+            candidateCapacity = data.capacity()
+        } else {
+            GLES20.glBufferSubData(GLES31.GL_SHADER_STORAGE_BUFFER, 0, data.capacity(), data)
+        }
         GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 0, buffer)
     }
 

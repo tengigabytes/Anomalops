@@ -8,7 +8,7 @@
 | 依賴 | 無 |
 | 被誰使用 | 尚未接上；之後由 `:app` 使用 |
 | 對應需求 | FR-17、FR-33（ADR-0015） |
-| 內容 | `align/`：`Plane`（單通道線性數值、雙線性取樣、減半；`fromBayer` 由 RAW 的 2 × 2 格合成亮度）、`Pyramid`、`Similarity`（以畫面中心縮放加位移）、`GlobalAligner`（整張的縮放與位移，由粗到細窮舉）、`GaussNewton`（整張的次像素求精；均方差的拋物線擬合在雜訊或清晰度不同時有偏差，見 ADR-0015 補註）、`TileAligner`（每 32 像素一塊的殘差位移、代價與紋理可信度）、`FrameAligner`（對外入口：一次建好參考影像的金字塔，逐張對齊；`warp` 依整張變換重取樣） |
+| 內容 | `align/`：`Plane`（單通道線性數值、雙線性取樣、減半；`fromBayer` 由 RAW 的 2 × 2 格合成亮度）、`Pyramid`、`Similarity`（以畫面中心縮放加位移）、`GlobalAligner`（整張的縮放與位移，由粗到細窮舉；搜尋本身另有一個以函式傳入代價與法方程式的版本，`:core:gpu` 共用）、`GaussNewton`（整張的次像素求精；均方差的拋物線擬合在雜訊或清晰度不同時有偏差，見 ADR-0015 補註；法方程式在 CPU 上由 `GradientSums` 計算）、`TileAligner`（每 32 像素一塊的殘差位移、代價與紋理可信度）、`FrameAligner`（對外入口：一次建好參考影像的金字塔，逐張對齊；`warp` 依整張變換重取樣） |
 | 內容（解碼） | `develop/`：`CfaLayout`（執行時讀的色彩排列）、`RawFrame`（RAW_SENSOR 樣本、各格黑位、白位）、`Demosaic.halfSize`（每格一個 RGB，快）與 `Demosaic.bilinear`（全尺寸）、`ColourPipeline`（白平衡增益加色彩矩陣，ADR-0002）、`Rgb.luma`（Rec. 709 亮度） |
 | 內容（輸出） | `develop/`：`Render.toArgb`（ADR-0015 最後一步：相機 RGB → 8-bit sRGB ARGB；依序為 RAW 接近剪切的程度、鏡頭陰影補償、白平衡、色彩矩陣、曝光、高光往中性灰混合、以最亮色版套色調曲線（保持色相）、sRGB 編碼）、`RenderOptions`（曝光、高光起點 0.9、曲線肩部 0.9、白點 2；都是提議值，外觀未定）、`ShadingMap`（`STATISTICS_LENS_SHADING_CORRECTION_MAP` 的四色版增益格點，雙線性內插；RAW 是否已補償、2× 裁切串流的對應範圍待實機確認） |
 | 內容（景深合成） | `stack/`：`FocusStack` 介面（以亮度決定、各色版照同一決定合成），ADR-0015 的三個候選：`ContrastSelectStack`（A，局部對比選取加平滑）、`LaplacianPyramidStack`（B，拉普拉斯金字塔逐層取最大係數）、`GuidedWeightStack`（C，引導濾波修整權重）；`StackGuard`（合成不比最清晰的單張清楚時退回單張，缺的像素以參考幀補；`start` 回傳 `Session`，可逐張加入）；`FocusAccumulator`（逐張加入、最後 `finish`，ADR-0017）：B 逐張累加（每層保留目前最高分與各色版的係數），A 分兩輪（第一輪只留每像素的最高分與張號，第二輪再加入每張乘上平滑後的權重；2026-10-02 維護者決定），兩者記憶體都不隨張數增加；C 的權重要看全部張數，暫用 `CollectingAccumulator` 收齊再合成；`Filters`（拉普拉斯、盒狀平均、引導濾波、放大） |

@@ -25,6 +25,18 @@ class ComputeProgram(source: String) : AutoCloseable {
 
     fun uniform(name: String, x: Int, y: Int): ComputeProgram = apply { GLES20.glUniform2i(location(name), x, y) }
 
+    /** A vec4 from four floats. */
+    fun uniform(name: String, values: FloatArray): ComputeProgram = apply {
+        require(values.size == VEC4) { "vec4 needs four values, got ${values.size}" }
+        GLES20.glUniform4fv(location(name), 1, values, 0)
+    }
+
+    /** An ivec4 from four ints. */
+    fun uniform(name: String, values: IntArray): ComputeProgram = apply {
+        require(values.size == VEC4) { "ivec4 needs four values, got ${values.size}" }
+        GLES20.glUniform4iv(location(name), 1, values, 0)
+    }
+
     fun uniform(name: String, x: Int, y: Int, z: Int, w: Int): ComputeProgram =
         apply { GLES20.glUniform4i(location(name), x, y, z, w) }
 
@@ -44,6 +56,7 @@ class ComputeProgram(source: String) : AutoCloseable {
 
     private companion object {
         const val HEADER = "#version 310 es\n#extension GL_EXT_gpu_shader5 : require\n"
+        const val VEC4 = 4
 
         fun compile(source: String): Int {
             val shader = GLES20.glCreateShader(GLES31.GL_COMPUTE_SHADER)
