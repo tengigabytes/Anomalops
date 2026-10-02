@@ -13,20 +13,18 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.math.abs
 import kotlin.math.max
-import kotlin.random.Random
 
 /**
  * ADR-0017 step 5 on the phone: [GpuContrastSelect] against `ContrastSelectStack` (candidate A) and
- * [GpuLaplacianPyramid] against `LaplacianPyramidStack` (candidate B), on a synthetic focus bracket: five noisy
- * frames of one multi-scale scene, each sharp in its own horizontal band and blurred elsewhere, with the luma and a
- * second channel. The GPU's box sums are float where the CPU's are double, so a near tie between two frames can
- * pick the other; the test counts the pixels that differ and how much (limits proposed). Logged under [TAG] as
+ * [GpuLaplacianPyramid] against `LaplacianPyramidStack` (candidate B), on the synthetic focus bracket of
+ * [BracketScene] with the luma and a second channel. The GPU's box sums are float where the CPU's are double,
+ * so a near tie between two frames can pick the other; the test counts the pixels that differ and how much (limits proposed). Logged under [TAG] as
  * `GPU` lines, with each result's mean error against the sharp scene.
  */
 @RunWith(AndroidJUnit4::class)
 class GpuFocusStackTest {
-    private val sharp = scene()
-    private val luma = List(FRAMES) { k -> bracketFrame(k) }
+    private val sharp = BracketScene.sharp
+    private val luma = List(FRAMES) { k -> BracketScene.frame(k) }
     private val channels = luma.map { listOf(it, second(it)) }
 
     @Test
@@ -94,22 +92,6 @@ class GpuFocusStackTest {
         p.data.indices.sumOf { abs(p.data[it] - sharp.data[it]).toDouble() } / p.data.size,
     )
 
-    /** Frame [k]: the scene sharp in the k-th horizontal band, blurred elsewhere, plus its own noise. */
-    private fun bracketFrame(k: Int): Plane {
-        val blurred = blur(sharp, BLUR)
-        val r = Random(NOISE_SEED + k)
-        val top = k * HEIGHT / FRAMES
-        val bottom = (k + 1) * HEIGHT / FRAMES
-        return Plane(
-            WIDTH,
-            HEIGHT,
-            FloatArray(WIDTH * HEIGHT) { i ->
-                val y = i / WIDTH
-                (if (y in top until bottom) sharp.data[i] else blurred.data[i]) + NOISE * (2 * r.nextFloat() - 1)
-            },
-        )
-    }
-
     private fun second(p: Plane) = Plane(p.width, p.height, FloatArray(p.data.size) { SECOND * p.data[it] + OFFSET })
 
     private fun log(text: String) {
@@ -118,12 +100,9 @@ class GpuFocusStackTest {
 
     private companion object {
         const val TAG = "GpuFocusStackTest"
-        const val WIDTH = 1024
-        const val HEIGHT = 768
-        const val FRAMES = 5
-        const val BLUR = 3
-        const val NOISE = 15f
-        const val NOISE_SEED = 20
+        const val WIDTH = BracketScene.WIDTH
+        const val HEIGHT = BracketScene.HEIGHT
+        const val FRAMES = BracketScene.FRAMES
         const val SECOND = 0.6f
         const val OFFSET = 100f
 
@@ -132,52 +111,5 @@ class GpuFocusStackTest {
 
         /** Proposed: near ties may pick another frame in at most 0.5 % of the pixels. */
         const val MAX_OVER_SHARE = 0.005
-
-        /** Random grids of 256, 64, 16 and 4 pixel cells in equal parts, 12-bit range. */
-        fun scene(): Plane {
-            val cells = intArrayOf(256, 64, 16, 4)
-            val grids = cells.mapIndexed { k, c ->
-                val r = Random(10 + k)
-                val gw = WIDTH / c + 2
-                val gh = HEIGHT / c + 2
-                Plane(gw, gh, FloatArray(gw * gh) { r.nextFloat() })
-            }
-            return Plane(
-                WIDTH,
-                HEIGHT,
-                FloatArray(WIDTH * HEIGHT) { i ->
-                    var v = 0f
-                    cells.forEachIndexed { k, c ->
-                        v += grids[k].sample(
-                            (i % WIDTH).toFloat() / c,
-                            (i / WIDTH).toFloat() / c,
-                        )
-                    }
-                    4000f * v / cells.size
-                },
-            )
-        }
-
-        /** A separable box blur of [radius], edges clamped. */
-        fun blur(p: Plane, radius: Int): Plane {
-            fun pass(src: Plane, horizontal: Boolean) = Plane(
-                src.width,
-                src.height,
-                FloatArray(src.data.size) { i ->
-                    val x = i % src.width
-                    val y = i / src.width
-                    var s = 0f
-                    for (d in -radius..radius) {
-                        s += if (horizontal) {
-                            src[(x + d).coerceIn(0, src.width - 1), y]
-                        } else {
-                            src[x, (y + d).coerceIn(0, src.height - 1)]
-                        }
-                    }
-                    s / (2 * radius + 1)
-                },
-            )
-            return pass(pass(p, true), false)
-        }
     }
 }
