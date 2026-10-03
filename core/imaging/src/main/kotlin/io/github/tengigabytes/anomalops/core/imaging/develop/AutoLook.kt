@@ -90,7 +90,7 @@ object AutoLook {
             for (column in 0 until columns) {
                 val x = 2 * column * STEP
                 val y = 2 * row * STEP
-                cell(raw, x, y, v)
+                raw.cell(x, y, v)
                 shading?.gainsAt(x + HALF, y + HALF, raw.width, raw.height, shade)
                 for (c in 0 until CHANNELS) v[c] *= shade[c] * gains[c]
                 var luminance = 0f
@@ -104,14 +104,5 @@ object AutoLook {
         }
         values.sort()
         return values[values.size / 2]
-    }
-
-    /** `Demosaic.halfSize` of the cell whose top-left photosite is ([x], [y]). */
-    private fun cell(raw: RawFrame, x: Int, y: Int, out: FloatArray) {
-        out.fill(0f)
-        for (dy in 0..1) {
-            for (dx in 0..1) out[raw.layout.colourAt(x + dx, y + dy)] += raw.linear(x + dx, y + dy)
-        }
-        out[CfaLayout.GREEN] /= 2
     }
 }

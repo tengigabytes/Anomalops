@@ -57,15 +57,20 @@ class StillStore(context: Context, private val clock: () -> ZonedDateTime = Zone
         SavedStill(uri, name, stem, takenAtMs, frame.bytes.size.toLong(), SystemClock.elapsedRealtime() - started)
     }
 
-    suspend fun save(capture: StillCapture): SavedStill = withContext(Dispatchers.IO) {
-        val started = SystemClock.elapsedRealtime()
-        val takenAt = takenAt(capture.sensorTimestampNs)
-        val stem = StillNames.stem(takenAt)
-        val name = StillNames.stillName(stem)
-        val takenAtMs = takenAt.toInstant().toEpochMilli()
-        val uri = resolver.writePending(name, StillNames.MIME_TYPE, takenAtMs) { it.write(capture.bytes) }
-        SavedStill(uri, name, stem, takenAtMs, capture.bytes.size.toLong(), SystemClock.elapsedRealtime() - started)
-    }
+    /**
+     * The still of [capture], named and dated by its exposure. [bytes] is the encoded picture to store: the
+     * camera's own by default, or one the app rendered from the same moment (FR-17), also a JPEG.
+     */
+    suspend fun save(capture: StillCapture, bytes: ByteArray = capture.bytes): SavedStill =
+        withContext(Dispatchers.IO) {
+            val started = SystemClock.elapsedRealtime()
+            val takenAt = takenAt(capture.sensorTimestampNs)
+            val stem = StillNames.stem(takenAt)
+            val name = StillNames.stillName(stem)
+            val takenAtMs = takenAt.toInstant().toEpochMilli()
+            val uri = resolver.writePending(name, StillNames.MIME_TYPE, takenAtMs) { it.write(bytes) }
+            SavedStill(uri, name, stem, takenAtMs, bytes.size.toLong(), SystemClock.elapsedRealtime() - started)
+        }
 
     private companion object {
         const val MAX_AGE_NS = 5_000_000_000L

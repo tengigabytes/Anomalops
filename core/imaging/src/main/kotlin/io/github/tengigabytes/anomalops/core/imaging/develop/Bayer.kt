@@ -57,6 +57,18 @@ class RawFrame(
         return ((samples[y * rowStride + x].toInt() and U16) - black) / (whiteLevel - black)
     }
 
+    /**
+     * `Demosaic.halfSize` of the 2 x 2 cell whose top-left photosite is ([x], [y]), both even: its red, the mean of
+     * its greens and its blue into [out].
+     */
+    fun cell(x: Int, y: Int, out: FloatArray) {
+        out.fill(0f)
+        for (dy in 0..1) {
+            for (dx in 0..1) out[layout.colourAt(x + dx, y + dy)] += linear(x + dx, y + dy)
+        }
+        out[CfaLayout.GREEN] /= 2
+    }
+
     private companion object {
         const val CELL = 4
         const val U16 = 0xFFFF

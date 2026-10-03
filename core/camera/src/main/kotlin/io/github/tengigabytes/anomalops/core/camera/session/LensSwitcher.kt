@@ -82,6 +82,29 @@ internal class LensSwitcher(
     }
 
     /**
+     * FR-17: [takeStill], then [extraFrames] more RAW frames with the same manual exposure, focus and colour, for
+     * a multi-frame merge. The still comes first so the shutter moment and a finished picture do not depend on
+     * the merge. The extra frames ask for the lens shading map, which the merge's rendering needs.
+     */
+    suspend fun takeStillWithRawBurst(extraFrames: Int): MultiFrameCapture {
+        val still = takeStill()
+        val lens = checkNotNull(stream) { "preview not started" }
+        val raw = still.raw
+        val reader = lens.rawReader
+        if (raw == null || reader == null) return MultiFrameCapture(still, emptyList(), lens.characteristics)
+        val own = raw.image.copySamples()(raw.result)
+        val request = request(still.spec, CameraDevice.TEMPLATE_STILL_CAPTURE) {
+            addTarget(reader.surface)
+            val on = CaptureRequest.STATISTICS_LENS_SHADING_MAP_MODE_ON
+            set(CaptureRequest.STATISTICS_LENS_SHADING_MAP_MODE, on)
+            // Only allowed when the key is among the physical camera's request keys.
+            runCatching { setPhysicalCameraKey(CaptureRequest.STATISTICS_LENS_SHADING_MAP_MODE, on, lens.camera.id) }
+        }
+        val burst = lens.session.captureRawBurst(List(extraFrames) { request }, reader, lens.camera.id, handler)
+        return MultiFrameCapture(still, listOf(own) + burst, lens.characteristics)
+    }
+
+    /**
      * FR-15: swaps the single session for the burst session, repeats one manual JPEG request at [fps] until [until]
      * returns, then restores the single session and its preview. Returns the number of frames delivered.
      */

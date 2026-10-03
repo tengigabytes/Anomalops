@@ -81,6 +81,18 @@ class CameraController(context: Context, profile: DeviceProfile) {
     }
 
     /**
+     * FR-17: [capture], followed by [extraFrames] RAW frames of the same exposure to merge with it. The frames
+     * are copies; only the still's own RAW frame holds a camera buffer, as after [capture].
+     */
+    suspend fun captureMultiFrame(extraFrames: Int): MultiFrameCapture = serial {
+        lenses.takeStillWithRawBurst(extraFrames).also {
+            if (mutableState.value.status == CameraStatus.FAILED) {
+                mutableState.value = mutableState.value.copy(status = CameraStatus.PREVIEWING, error = null)
+            }
+        }
+    }
+
+    /**
      * FR-15, FR-68: bursts plain JPEG at [fps] on the current lens until [until] returns; [onFrame] runs on the
      * camera thread for every frame and must not block. Returns the frame count.
      */
