@@ -43,7 +43,9 @@ class ShotPipeline(
 ) {
     /**
      * How FR-17 went for one shot; null on [Shot] when it was not tried. [gain] is the exposure gain the merged
-     * picture was rendered with (`AutoLook`), 0 when it fell back to the camera's still.
+     * picture was rendered with (`AutoLook`), 0 when it fell back to the camera's still. [keptWidth] is the share of
+     * the RAW frame's width left after cropping to the camera's field of view (1 without a crop), and
+     * [cropMatched] whether that crop was found on this shot.
      */
     class Merge(
         val merged: Boolean,
@@ -52,6 +54,8 @@ class ShotPipeline(
         val mergeMs: Long,
         val encodeMs: Long,
         val gain: Float,
+        val keptWidth: Float = 1f,
+        val cropMatched: Boolean = false,
     )
 
     class Shot(val capture: StillCapture, val saved: SavedStill, val merge: Merge? = null)
@@ -68,16 +72,27 @@ class ShotPipeline(
             val saved = store.save(capture, rendered?.jpeg ?: capture.bytes)
             capture.raw?.let { keeper.offer(saved, it) }
             handedOver = true
-            val merge = multi?.let {
-                val gain = rendered?.picture?.options?.exposure ?: 0f
-                val mergeMs = rendered?.mergeMs ?: 0
-                Merge(rendered != null, it.frames.size, captureMs, mergeMs, rendered?.encodeMs ?: 0, gain)
-            }
+            val merge = multi?.let { merge(it, rendered, captureMs) }
             return Shot(capture, saved, merge)
         } finally {
             // A still that could not be saved has no stem for its DNG; give the camera buffer back.
             if (!handedOver) capture.raw?.close()
         }
+    }
+
+    private fun merge(multi: MultiFrameCapture, rendered: LowLightRenderer.Rendered?, captureMs: Long): Merge {
+        if (rendered == null) return Merge(false, multi.frames.size, captureMs, 0, 0, 0f)
+        val kept = rendered.crop?.let { it.right - it.left } ?: 1f
+        return Merge(
+            merged = true,
+            frames = multi.frames.size,
+            captureMs = captureMs,
+            mergeMs = rendered.mergeMs,
+            encodeMs = rendered.matchMs + rendered.encodeMs,
+            gain = rendered.picture.options.exposure,
+            keptWidth = kept,
+            cropMatched = rendered.cropMatched,
+        )
     }
 
     /** The merged JPEG, or null when the burst cannot be merged, the merge fails or it overruns. */
@@ -86,7 +101,10 @@ class ShotPipeline(
         val burst = LowLightFrames.burst(multi) ?: return null
         val rotation = multi.still.raw?.sensorOrientation ?: 0
         return try {
-            val rendered = withTimeoutOrNull(MERGE_TIMEOUT_MS) { renderer.render(burst, rotation) }
+            val still = multi.still
+            val rendered = withTimeoutOrNull(MERGE_TIMEOUT_MS) {
+                renderer.render(burst, rotation, still.bytes, still.spec.physicalId)
+            }
             if (rendered == null) Log.w(TAG, "FR-17 merge overran $MERGE_TIMEOUT_MS ms; storing the camera's still")
             rendered
         } catch (e: CancellationException) {

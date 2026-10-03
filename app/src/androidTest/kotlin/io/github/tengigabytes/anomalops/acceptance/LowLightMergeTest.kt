@@ -26,8 +26,8 @@ import java.io.File
 
 /**
  * FR-17 through the app's shot pipeline on the real camera, merge switch on: in each of the dive screen's modes a
- * shot is a still plus four RAW frames, merged on the GPU and stored as a JPEG of half the lens's RAW size,
- * upright. Logs the times, and what the camera reported for the frames, under [TAG]. With the switch off the
+ * shot is a still plus four RAW frames, merged on the GPU and stored as a JPEG of half the lens's RAW size cropped
+ * to the camera's field of view, upright. Logs the times, and what the camera reported for the frames, under [TAG]. With the switch off the
  * camera's own still is stored. The files are deleted afterwards; with `-e keep true` each merged picture and the
  * camera's still of the same moment are also written to the app's external files directory, under `fr17/`.
  */
@@ -85,6 +85,14 @@ class LowLightMergeTest {
                 "${result?.get(CaptureResult.SENSOR_SENSITIVITY)} postRawBoost=" +
                 "${result?.get(CaptureResult.CONTROL_POST_RAW_SENSITIVITY_BOOST)}",
         )
+        Log.i(
+            TAG,
+            "FR-17 $name: crop region ${result?.get(CaptureResult.SCALER_CROP_REGION)} zoom " +
+                "${result?.get(
+                    CaptureResult.CONTROL_ZOOM_RATIO,
+                )} focus ${result?.get(CaptureResult.LENS_FOCUS_DISTANCE)} D " +
+                "distortion mode ${result?.get(CaptureResult.DISTORTION_CORRECTION_MODE)}",
+        )
         assertTrue("$name fell back to the camera's still", merge.merged)
         assertEquals("$name frames", FRAMES, merge.frames)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -102,9 +110,14 @@ class LowLightMergeTest {
             File(dir, "$stem-merged.jpg").writeBytes(bytes)
             File(dir, "$stem-camera.jpg").writeBytes(shot.capture.bytes)
         }
-        // Half the RAW size, turned upright for the portrait-locked screen.
-        assertEquals("$name short side", minOf(halfWidth, halfHeight), minOf(bounds.outWidth, bounds.outHeight))
-        assertEquals("$name long side", maxOf(halfWidth, halfHeight), maxOf(bounds.outWidth, bounds.outHeight))
+        Log.i(TAG, "FR-17 $name: kept ${merge.keptWidth} of the RAW frame's width, matched=${merge.cropMatched}")
+        // Half the RAW size cropped to the camera's field of view, turned upright for the portrait-locked screen.
+        val short = minOf(halfWidth, halfHeight) * merge.keptWidth
+        val long = maxOf(halfWidth, halfHeight) * merge.keptWidth
+        assertEquals("$name short side", short, minOf(bounds.outWidth, bounds.outHeight).toFloat(), SIZE_TOLERANCE)
+        assertEquals("$name long side", long, maxOf(bounds.outWidth, bounds.outHeight).toFloat(), SIZE_TOLERANCE)
+        // The camera's stills are a centred crop of the RAW frame: 85 to 95 % on this phone's lenses.
+        assertTrue("$name kept ${merge.keptWidth}", merge.keptWidth in MIN_KEPT..1f)
     }
 
     /** The mean of the green channel (0..255) of an encoded picture, decoded at an eighth of its size. */
@@ -120,6 +133,8 @@ class LowLightMergeTest {
     private companion object {
         const val TAG = "LowLightMergeTest"
         const val SHOTS = 2
+        const val SIZE_TOLERANCE = 3f
+        const val MIN_KEPT = 0.75f
         const val FRAMES = 5
         const val SETTLE_MS = 1_500L
         const val SAMPLE = 8
