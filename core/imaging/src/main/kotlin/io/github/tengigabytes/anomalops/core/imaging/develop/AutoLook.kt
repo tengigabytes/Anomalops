@@ -11,8 +11,11 @@ package io.github.tengigabytes.anomalops.core.imaging.develop
  * - [maxGain]: the most the exposure is raised when the camera's own gain is not known; a dark subject (a black
  *   keyboard filling the frame) would otherwise be pulled up 16 times.
  * - [brightSceneMaxGain]: when the camera's gain is known, the median may raise the exposure above it only up to
- *   this much: a well-lit scene (camera gain 1) was preferred at about 2.3, while in dim scenes the camera's gain
- *   (5 to 7) was as good as anything brighter.
+ *   this much. 1, so the camera's gain is used as it is: at 2.5 a dark subject in fair light (a black keyboard,
+ *   camera gain 1) came out grey, its darkest parts lifted from code 11 to 50, and the maintainer preferred the
+ *   camera's own still. One well-lit scene had been preferred at about 2.3, so a rule that tells a dark subject
+ *   from a dim scene could raise this again. In dim scenes the camera's gain (5 to 7) was as good as anything
+ *   brighter.
  * - [sharpen]: [Sharpen]'s amount in good light; 0.5 was chosen over 1.0 every time.
  * - [sharpenFullGain], [sharpenZeroGain]: the amount fades linearly to nothing between these gains, since
  *   sharpening a picture that was raised a lot sharpens its noise (at a gain of 11 it was not preferred). The two
@@ -23,7 +26,7 @@ package io.github.tengigabytes.anomalops.core.imaging.develop
 data class LookOptions(
     val targetMedian: Float = 0.19f,
     val maxGain: Float = 8f,
-    val brightSceneMaxGain: Float = 2.5f,
+    val brightSceneMaxGain: Float = 1f,
     val sharpen: Float = 0.5f,
     val sharpenFullGain: Float = 3f,
     val sharpenZeroGain: Float = 8f,

@@ -63,8 +63,9 @@ class AutoLookTest {
 
     @Test
     fun theCamerasPostRawGainIsTheFloorAndOnlyBrightScenesGoAboveIt() {
+        val lifting = LookOptions(brightSceneMaxGain = 2.5f)
         fun gain(level: Float, postRaw: Float) =
-            AutoLook.options(grey(level), unity, identity, postRawGain = postRaw).exposure
+            AutoLook.options(grey(level), unity, identity, look = lifting, postRawGain = postRaw).exposure
         // Dim: the median alone would ask for 19; the camera metered 6.
         assertEquals(6f, gain(0.01f, 6f), 0f)
         // The camera's gain holds even when the median would ask for less.
@@ -72,6 +73,8 @@ class AutoLookTest {
         // Bright (no post-RAW gain): the median raises it, up to 2.5.
         assertEquals(1.9f, gain(0.1f, 1f), 0.01f)
         assertEquals(2.5f, gain(0.05f, 1f), 0f)
+        // By default the camera's gain is used as it is, however dark the frame.
+        assertEquals(1f, AutoLook.options(grey(0.05f), unity, identity, postRawGain = 1f).exposure, 0f)
         // Sharpening fades with the gain actually used: 0.5 * (8 - 6) / (8 - 3).
         assertEquals(0.2f, AutoLook.options(grey(0.01f), unity, identity, postRawGain = 6f).sharpen, 1e-6f)
     }
