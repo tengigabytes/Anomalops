@@ -3,22 +3,24 @@
 package io.github.tengigabytes.anomalops.core.gpu
 
 /**
- * The kernels of [GpuFinish]: the whole-picture steps on packed ARGB after rendering (`Render.finish`). Both read
+ * The kernels of [GpuFinish]: the whole-picture steps on packed ARGB after rendering (`Render.finish`). All read
  * buffer 0 and write buffer 1, one uint per pixel, and use integers throughout in the CPU's order, so the codes
  * are the same.
  */
 internal object FinishShaders {
     /**
      * One pass of `ChromaDenoise`: neighbours `spacing` pixels apart on a 5 x 5 grid, weighted by `SPATIAL` and by
-     * buffer 2 (`ChromaDenoise.rangeWeights`, indexed by the luma difference in codes).
+     * buffer 2 (`ChromaDenoise.weightTables`: the luma weights, indexed by the luma difference in codes, then each
+     * pass's colour weights, the pass's table starting at `chromaTable`).
      */
     val CHROMA = """
         ${Glsl.LOCAL_2D}
         layout(std430, binding = 0) readonly buffer In { highp uint src[]; };
         layout(std430, binding = 1) writeonly buffer Out { highp uint dst[]; };
-        layout(std430, binding = 2) readonly buffer Range { highp int rangeWeight[]; };
+        layout(std430, binding = 2) readonly buffer Weights { highp int weight[]; };
         uniform ivec2 size;
         uniform int spacing;
+        uniform int chromaTable;
         const int SPATIAL[25] = int[25](
             2, 5, 6, 5, 2, 5, 10, 12, 10, 5, 6, 12, 16, 12, 6, 5, 10, 12, 10, 5, 2, 5, 6, 5, 2);
         ivec3 rgbOf(uint c) {
@@ -32,6 +34,7 @@ internal object FinishShaders {
             if (any(greaterThanEqual(p, size))) return;
             uint own = src[p.y * size.x + p.x];
             int luma = lumaOf(rgbOf(own));
+            ivec3 ownChroma = (((rgbOf(own) << 8) - luma) >> 4) + 4096;
             ivec3 sums = ivec3(0);
             int total = 0;
             for (int dy = -2; dy <= 2; dy++) {
@@ -39,13 +42,34 @@ internal object FinishShaders {
                     ivec2 q = clamp(p + spacing * ivec2(dx, dy), ivec2(0), size - 1);
                     ivec3 c = rgbOf(src[q.y * size.x + q.x]);
                     int y = lumaOf(c);
-                    int w = SPATIAL[(dy + 2) * 5 + dx + 2] * rangeWeight[abs(y - luma) >> 8];
-                    sums += w * ((((c << 8) - y) >> 4) + 4096);
+                    ivec3 chroma = (((c << 8) - y) >> 4) + 4096;
+                    int apart = min(max(abs(chroma.r - ownChroma.r), abs(chroma.b - ownChroma.b)) >> 4, 255);
+                    int alike = weight[abs(y - luma) >> 8] * weight[chromaTable + apart];
+                    int w = SPATIAL[(dy + 2) * 5 + dx + 2] * (alike >> 8);
+                    sums += w * chroma;
                     total += w;
                 }
             }
-            ivec3 chroma = (sums + total / 2) / total - 4096;
-            ivec3 o = clamp((luma + chroma * 16 + 128) >> 8, 0, 255);
+            ivec3 mean = (sums + total / 2) / total - 4096;
+            ivec3 o = clamp((luma + mean * 16 + 128) >> 8, 0, 255);
+            dst[p.y * size.x + p.x] = (own & 0xFF000000u) | (uint(o.r) << 16) | (uint(o.g) << 8) | uint(o.b);
+        }
+    """
+
+    /** `Saturation.apply`; `factor` is `Saturation.quantise`'s integer. */
+    val SATURATE = """
+        ${Glsl.LOCAL_2D}
+        layout(std430, binding = 0) readonly buffer In { highp uint src[]; };
+        layout(std430, binding = 1) writeonly buffer Out { highp uint dst[]; };
+        uniform ivec2 size;
+        uniform int factor;
+        void main() {
+            ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+            if (any(greaterThanEqual(p, size))) return;
+            uint own = src[p.y * size.x + p.x];
+            ivec3 c = ivec3(int((own >> 16) & 0xFFu), int((own >> 8) & 0xFFu), int(own & 0xFFu));
+            int luma = 54 * c.r + 183 * c.g + 19 * c.b;
+            ivec3 o = clamp(((luma << 8) + factor * ((c << 8) - luma) + 32768) >> 16, 0, 255);
             dst[p.y * size.x + p.x] = (own & 0xFF000000u) | (uint(o.r) << 16) | (uint(o.g) << 8) | uint(o.b);
         }
     """

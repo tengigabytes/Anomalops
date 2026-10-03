@@ -4,6 +4,7 @@ package io.github.tengigabytes.anomalops.core.imaging.develop
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import kotlin.math.sqrt
 
 class AutoLookTest {
     private val identity = floatArrayOf(1f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 1f)
@@ -30,6 +31,7 @@ class AutoLookTest {
         val options = AutoLook.options(grey(0.5f), unity, identity)
         assertEquals(1f, options.exposure, 0f)
         assertEquals(0.5f, options.sharpen, 0f)
+        assertEquals(1.25f, options.saturation, 0f)
     }
 
     @Test
@@ -77,6 +79,34 @@ class AutoLookTest {
         assertEquals(1f, AutoLook.options(grey(0.05f), unity, identity, postRawGain = 1f).exposure, 0f)
         // Sharpening fades with the gain actually used: 0.5 * (8 - 6) / (8 - 3).
         assertEquals(0.2f, AutoLook.options(grey(0.01f), unity, identity, postRawGain = 6f).sharpen, 1e-6f)
+    }
+
+    @Test
+    fun theColourFilterFollowsThePredictedNoise() {
+        // Flat grey at 0.2, exposure 1, no matrix: red minus luma is (1 - 54/256) R - 183/256 G - 19/256 B in
+        // codes, each channel through the sRGB slope at 0.2; green's variance is halved (two photosites).
+        val variance = 1e-4f * 0.2f + 1e-6f
+        val slope = 255f * 1.055f / 2.4f * Math.pow(0.2, 1 / 2.4 - 1).toFloat()
+        val weights = floatArrayOf(1 - 54 / 256f, 183 / 256f, 19 / 256f)
+        val expected = slope * sqrt(
+            variance * (weights[0] * weights[0] + weights[1] * weights[1] / 2 + weights[2] * weights[2]),
+        )
+        val profile = NoiseProfile(FloatArray(3) { 1e-4f }, FloatArray(3) { 1e-6f })
+        assertEquals(expected, profile.chromaSigma(grey(0.2f), unity, identity, null, 1f), expected * 0.01f)
+
+        // Halfway between the two ends: half the full tolerance. Four frames halve the noise: below the lower end.
+        val look = LookOptions(chromaOffNoise = expected * 0.75f, chromaFullNoise = expected * 1.25f)
+        fun options(noise: BurstNoise?) =
+            AutoLook.options(grey(0.2f), unity, identity, look = look, postRawGain = 1f, noise = noise)
+        val one = options(BurstNoise(profile, 1))
+        assertEquals(20f, one.chromaTolerance, 0.5f)
+        assertEquals(3, one.chromaPasses)
+        assertEquals(0, options(BurstNoise(profile, 4)).chromaPasses)
+        // Without the noise model, and when the noise is strong, the filter's full tolerance.
+        assertEquals(40f, options(null).chromaTolerance, 0f)
+        assertEquals(3, options(null).chromaPasses)
+        val loud = BurstNoise(NoiseProfile(FloatArray(3) { 1f }, FloatArray(3) { 0f }), 1)
+        assertEquals(40f, options(loud).chromaTolerance, 0f)
     }
 
     @Test

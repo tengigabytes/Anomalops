@@ -68,21 +68,44 @@ class ChromaDenoiseTest {
     }
 
     @Test
+    fun differentColoursOfTheSameLumaDoNotBleedEither() {
+        // Blue beside orange, both of luma 100 (54 R + 183 G + 19 B = 25 600), with a little noise on each.
+        val blue = intArrayOf(40, 108, 194)
+        val orange = intArrayOf(190, 82, 20)
+        val random = Random(8)
+        fun noisy(c: IntArray) = argb(c[0] + random.nextInt(7) - 3, c[1], c[2] + random.nextInt(7) - 3)
+        val picture = IntArray(64 * 32) { if (it % 64 < 32) noisy(blue) else noisy(orange) }
+        val out = ChromaDenoise.apply(picture, 64, 32, 3)
+        for (x in intArrayOf(8, 28, 31, 32, 35, 56)) {
+            val expected = if (x < 32) blue else orange
+            val p = out[16 * 64 + x]
+            val differences = listOf(red(p) - expected[0], green(p) - expected[1], blue(p) - expected[2])
+            assertTrue("x=$x differs by $differences", differences.all { abs(it) <= 6 })
+        }
+    }
+
+    @Test
     fun weightsAndSpacingAreAsDocumented() {
         assertEquals(255, ChromaDenoise.rangeWeights[0])
         // 255 exp(-10² / (2 · 10.2²)) = 157.6.
         assertEquals(158, ChromaDenoise.rangeWeights[10])
         assertEquals(0, ChromaDenoise.rangeWeights[60])
         assertEquals(16, ChromaDenoise.spatialWeights[12])
+        // 255 exp(-40² / (2 · 40²)) = 154.7, and the last pass is the strictest.
+        assertEquals(155, ChromaDenoise.chromaWeights(0)[40])
+        assertEquals(1, ChromaDenoise.chromaWeights(2)[40])
+        assertEquals(4 * 256, ChromaDenoise.weightTables(40f).size)
+        // A tolerance of 10 codes: 255 exp(-10² / (2 · 10²)) = 154.7 at 10 codes in the first pass.
+        assertEquals(155, ChromaDenoise.chromaWeights(0, 10f)[10])
         assertEquals(listOf(2, 4, 8), (0 until 3).map { ChromaDenoise.spacing(it) })
     }
 
     @Test
-    fun renderDenoisesBeforeItSharpens() {
+    fun renderDenoisesThenSaturatesThenSharpens() {
         val random = Random(3)
         val noisy = IntArray(32 * 32) { argb(100 + random.nextInt(31), 110, 100 + random.nextInt(31)) }
-        val options = RenderOptions(chromaPasses = 2, sharpen = 0.5f)
-        val expected = Sharpen.apply(ChromaDenoise.apply(noisy, 32, 32, 2), 32, 32, 0.5f)
+        val options = RenderOptions(chromaPasses = 2, saturation = 1.25f, sharpen = 0.5f)
+        val expected = Sharpen.apply(Saturation.apply(ChromaDenoise.apply(noisy, 32, 32, 2), 1.25f), 32, 32, 0.5f)
         assertArrayEquals(expected, Render.finish(noisy, 32, 32, options))
         assertArrayEquals(noisy, Render.finish(noisy, 32, 32, RenderOptions()))
     }

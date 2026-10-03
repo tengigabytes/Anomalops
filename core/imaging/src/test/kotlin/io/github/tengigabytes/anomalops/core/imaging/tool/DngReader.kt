@@ -3,6 +3,7 @@
 package io.github.tengigabytes.anomalops.core.imaging.tool
 
 import io.github.tengigabytes.anomalops.core.imaging.develop.CfaLayout
+import io.github.tengigabytes.anomalops.core.imaging.develop.NoiseProfile
 import io.github.tengigabytes.anomalops.core.imaging.develop.RawFrame
 import io.github.tengigabytes.anomalops.core.imaging.develop.ShadingMap
 import java.nio.ByteBuffer
@@ -22,6 +23,7 @@ class DngImage(
     val forwardMatrix: FloatArray?,
     val shading: ShadingMap?,
     val postRawGain: Float = 1f,
+    val noise: NoiseProfile? = null,
 )
 
 /**
@@ -48,6 +50,8 @@ object DngReader {
     private const val FORWARD_1 = 50964
     private const val FORWARD_2 = 50965
     private const val OPCODE_LIST_2 = 51009
+    private const val NOISE_PROFILE = 51041
+    private const val NOISE_VALUES = 6
     private const val CFA = 32803
     private const val D65 = 21
     private const val BITS_16 = 16
@@ -76,7 +80,11 @@ object DngReader {
         )
         val shading = (main.bytes(OPCODE_LIST_2) ?: root.bytes(OPCODE_LIST_2))?.let { GainMaps.read(it, raw) }
         val gain = root.floats(BASELINE_EXPOSURE)?.first()?.let { 2f.pow(it) } ?: 1f
-        return DngImage(raw, root.floats(AS_SHOT_NEUTRAL), forwardMatrix(root), shading, gain)
+        // NoiseProfile as `DngCreator` writes it: scale and offset for red, green and blue in turn.
+        val noise = root.floats(NOISE_PROFILE)?.takeIf { it.size == NOISE_VALUES }?.let { n ->
+            NoiseProfile(FloatArray(3) { n[2 * it] }, FloatArray(3) { n[2 * it + 1] })
+        }
+        return DngImage(raw, root.floats(AS_SHOT_NEUTRAL), forwardMatrix(root), shading, gain, noise)
     }
 
     /** ForwardMatrix for D65 if one of the two is calibrated for it, else the first; null without one. */

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.core.imaging.develop
 
+import kotlin.math.sqrt
+
 /**
  * How bright and how sharp [AutoLook] makes a picture. All proposed, from the maintainer's side-by-side choices of
  * 2026-10-03 on two indoor scenes (too few to be more than a starting point):
@@ -22,6 +24,15 @@ package io.github.tengigabytes.anomalops.core.imaging.develop
  *   ends are guesses.
  * - [chromaPasses]: [ChromaDenoise]'s passes; three were preferred to none in a bright scene and two dim ones
  *   (once each).
+ * - [chromaOffNoise], [chromaFullNoise]: the merge's predicted colour noise (`NoiseProfile.chromaSigma` over the
+ *   root of the frame count, in codes) up to which [ChromaDenoise] is left out, and from which it runs with its
+ *   full tolerance of 40 codes; between them the tolerance rises linearly. On 2026-10-03 the full tolerance
+ *   erased a faint red stamp on paper in good light (ISO 117, predicted noise 1.5), which the maintainer noticed,
+ *   and there no filter was preferred even to a tolerance of 3.7; in two dim bursts (predicted 5.9 and 7.0) the
+ *   full tolerance was preferred to 15 and 17. Both ends are guesses between those points; in a bright scene
+ *   between them (predicted 1.9) the tolerance they give, 6.6, was preferred both to none and to the full one.
+ * - [saturation]: [Saturation]'s factor. 1.25 was preferred to 1.5 in all three modes on 2026-10-03 (once each),
+ *   and 1.5 to none in two of them; 1.25 against none was not shown, and in the third mode none beat 1.5.
  */
 data class LookOptions(
     val targetMedian: Float = 0.19f,
@@ -31,10 +42,21 @@ data class LookOptions(
     val sharpenFullGain: Float = 3f,
     val sharpenZeroGain: Float = 8f,
     val chromaPasses: Int = ChromaDenoise.MAX_PASSES,
+    val saturation: Float = 1.25f,
+    val chromaOffNoise: Float = 1.5f,
+    val chromaFullNoise: Float = 4f,
 ) {
     init {
         require(targetMedian > 0f && maxGain >= 1f && brightSceneMaxGain >= 1f) { "target $targetMedian, gains" }
         require(sharpen in 0f..Sharpen.MAX_AMOUNT && sharpenZeroGain > sharpenFullGain) { "sharpen $sharpen" }
+        require(chromaOffNoise >= 0f && chromaFullNoise > chromaOffNoise) { "chroma noise ends" }
+    }
+}
+
+/** The sensor's noise model for a burst's reference frame and how many [frames] the merge averages. */
+class BurstNoise(val profile: NoiseProfile, val frames: Int) {
+    init {
+        require(frames >= 1) { "frames $frames" }
     }
 }
 
@@ -58,6 +80,8 @@ object AutoLook {
     /**
      * [base] with its exposure and sharpening set for [raw]; [gains], [matrix] and [shading] as for [Render].
      * [postRawGain] is the capture's post-RAW boost as a factor (boost / 100), null when it is not known.
+     * [noise] is the sensor's noise model and the number of frames merged; without it the colour denoising keeps
+     * its fixed tolerance.
      */
     @Suppress("LongParameterList") // Render's inputs, the capture's gain and the two option sets.
     fun options(
@@ -68,6 +92,7 @@ object AutoLook {
         look: LookOptions = LookOptions(),
         base: RenderOptions = RenderOptions(),
         postRawGain: Float? = null,
+        noise: BurstNoise? = null,
     ): RenderOptions {
         val median = medianLuminance(raw, gains, matrix, shading)
         val floor = postRawGain?.coerceAtLeast(1f) ?: 1f
@@ -75,7 +100,17 @@ object AutoLook {
         val gain = if (median > 0f) (look.targetMedian / median).coerceIn(floor, ceiling) else ceiling
         val fade = (look.sharpenZeroGain - gain) / (look.sharpenZeroGain - look.sharpenFullGain)
         val sharpen = look.sharpen * fade.coerceIn(0f, 1f)
-        return base.copy(exposure = gain, sharpen = sharpen, chromaPasses = look.chromaPasses)
+        val sigma = noise?.let { it.profile.chromaSigma(raw, gains, matrix, shading, gain) / sqrt(it.frames.toFloat()) }
+        val share = sigma?.let { (it - look.chromaOffNoise) / (look.chromaFullNoise - look.chromaOffNoise) } ?: 1f
+        val tolerance = ChromaDenoise.DEFAULT_TOLERANCE * share.coerceIn(0f, 1f)
+        val filtered = tolerance >= ChromaDenoise.MIN_TOLERANCE
+        return base.copy(
+            exposure = gain,
+            sharpen = sharpen,
+            chromaPasses = if (filtered) look.chromaPasses else 0,
+            saturation = look.saturation,
+            chromaTolerance = if (filtered) tolerance else ChromaDenoise.DEFAULT_TOLERANCE,
+        )
     }
 
     /**

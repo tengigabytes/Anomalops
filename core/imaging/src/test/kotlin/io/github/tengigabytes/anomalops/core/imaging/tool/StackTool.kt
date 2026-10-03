@@ -7,6 +7,7 @@ import io.github.tengigabytes.anomalops.core.imaging.align.Alignment
 import io.github.tengigabytes.anomalops.core.imaging.align.FrameAligner
 import io.github.tengigabytes.anomalops.core.imaging.align.Plane
 import io.github.tengigabytes.anomalops.core.imaging.develop.AutoLook
+import io.github.tengigabytes.anomalops.core.imaging.develop.BurstNoise
 import io.github.tengigabytes.anomalops.core.imaging.develop.Demosaic
 import io.github.tengigabytes.anomalops.core.imaging.develop.Render
 import io.github.tengigabytes.anomalops.core.imaging.develop.RenderOptions
@@ -34,11 +35,15 @@ import kotlin.system.measureTimeMillis
  * on the module's code without a module of its own.
  *
  * `--exposure=<gain>` renders with that linear gain (default 1); `--auto` lets `AutoLook` set the gain and the
- * sharpening from the reference frame; `--dump` also writes each picture's linear data.
+ * sharpening from the reference frame; `--chroma=<passes>` overrides the colour denoising's passes (0 for none)
+ * and `--tolerance=<codes>` its colour tolerance;
+ * `--dump` also writes each picture's linear data.
  *
  * gradlew :core:imaging:stackTool --args="<out dir> <a.dng> <b.dng> ... [--full] [--lowlight] [--auto]"
  */
 private const val EXPOSURE_FLAG = "--exposure="
+private const val CHROMA_FLAG = "--chroma="
+private const val TOLERANCE_FLAG = "--tolerance="
 
 fun main(args: Array<String>) {
     val flags = args.filter { it.startsWith("--") }.toSet()
@@ -57,7 +62,10 @@ fun main(args: Array<String>) {
     val reference = if ("--lowlight" in flags) best else frames.size / 2
     val exposure = flags.firstOrNull { it.startsWith(EXPOSURE_FLAG) }?.removePrefix(EXPOSURE_FLAG)?.toFloat() ?: 1f
     val base = RenderOptions(exposure = exposure)
-    val render = Renderer(images[reference], out, base, "--dump" in flags, "--auto" in flags)
+    val chroma = flags.firstOrNull { it.startsWith(CHROMA_FLAG) }?.removePrefix(CHROMA_FLAG)?.toInt()
+    val tolerance = flags.firstOrNull { it.startsWith(TOLERANCE_FLAG) }?.removePrefix(TOLERANCE_FLAG)?.toFloat()
+    val look = Overrides(chroma, tolerance)
+    val render = Renderer(images[reference], out, base, "--dump" in flags, "--auto" in flags, look, frames.size)
     val size = "${frames[0].width}x${frames[0].height}"
     println("${frames.size} frames $size, reference ${reference + 1}, shading map ${images[reference].shading != null}")
     println("sharpness per frame: ${singles.joinToString { "%.3g".format(it) }}; sharpest ${best + 1}")
@@ -141,6 +149,14 @@ private fun focusStack(luma: List<Plane>, frames: List<Rgb>, reference: Int, ren
     }
 }
 
+/** What `--chroma=` and `--tolerance=` change in the options, for trying the colour denoising on real bursts. */
+private class Overrides(private val chroma: Int?, private val tolerance: Float?) {
+    fun on(options: RenderOptions): RenderOptions = options.copy(
+        chromaPasses = chroma ?: options.chromaPasses,
+        chromaTolerance = tolerance ?: options.chromaTolerance,
+    )
+}
+
 /** Renders camera RGB planes with [image]'s white balance, colour and shading, and writes them as PNG. */
 private class Renderer(
     private val image: DngImage,
@@ -148,17 +164,22 @@ private class Renderer(
     base: RenderOptions,
     private val dump: Boolean,
     auto: Boolean,
+    look: Overrides,
+    frames: Int,
 ) {
     private val gains = image.asShotNeutral?.let { n -> FloatArray(3) { n[1] / n[it] } } ?: floatArrayOf(1f, 1f, 1f)
     private val matrix = Colour.cameraToSrgb(image.forwardMatrix)
     private val options = if (auto) {
-        AutoLook.options(image.raw, gains, matrix, image.shading, base = base, postRawGain = image.postRawGain)
+        val noise = image.noise?.let { BurstNoise(it, frames) }
+        val gain = image.postRawGain
+        AutoLook.options(image.raw, gains, matrix, image.shading, base = base, postRawGain = gain, noise = noise)
     } else {
         base
-    }
+    }.let { look.on(it) }
 
     init {
-        val used = "exposure %.2f, sharpen %.2f".format(options.exposure, options.sharpen)
+        val used = "exposure %.2f, sharpen %.2f, chroma tolerance %.2f"
+            .format(options.exposure, options.sharpen, options.chromaTolerance)
         println("render: $used (the capture's post-RAW gain %.2f)".format(image.postRawGain))
     }
 

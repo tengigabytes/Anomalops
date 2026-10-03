@@ -7,13 +7,20 @@ import kotlin.math.exp
 
 /**
  * Colour noise removed from the finished 8-bit picture: each pixel's colour (its channels minus its luma) becomes
- * the weighted mean of its neighbours' colours, counting most the neighbours that are near and of similar luma, so
- * colour does not bleed across an edge. Luma is left as it is (up to rounding), so detail and luma noise stay.
+ * the weighted mean of its neighbours' colours, counting most the neighbours that are near, of similar luma and of
+ * similar colour, so colour does not bleed across an edge. Luma is left as it is (up to rounding), so detail and
+ * luma noise stay.
  *
  * Each pass reads a 5 x 5 grid of neighbours, [spacing] pixels apart: 2, 4 and 8 for the three passes, reaching 16
  * pixels. Integers only, so the GPU kernel gives the same codes bit for bit: luma is 54 R + 183 G + 19 B (256ths),
  * colour is held in 16ths of a code with an offset that keeps the sums positive, the spatial weights are
- * 16 exp(-d² / 4) rounded and the luma weights come from [rangeWeights].
+ * 16 exp(-d² / 4) rounded, the luma weights come from [rangeWeights] and the colour weights from [chromaWeights].
+ *
+ * The colour weight was added on 2026-10-03: with luma alone, objects of different colour and similar luma bled
+ * into each other over the 28 pixels the three passes reach. Measured on 4 x 4 block means of two dim bursts (so
+ * noise does not count), the blocks whose colour moved by more than 10 codes fell from 0.7 and 1.1 % to 0.5 %,
+ * with the same noise left in flat areas. Its tolerance starts wide, while the colour is still noisy, and narrows
+ * as the passes clean it.
  *
  * Why: on real bursts of 2026-10-03 the colour noise of a 5-frame merge was about 20 times the stock camera's
  * (4.3 against 0.2 codes in a flat patch) while its luma noise was no worse; three passes brought it to 0.4.
@@ -35,6 +42,12 @@ object ChromaDenoise {
     private const val ROUND = 128
     private const val RANGE_PEAK = 255
     private const val RANGE_SIGMA = 10.2
+    private const val WEIGHT_BITS = 8
+    private val toleranceShare = doubleArrayOf(1.0, 0.5, 0.3)
+
+    /** The colour tolerance the filter was first given; right for the colour noise of a dim scene, about 5 codes. */
+    const val DEFAULT_TOLERANCE = 40f
+    const val MIN_TOLERANCE = 0.5f
     private const val HALF = 0.5
 
     /** 16 exp(-(dx² + dy²) / 4), row by row. */
@@ -51,36 +64,61 @@ object ChromaDenoise {
         (RANGE_PEAK * exp(-(it * it) / (2 * RANGE_SIGMA * RANGE_SIGMA)) + HALF).toInt()
     }
 
+    /**
+     * The weight of a neighbour whose red-minus-luma or blue-minus-luma differs by the index, in codes (the larger
+     * of the two), for pass [pass]: 255 exp(-d² / (2 σ²)) with σ of 1, 0.5 and 0.3 times [tolerance] codes. A
+     * colour that differs from its surroundings by well over the tolerance is kept; one within it is taken for
+     * noise and averaged away, so the tolerance has to follow the picture's colour noise.
+     */
+    fun chromaWeights(pass: Int, tolerance: Float = DEFAULT_TOLERANCE): IntArray {
+        val sigma = tolerance * toleranceShare[pass]
+        return IntArray(CODE + 1) { (RANGE_PEAK * exp(-(it * it) / (2 * sigma * sigma)) + HALF).toInt() }
+    }
+
+    /** [rangeWeights] followed by [chromaWeights] of each pass: the table the GPU kernel reads. */
+    fun weightTables(tolerance: Float): IntArray =
+        rangeWeights + (0 until MAX_PASSES).flatMap { chromaWeights(it, tolerance).asList() }.toIntArray()
+
     /** How far apart pass [pass] (from 0) takes its neighbours. */
     fun spacing(pass: Int): Int = 2 shl pass
 
-    /** [argb] ([width] x [height], packed as `Render.toArgb` makes it) after [passes] passes; alpha is kept. */
-    fun apply(argb: IntArray, width: Int, height: Int, passes: Int): IntArray {
+    /**
+     * [argb] ([width] x [height], packed as `Render.toArgb` makes it) after [passes] passes with colour
+     * [tolerance]; alpha is kept.
+     */
+    fun apply(argb: IntArray, width: Int, height: Int, passes: Int, tolerance: Float = DEFAULT_TOLERANCE): IntArray {
         require(argb.size == width * height) { "${argb.size} pixels for ${width}x$height" }
-        require(passes in 0..MAX_PASSES) { "passes $passes" }
+        require(passes in 0..MAX_PASSES && tolerance >= MIN_TOLERANCE) { "passes $passes, tolerance $tolerance" }
         var current = argb.copyOf()
-        for (pass in 0 until passes) current = pass(current, width, height, spacing(pass))
+        for (pass in 0 until passes) {
+            current = pass(current, width, height, spacing(pass), chromaWeights(pass, tolerance))
+        }
         return current
     }
 
-    private fun pass(src: IntArray, width: Int, height: Int, spacing: Int): IntArray {
+    private fun pass(src: IntArray, width: Int, height: Int, spacing: Int, chromaWeight: IntArray): IntArray {
         val luma = IntArray(src.size) { luma(src[it]) }
         val out = IntArray(src.size)
         val sums = IntArray(CHANNELS)
         for (y in 0 until height) {
             for (x in 0 until width) {
                 val i = y * width + x
+                val ownRed = chroma(src[i] shr RED_SHIFT and CODE, luma[i])
+                val ownBlue = chroma(src[i] and CODE, luma[i])
                 sums.fill(0)
                 var total = 0
                 for (dy in -RADIUS..RADIUS) {
                     val row = (y + dy * spacing).coerceIn(0, height - 1) * width
                     for (dx in -RADIUS..RADIUS) {
                         val j = row + (x + dx * spacing).coerceIn(0, width - 1)
-                        val spatial = spatialWeights[(dy + RADIUS) * (2 * RADIUS + 1) + dx + RADIUS]
-                        val w = spatial * rangeWeights[abs(luma[j] - luma[i]) shr CODE_BITS]
-                        sums[0] += w * chroma(src[j] shr RED_SHIFT and CODE, luma[j])
+                        val red = chroma(src[j] shr RED_SHIFT and CODE, luma[j])
+                        val blue = chroma(src[j] and CODE, luma[j])
+                        val apart = (maxOf(abs(red - ownRed), abs(blue - ownBlue)) shr CHROMA_BITS).coerceAtMost(CODE)
+                        val alike = rangeWeights[abs(luma[j] - luma[i]) shr CODE_BITS] * chromaWeight[apart]
+                        val w = spatialWeights[(dy + RADIUS) * (2 * RADIUS + 1) + dx + RADIUS] * (alike shr WEIGHT_BITS)
+                        sums[0] += w * red
                         sums[1] += w * chroma(src[j] shr GREEN_SHIFT and CODE, luma[j])
-                        sums[2] += w * chroma(src[j] and CODE, luma[j])
+                        sums[2] += w * blue
                         total += w
                     }
                 }

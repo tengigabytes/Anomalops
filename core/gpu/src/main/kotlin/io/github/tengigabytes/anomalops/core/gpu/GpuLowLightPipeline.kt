@@ -4,6 +4,7 @@ package io.github.tengigabytes.anomalops.core.gpu
 
 import io.github.tengigabytes.anomalops.core.imaging.align.Alignment
 import io.github.tengigabytes.anomalops.core.imaging.develop.AutoLook
+import io.github.tengigabytes.anomalops.core.imaging.develop.BurstNoise
 import io.github.tengigabytes.anomalops.core.imaging.develop.Demosaic
 import io.github.tengigabytes.anomalops.core.imaging.develop.LookOptions
 import io.github.tengigabytes.anomalops.core.imaging.develop.NoiseProfile
@@ -68,9 +69,16 @@ class GpuLowLightPipeline(private val look: LookOptions = LookOptions()) : AutoC
         val alignments = mutableListOf<Alignment>()
         val merged = merged(frames, best, sigma, alignments)
         try {
-            val gain = burst.postRawGain
-            val options =
-                AutoLook.options(frames[best], burst.gains, burst.matrix, burst.shading, look, postRawGain = gain)
+            val noise = burst.noise?.let { BurstNoise(it, frames.size) }
+            val options = AutoLook.options(
+                frames[best],
+                burst.gains,
+                burst.matrix,
+                burst.shading,
+                look,
+                postRawGain = burst.postRawGain,
+                noise = noise,
+            )
             val argb =
                 develop.toArgb(merged, burst.gains, burst.matrix, options, burst.shading, first.width, first.height)
             return LowLightPicture(argb, first.width / 2, first.height / 2, best, options, alignments)

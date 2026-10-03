@@ -80,6 +80,9 @@ class GpuDevelopTest {
             "sharpen" to options.copy(sharpen = SHARPEN),
             "chroma" to options.copy(chromaPasses = ChromaDenoise.MAX_PASSES),
             "chroma and sharpen" to options.copy(chromaPasses = 2, sharpen = SHARPEN),
+            "saturation" to options.copy(saturation = SATURATION),
+            "chroma, tight tolerance" to options.copy(chromaPasses = 3, chromaTolerance = TIGHT_TOLERANCE),
+            "all three" to options.copy(chromaPasses = 3, saturation = SATURATION, sharpen = SHARPEN),
         )
         val (plain, finished) = GlesContext.create().use {
             GpuDevelop().use { develop ->
@@ -130,6 +133,8 @@ class GpuDevelopTest {
         /** Proposed: at most 0.1 % of the pixels one code apart. */
         const val MAX_DIFFER_SHARE = 0.001
         const val SHARPEN = 0.5f
+        const val SATURATION = 1.25f
+        const val TIGHT_TOLERANCE = 4f
         const val MIN_CHANGED_SHARE = 100
     }
 }
