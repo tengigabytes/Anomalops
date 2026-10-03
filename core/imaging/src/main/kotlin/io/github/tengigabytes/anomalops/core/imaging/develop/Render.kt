@@ -14,6 +14,8 @@ import kotlin.math.pow
  *   otherwise turn clipped highlights pink or cyan.
  * - [shoulder], [white]: output levels up to [shoulder] pass unchanged; above it the curve rolls off smoothly and
  *   reaches 1 at scene level [white]. White balance gains push saturated colours above 1, so [white] > 1.
+ * - [chromaPasses]: [ChromaDenoise]'s passes over the finished picture, before sharpening; 0 leaves its colour
+ *   noise.
  * - [sharpen]: [Sharpen]'s amount on the finished picture; 0 leaves it as rendered.
  */
 data class RenderOptions(
@@ -22,11 +24,13 @@ data class RenderOptions(
     val shoulder: Float = 0.9f,
     val white: Float = 2f,
     val sharpen: Float = 0f,
+    val chromaPasses: Int = 0,
 ) {
     init {
         require(exposure > 0f && highlightKnee in 0f..<1f) { "exposure $exposure, knee $highlightKnee" }
         require(shoulder in 0f..<1f && white > 1f) { "shoulder $shoulder, white $white" }
         require(sharpen in 0f..Sharpen.MAX_AMOUNT) { "sharpen $sharpen" }
+        require(chromaPasses in 0..ChromaDenoise.MAX_PASSES) { "chroma passes $chromaPasses" }
     }
 }
 
@@ -35,7 +39,7 @@ data class RenderOptions(
  * as ARGB (`Bitmap.setPixels`, `BufferedImage.TYPE_INT_ARGB`). In order, per pixel: how close to clipping the RAW
  * was, lens shading gains ([ShadingMap], optional), white-balance gains, colour matrix (camera to linear sRGB,
  * ADR-0002), exposure, highlight blend toward neutral, tone curve on the brightest channel (keeps the hue), sRGB
- * encoding, and [Sharpen] over the whole picture when asked. Shading comes after the clipping check because it
+ * encoding, then [ChromaDenoise] and [Sharpen] over the whole picture when asked. Shading comes after the clipping check because it
  * lifts clipped corners above RAW white.
  */
 object Render {
@@ -85,10 +89,20 @@ object Render {
                 out[i] = OPAQUE or (encode(o[0]) shl RED_SHIFT) or (encode(o[1]) shl GREEN_SHIFT) or encode(o[2])
             }
         }
-        return if (Sharpen.quantise(options.sharpen) > 0) {
-            Sharpen.apply(out, rgb.width, rgb.height, options.sharpen)
+        return finish(out, rgb.width, rgb.height, options)
+    }
+
+    /** The whole-picture steps after the per-pixel rendering: colour denoising, then sharpening. */
+    fun finish(argb: IntArray, width: Int, height: Int, options: RenderOptions): IntArray {
+        val clean = if (options.chromaPasses > 0) {
+            ChromaDenoise.apply(argb, width, height, options.chromaPasses)
         } else {
-            out
+            argb
+        }
+        return if (Sharpen.quantise(options.sharpen) > 0) {
+            Sharpen.apply(clean, width, height, options.sharpen)
+        } else {
+            clean
         }
     }
 

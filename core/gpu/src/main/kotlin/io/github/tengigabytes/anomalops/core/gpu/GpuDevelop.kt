@@ -9,20 +9,19 @@ import io.github.tengigabytes.anomalops.core.imaging.develop.RawFrame
 import io.github.tengigabytes.anomalops.core.imaging.develop.Render
 import io.github.tengigabytes.anomalops.core.imaging.develop.RenderOptions
 import io.github.tengigabytes.anomalops.core.imaging.develop.ShadingMap
-import io.github.tengigabytes.anomalops.core.imaging.develop.Sharpen
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /**
  * The ends of FR-17's pipeline on the GPU (ADR-0017 step 4): a RAW frame uploaded as a 16-bit integer texture and
  * decoded to half-size R, G, B and luma planes (`Demosaic.halfSize` and `Rgb.luma`), and merged camera RGB rendered
- * to 8-bit sRGB ARGB (`Render.toArgb`, with the same sRGB table, and `Sharpen.apply`). Needs a current
- * [GlesContext].
+ * to 8-bit sRGB ARGB (`Render.toArgb`, with the same sRGB table, and its whole-picture steps in [GpuFinish]).
+ * Needs a current [GlesContext].
  */
 class GpuDevelop : AutoCloseable {
     private val decode = ComputeProgram(DevelopShaders.HALF_SIZE)
     private val render = ComputeProgram(DevelopShaders.RENDER)
-    private val sharpen = ComputeProgram(DevelopShaders.SHARPEN)
+    private val finish = GpuFinish()
     private val buffers = IntArray(BUFFERS).also { GLES20.glGenBuffers(BUFFERS, it, 0) }
     private var raw = 0
     private var rawWidth = 0
@@ -60,8 +59,8 @@ class GpuDevelop : AutoCloseable {
 
     /**
      * `Render.toArgb` of camera RGB planes from a [rawWidth] x [rawHeight] frame; [gains] red, green, blue, [matrix]
-     * 3 x 3 row by row. With [RenderOptions.sharpen] the picture goes through `Sharpen.apply`'s kernel before it is
-     * read back.
+     * 3 x 3 row by row. The picture then goes through `Render.finish`'s steps ([GpuFinish]) before it is read
+     * back.
      */
     @Suppress("LongParameterList") // Render.toArgb's parameters, with the planes apart.
     fun toArgb(
@@ -91,10 +90,9 @@ class GpuDevelop : AutoCloseable {
             .uniform("shadingRows", shading?.rows ?: 0)
             .uniform("rawSize", rawWidth, rawHeight)
             .dispatch(GpuPlane.groups(w), GpuPlane.groups(h))
-        val amount = Sharpen.quantise(options.sharpen)
-        val result = if (amount > 0) sharpened(w, h, amount) else OUT
+        val result = finish.run(buffers[OUT], w, h, options)
         GLES31.glMemoryBarrier(GLES31.GL_BUFFER_UPDATE_BARRIER_BIT)
-        GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, buffers[result])
+        GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, result)
         val bytes = w * h * Int.SIZE_BYTES
         val mapped = GLES30.glMapBufferRange(GLES31.GL_SHADER_STORAGE_BUFFER, 0, bytes, GLES30.GL_MAP_READ_BIT)
         checkNotNull(mapped) { "glMapBufferRange failed" }
@@ -103,18 +101,6 @@ class GpuDevelop : AutoCloseable {
         GLES30.glUnmapBuffer(GLES31.GL_SHADER_STORAGE_BUFFER)
         checkGl("GpuDevelop.toArgb")
         return argb
-    }
-
-    /** Runs the sharpen kernel from buffer [OUT] into buffer [SHARP] and returns the latter's index. */
-    private fun sharpened(w: Int, h: Int, amount: Int): Int {
-        GLES31.glMemoryBarrier(GLES31.GL_SHADER_STORAGE_BARRIER_BIT)
-        allocate(SHARP, 1, w * h)
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, 0, buffers[OUT])
-        sharpen.use()
-            .uniform("size", w, h)
-            .uniform("amount", amount)
-            .dispatch(GpuPlane.groups(w), GpuPlane.groups(h))
-        return SHARP
     }
 
     /** Buffer [index] sized for [pixels] packed pixels, to be read back, bound to [binding]. */
@@ -127,7 +113,7 @@ class GpuDevelop : AutoCloseable {
     override fun close() {
         decode.close()
         render.close()
-        sharpen.close()
+        finish.close()
         GLES20.glDeleteBuffers(BUFFERS, buffers, 0)
         if (raw != 0) GLES20.glDeleteTextures(1, intArrayOf(raw), 0)
     }
@@ -213,10 +199,7 @@ class GpuDevelop : AutoCloseable {
 
         /** The decode kernel's table of linear values, bound to its binding 0. */
         const val LINEAR = 4
-
-        /** The sharpen kernel's output, bound to its binding 1. */
-        const val SHARP = 5
-        const val BUFFERS = 6
+        const val BUFFERS = 5
         const val SAMPLES = 1 shl 16
 
         /** `Render`'s sRGB table, built with the same expression, four 8-bit codes per uint. */

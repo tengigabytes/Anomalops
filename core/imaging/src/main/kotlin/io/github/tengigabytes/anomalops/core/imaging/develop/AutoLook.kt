@@ -17,6 +17,8 @@ package io.github.tengigabytes.anomalops.core.imaging.develop
  * - [sharpenFullGain], [sharpenZeroGain]: the amount fades linearly to nothing between these gains, since
  *   sharpening a picture that was raised a lot sharpens its noise (at a gain of 11 it was not preferred). The two
  *   ends are guesses.
+ * - [chromaPasses]: [ChromaDenoise]'s passes; three were preferred to none in a bright scene and two dim ones
+ *   (once each).
  */
 data class LookOptions(
     val targetMedian: Float = 0.19f,
@@ -25,6 +27,7 @@ data class LookOptions(
     val sharpen: Float = 0.5f,
     val sharpenFullGain: Float = 3f,
     val sharpenZeroGain: Float = 8f,
+    val chromaPasses: Int = ChromaDenoise.MAX_PASSES,
 ) {
     init {
         require(targetMedian > 0f && maxGain >= 1f && brightSceneMaxGain >= 1f) { "target $targetMedian, gains" }
@@ -68,7 +71,8 @@ object AutoLook {
         val ceiling = if (postRawGain == null) look.maxGain else maxOf(floor, look.brightSceneMaxGain)
         val gain = if (median > 0f) (look.targetMedian / median).coerceIn(floor, ceiling) else ceiling
         val fade = (look.sharpenZeroGain - gain) / (look.sharpenZeroGain - look.sharpenFullGain)
-        return base.copy(exposure = gain, sharpen = look.sharpen * fade.coerceIn(0f, 1f))
+        val sharpen = look.sharpen * fade.coerceIn(0f, 1f)
+        return base.copy(exposure = gain, sharpen = sharpen, chromaPasses = look.chromaPasses)
     }
 
     /**

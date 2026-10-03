@@ -6,12 +6,12 @@ import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.github.tengigabytes.anomalops.core.imaging.align.Similarity
 import io.github.tengigabytes.anomalops.core.imaging.develop.CfaLayout
+import io.github.tengigabytes.anomalops.core.imaging.develop.ChromaDenoise
 import io.github.tengigabytes.anomalops.core.imaging.develop.Demosaic
 import io.github.tengigabytes.anomalops.core.imaging.develop.RawFrame
 import io.github.tengigabytes.anomalops.core.imaging.develop.Render
 import io.github.tengigabytes.anomalops.core.imaging.develop.RenderOptions
 import io.github.tengigabytes.anomalops.core.imaging.develop.ShadingMap
-import io.github.tengigabytes.anomalops.core.imaging.develop.Sharpen
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -24,8 +24,8 @@ import kotlin.math.sqrt
  * ADR-0017 step 4 on the phone: [GpuDevelop] against `Demosaic.halfSize`, `Rgb.luma` and `Render.toArgb`, on a
  * synthetic GBRG RAW (4080 x 3072, padded rows, a black level per cell position, some photosites clipped) and a
  * shading map like the phone's 33 x 25. Decoding must match bit for bit; rendering may differ where the GPU's
- * division rounds differently (proposed limit); sharpening that rendering must match bit for bit again. Results are
- * logged under [TAG] as `GPU` lines.
+ * division rounds differently (proposed limit); `Render.finish` of that rendering must match bit for bit again.
+ * Results are logged under [TAG] as `GPU` lines.
  */
 @RunWith(AndroidJUnit4::class)
 class GpuDevelopTest {
@@ -73,26 +73,32 @@ class GpuDevelopTest {
         assertTrue("render: $differ pixels, $worst", differ <= cpuArgb.size * MAX_DIFFER_SHARE && worst <= 1)
     }
 
-    /** The sharpen kernel is integer arithmetic: on the GPU's own rendering it must give `Sharpen.apply`'s codes. */
+    /** The whole-picture kernels are integer arithmetic: on the GPU's own rendering they must give the CPU's codes. */
     @Test
-    fun sharpenMatchesTheCpu() {
-        val sharp = options.copy(sharpen = SHARPEN)
-        val (plain, sharpened) = GlesContext.create().use {
+    fun finishMatchesTheCpu() {
+        val cases = listOf(
+            "sharpen" to options.copy(sharpen = SHARPEN),
+            "chroma" to options.copy(chromaPasses = ChromaDenoise.MAX_PASSES),
+            "chroma and sharpen" to options.copy(chromaPasses = 2, sharpen = SHARPEN),
+        )
+        val (plain, finished) = GlesContext.create().use {
             GpuDevelop().use { develop ->
                 val planes = develop.halfSize(raw)
                 val a = develop.toArgb(planes, gains, matrix, options, shading, raw.width, raw.height)
-                val b = develop.toArgb(planes, gains, matrix, sharp, shading, raw.width, raw.height)
+                val b = cases.map { develop.toArgb(planes, gains, matrix, it.second, shading, raw.width, raw.height) }
                 planes.forEach { it.close() }
                 a to b
             }
         }
-        val expected = Sharpen.apply(plain, raw.width / 2, raw.height / 2, SHARPEN)
-        val differ = expected.indices.count { expected[it] != sharpened[it] }
-        val changed = plain.indices.count { plain[it] != sharpened[it] }
-        log("sharpen: $differ of ${expected.size} pixels differ from the CPU; $changed changed by sharpening")
-        assertEquals("sharpen mismatches", 0, differ)
-        // The scene is mostly smooth: about 5 % of its pixels move; none would mean the kernel did not run.
-        assertTrue("sharpening changed $changed pixels", changed > expected.size / MIN_CHANGED_SHARE)
+        cases.forEachIndexed { k, (name, case) ->
+            val expected = Render.finish(plain, raw.width / 2, raw.height / 2, case)
+            val differ = expected.indices.count { expected[it] != finished[k][it] }
+            val changed = plain.indices.count { plain[it] != finished[k][it] }
+            log("$name: $differ of ${expected.size} pixels differ from the CPU; $changed changed by it")
+            assertEquals("$name mismatches", 0, differ)
+            // The scene is mostly smooth and grey; no change at all would mean the kernel did not run.
+            assertTrue("$name changed $changed pixels", changed > expected.size / MIN_CHANGED_SHARE)
+        }
     }
 
     /** Gains 1 in the centre rising towards the corners, a little differently per channel, as a lens has them. */
