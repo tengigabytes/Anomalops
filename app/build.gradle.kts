@@ -43,6 +43,9 @@ android {
 
 dependencies {
     implementation(project(":core:camera"))
+    // FR-17 behind the developer switch (ShotPipeline); the benchmarks under androidTest use them too.
+    implementation(project(":core:gpu"))
+    implementation(project(":core:imaging"))
     implementation(project(":core:profile"))
     implementation(project(":core:store"))
     implementation(project(":core:telemetry"))
@@ -59,9 +62,6 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.test.ext.junit)
-    // ImagingBenchmark and GpuBenchmark time :core:imaging and :core:gpu on the phone; the app does not use them yet.
-    androidTestImplementation(project(":core:imaging"))
-    androidTestImplementation(project(":core:gpu"))
     // Dive-screen UI tests measure the Compose layout on the device; the manifest adds the host activity to debug
     // builds only.
     androidTestImplementation(platform(libs.compose.bom))

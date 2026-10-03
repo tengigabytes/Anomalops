@@ -23,17 +23,18 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.GrantPermissionRule
 import io.github.tengigabytes.anomalops.R
+import io.github.tengigabytes.anomalops.capture.MergeSwitch
+import io.github.tengigabytes.anomalops.capture.ShootingMode
 import io.github.tengigabytes.anomalops.conditions.ShootingConditions
 import io.github.tengigabytes.anomalops.core.camera.request.ColorSpec
 import io.github.tengigabytes.anomalops.core.profile.DepthBand
 import io.github.tengigabytes.anomalops.core.profile.LensFilter
-import io.github.tengigabytes.anomalops.core.profile.ScenePreset
 import io.github.tengigabytes.anomalops.core.telemetry.depth.DepthZone
 import io.github.tengigabytes.anomalops.core.telemetry.depth.ManualDepthSource
 import io.github.tengigabytes.anomalops.dive.DiveActions
 import io.github.tengigabytes.anomalops.dive.DiveDeps
 import io.github.tengigabytes.anomalops.dive.DiveScreen
-import io.github.tengigabytes.anomalops.dive.presetLabel
+import io.github.tengigabytes.anomalops.dive.modeLabel
 import io.github.tengigabytes.anomalops.layout.MIN_SHUTTER_DP
 import io.github.tengigabytes.anomalops.settings.SettingsScreen
 import kotlinx.coroutines.CoroutineStart
@@ -77,7 +78,7 @@ class DiveScreenTest {
 
     @Before
     fun setUp() {
-        val deps = DiveDeps(rig.controller, rig.pipeline, conditions, depth)
+        val deps = DiveDeps(rig.controller, rig.pipeline, conditions, depth, MergeSwitch(rig.context))
         val actions = DiveActions({ lockPresses++ }, {}, { settingsOpen = true }, { null })
         compose.setContent {
             MaterialTheme {
@@ -113,13 +114,13 @@ class DiveScreenTest {
         val geometry = ScreenGeometry(compose.activity)
         assertTrue("the host window must cover the display", geometry.coversDisplay)
         val controls = controls()
-        val presets = ScenePreset.entries.map { bounds(text(presetLabel(it))) }
+        val presets = ShootingMode.entries.map { bounds(text(modeLabel(it))) } + bounds(text(R.string.merge_label))
         report("normal", geometry, controls)
         assertEquals(emptyList<String>(), geometry.problems(controls, text(R.string.shutter), MIN_SHUTTER_DP))
         // FR-12: one column on the right long edge, all on screen, none scrolled away.
         assertTrue("presets not in one column: $presets", presets.all { it.left == presets.first().left })
         assertTrue("presets not on the right half", presets.first().left > geometry.widthPx / 2)
-        assertEquals(ScenePreset.entries.size + NORMAL_EXTRAS, controls.size)
+        assertEquals(presets.size + NORMAL_EXTRAS, controls.size)
     }
 
     @Test
@@ -138,9 +139,10 @@ class DiveScreenTest {
 
     @Test
     fun fr12_oneTapSelectsEachPreset() {
-        val latenciesMs = ScenePreset.entries.reversed().map { preset ->
+        val latenciesMs = ShootingMode.entries.reversed().map { mode ->
+            val preset = mode.preset(merge = false)
             val tappedAt = SystemClock.elapsedRealtime()
-            tap(text(presetLabel(preset)))
+            tap(text(modeLabel(mode)))
             runBlocking { withTimeout(TIMEOUT_MS) { rig.controller.state.first { it.preset == preset } } }
             SystemClock.elapsedRealtime() - tappedAt
         }

@@ -4,7 +4,7 @@ package io.github.tengigabytes.anomalops.core.gpu
 
 /**
  * The kernels of [GpuDevelop]: RAW to camera RGB planes (`Demosaic.halfSize` and `Rgb.luma` of `:core:imaging`)
- * and camera RGB to 8-bit sRGB ARGB (`Render.toArgb`), with the same order of operations.
+ * and camera RGB to 8-bit sRGB ARGB (`Render.toArgb`'s per-pixel part), with the same order of operations.
  */
 internal object DevelopShaders {
     /**

@@ -15,11 +15,13 @@ import java.nio.ByteOrder
 /**
  * The ends of FR-17's pipeline on the GPU (ADR-0017 step 4): a RAW frame uploaded as a 16-bit integer texture and
  * decoded to half-size R, G, B and luma planes (`Demosaic.halfSize` and `Rgb.luma`), and merged camera RGB rendered
- * to 8-bit sRGB ARGB (`Render.toArgb`, with the same sRGB table). Needs a current [GlesContext].
+ * to 8-bit sRGB ARGB (`Render.toArgb`, with the same sRGB table, and its whole-picture steps in [GpuFinish]).
+ * Needs a current [GlesContext].
  */
 class GpuDevelop : AutoCloseable {
     private val decode = ComputeProgram(DevelopShaders.HALF_SIZE)
     private val render = ComputeProgram(DevelopShaders.RENDER)
+    private val finish = GpuFinish()
     private val buffers = IntArray(BUFFERS).also { GLES20.glGenBuffers(BUFFERS, it, 0) }
     private var raw = 0
     private var rawWidth = 0
@@ -57,7 +59,8 @@ class GpuDevelop : AutoCloseable {
 
     /**
      * `Render.toArgb` of camera RGB planes from a [rawWidth] x [rawHeight] frame; [gains] red, green, blue, [matrix]
-     * 3 x 3 row by row.
+     * 3 x 3 row by row. The picture then goes through `Render.finish`'s steps ([GpuFinish]) before it is read
+     * back.
      */
     @Suppress("LongParameterList") // Render.toArgb's parameters, with the planes apart.
     fun toArgb(
@@ -80,17 +83,16 @@ class GpuDevelop : AutoCloseable {
         )
         upload(PARAMS, floats(params))
         upload(SHADING, floats(shading?.gains ?: params))
-        GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, buffers[OUT])
-        GLES20.glBufferData(GLES31.GL_SHADER_STORAGE_BUFFER, w * h * Int.SIZE_BYTES, null, GLES30.GL_STREAM_READ)
-        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, OUT, buffers[OUT])
+        allocate(OUT, OUT, w * h)
         for (c in 0 until CHANNELS) rgb[c].bindSampler(c)
         render.use()
             .uniform("shadingColumns", shading?.columns ?: 0)
             .uniform("shadingRows", shading?.rows ?: 0)
             .uniform("rawSize", rawWidth, rawHeight)
             .dispatch(GpuPlane.groups(w), GpuPlane.groups(h))
+        val result = finish.run(buffers[OUT], w, h, options)
         GLES31.glMemoryBarrier(GLES31.GL_BUFFER_UPDATE_BARRIER_BIT)
-        GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, buffers[OUT])
+        GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, result)
         val bytes = w * h * Int.SIZE_BYTES
         val mapped = GLES30.glMapBufferRange(GLES31.GL_SHADER_STORAGE_BUFFER, 0, bytes, GLES30.GL_MAP_READ_BIT)
         checkNotNull(mapped) { "glMapBufferRange failed" }
@@ -101,9 +103,17 @@ class GpuDevelop : AutoCloseable {
         return argb
     }
 
+    /** Buffer [index] sized for [pixels] packed pixels, to be read back, bound to [binding]. */
+    private fun allocate(index: Int, binding: Int, pixels: Int) {
+        GLES20.glBindBuffer(GLES31.GL_SHADER_STORAGE_BUFFER, buffers[index])
+        GLES20.glBufferData(GLES31.GL_SHADER_STORAGE_BUFFER, pixels * Int.SIZE_BYTES, null, GLES30.GL_STREAM_READ)
+        GLES30.glBindBufferBase(GLES31.GL_SHADER_STORAGE_BUFFER, binding, buffers[index])
+    }
+
     override fun close() {
         decode.close()
         render.close()
+        finish.close()
         GLES20.glDeleteBuffers(BUFFERS, buffers, 0)
         if (raw != 0) GLES20.glDeleteTextures(1, intArrayOf(raw), 0)
     }

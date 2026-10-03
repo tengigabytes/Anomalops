@@ -16,6 +16,7 @@ class StillNamesTest {
         val at = ZonedDateTime.of(2026, 9, 28, 17, 2, 41, 51_000_000, taipei)
         assertEquals("ANM_20260928_170241_051", StillNames.stem(at))
         assertEquals("ANM_20260928_170241_051.jpg", StillNames.stillName(StillNames.stem(at)))
+        assertEquals("ANM_20260928_170241_051_M.jpg", StillNames.mergedName(StillNames.stem(at)))
     }
 
     @Test

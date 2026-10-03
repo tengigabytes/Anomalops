@@ -3,21 +3,27 @@
 package io.github.tengigabytes.anomalops.core.imaging.tool
 
 import io.github.tengigabytes.anomalops.core.imaging.develop.CfaLayout
+import io.github.tengigabytes.anomalops.core.imaging.develop.NoiseProfile
 import io.github.tengigabytes.anomalops.core.imaging.develop.RawFrame
 import io.github.tengigabytes.anomalops.core.imaging.develop.ShadingMap
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import kotlin.math.pow
 
 /**
  * What [StackTool] needs from one DNG: the RAW frame, the white balance it was shot with ([asShotNeutral], camera
  * RGB of a neutral, green 1), the forward matrix for D65 when there is one (white-balanced camera RGB to XYZ D50),
- * and the lens shading gain maps of OpcodeList2 when the capture carried a shading map.
+ * the lens shading gain maps of OpcodeList2 when the capture carried a shading map, and [postRawGain]: the gain
+ * the camera applied after the RAW (`CONTROL_POST_RAW_SENSITIVITY_BOOST` / 100), which `DngCreator` stores as
+ * BaselineExposure in stops (seen 2026-10-03: a boost of 711 gave 2.82); 1 without the tag.
  */
 class DngImage(
     val raw: RawFrame,
     val asShotNeutral: FloatArray?,
     val forwardMatrix: FloatArray?,
     val shading: ShadingMap?,
+    val postRawGain: Float = 1f,
+    val noise: NoiseProfile? = null,
 )
 
 /**
@@ -38,11 +44,14 @@ object DngReader {
     private const val BLACK_LEVEL = 50714
     private const val WHITE_LEVEL = 50717
     private const val AS_SHOT_NEUTRAL = 50728
+    private const val BASELINE_EXPOSURE = 50730
     private const val ILLUMINANT_1 = 50778
     private const val ILLUMINANT_2 = 50779
     private const val FORWARD_1 = 50964
     private const val FORWARD_2 = 50965
     private const val OPCODE_LIST_2 = 51009
+    private const val NOISE_PROFILE = 51041
+    private const val NOISE_VALUES = 6
     private const val CFA = 32803
     private const val D65 = 21
     private const val BITS_16 = 16
@@ -70,7 +79,12 @@ object DngReader {
             main.numbers(WHITE_LEVEL)!!.first().toFloat(),
         )
         val shading = (main.bytes(OPCODE_LIST_2) ?: root.bytes(OPCODE_LIST_2))?.let { GainMaps.read(it, raw) }
-        return DngImage(raw, root.floats(AS_SHOT_NEUTRAL), forwardMatrix(root), shading)
+        val gain = root.floats(BASELINE_EXPOSURE)?.first()?.let { 2f.pow(it) } ?: 1f
+        // NoiseProfile as `DngCreator` writes it: scale and offset for red, green and blue in turn.
+        val noise = root.floats(NOISE_PROFILE)?.takeIf { it.size == NOISE_VALUES }?.let { n ->
+            NoiseProfile(FloatArray(3) { n[2 * it] }, FloatArray(3) { n[2 * it + 1] })
+        }
+        return DngImage(raw, root.floats(AS_SHOT_NEUTRAL), forwardMatrix(root), shading, gain, noise)
     }
 
     /** ForwardMatrix for D65 if one of the two is calibrated for it, else the first; null without one. */

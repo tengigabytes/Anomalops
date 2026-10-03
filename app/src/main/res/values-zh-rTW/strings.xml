@@ -4,11 +4,8 @@
 <resources>
     <string name="unsupported_device">尚無 %1$s 的型號能力表。</string>
     <string name="camera_permission_needed">需要相機權限才能拍攝。</string>
-    <string name="preset_snapshot">快照</string>
     <string name="preset_wide">廣角</string>
-    <string name="preset_fish_school">魚群</string>
     <string name="preset_macro">微距</string>
-    <string name="preset_low_light">低光</string>
     <string name="shutter">拍攝</string>
     <string name="wb_approximate">白平衡為近似</string>
     <string name="camera_failed">相機錯誤：%1$s</string>
@@ -33,6 +30,11 @@
     <string name="filter_none">無</string>
     <string name="filter_red">紅</string>
     <string name="filter_magenta">洋紅</string>
+    <string name="mode_auto">自動</string>
+    <string name="merge_label">合成</string>
+    <string name="merge_done">已合成 %1$d 張（%2$.1f 秒）</string>
+    <string name="merge_running">合成中…</string>
+    <string name="merge_fell_back">合成未完成，已存單張</string>
     <string name="filter_note">設定白平衡起點，避免與濾鏡重複校正。潛水鎖定中無法開啟本頁。</string>
     <string name="status_battery">電量 %1$d%% · %2$.0f°C</string>
     <string name="status_hot">過熱</string>

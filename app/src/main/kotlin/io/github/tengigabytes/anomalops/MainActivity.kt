@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.lifecycleScope
 import io.github.tengigabytes.anomalops.capture.CameraPermissionGate
+import io.github.tengigabytes.anomalops.capture.LowLightRenderer
+import io.github.tengigabytes.anomalops.capture.MergeSwitch
 import io.github.tengigabytes.anomalops.capture.Message
 import io.github.tengigabytes.anomalops.capture.ShotPipeline
 import io.github.tengigabytes.anomalops.conditions.ShootingConditions
@@ -66,6 +68,10 @@ class MainActivity : ComponentActivity() {
     private val depth by lazy { ManualDepthSource(initialZone()) }
     private val conditions by lazy { ShootingConditions(depth) }
     private val filters by lazy { FilterPrefs(this) }
+    private val mergeSwitch by lazy { MergeSwitch(this) }
+
+    // FR-17 by the dive screen's merge switch; its GL thread starts only with the first merged shot.
+    private val lowLight by lazy { LowLightRenderer() }
     private val store by lazy { PrefsLockStore(this) }
     private lateinit var lock: DiveLock
     private lateinit var pins: PinWatcher
@@ -105,6 +111,7 @@ class MainActivity : ComponentActivity() {
         pins.stop()
         // Held RAW frames return their camera buffers before the camera thread stops (ADR-0005).
         rawKeeper.clear()
+        lowLight.close()
         controller?.release()
         super.onDestroy()
     }
@@ -123,9 +130,16 @@ class MainActivity : ComponentActivity() {
             val deps = remember(camera) {
                 DiveDeps(
                     camera,
-                    ShotPipeline(camera, StillStore(applicationContext), rawKeeper, stacks),
+                    ShotPipeline(
+                        camera,
+                        StillStore(applicationContext),
+                        rawKeeper,
+                        stacks,
+                        lowLight,
+                    ) { mergeSwitch.on },
                     conditions,
                     depth,
+                    mergeSwitch,
                 )
             }
             val actions = remember {

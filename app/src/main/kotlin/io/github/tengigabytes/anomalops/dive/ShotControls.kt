@@ -8,6 +8,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import io.github.tengigabytes.anomalops.R
+import io.github.tengigabytes.anomalops.capture.ShootingMode
 import io.github.tengigabytes.anomalops.capture.ShotPipeline
 import io.github.tengigabytes.anomalops.core.profile.CalibrationKey
 import io.github.tengigabytes.anomalops.core.profile.ScenePreset
@@ -17,9 +18,10 @@ import kotlinx.coroutines.launch
 import java.io.IOException
 
 private const val TAG = "DiveScreen"
+private const val MS_PER_S = 1000f
 
 /**
- * Shooting from the dive screen: preset (FR-11 / FR-12), stills and bursts (FR-52, FR-15), RAW keeps (FR-62), the
+ * Shooting from the dive screen: mode and merge switch (FR-11 / FR-12, FR-17), stills and bursts (FR-52, FR-15), RAW keeps (FR-62), the
  * short status note, and the FR-45 `captures.csv` rows.
  */
 class ShotControls(
@@ -28,8 +30,15 @@ class ShotControls(
     private val context: Context,
     private val scope: CoroutineScope,
 ) {
-    var preset by mutableStateOf(ScenePreset.SNAPSHOT)
+    var mode by mutableStateOf(ShootingMode.AUTO)
         private set
+
+    /** FR-17: whether shots are merged bursts; the switch on the dive screen, kept across launches. */
+    var merge by mutableStateOf(deps.merge.on)
+        private set
+
+    /** The FR-11 preset the camera runs: the mode's, which for [ShootingMode.AUTO] depends on [merge]. */
+    val preset: ScenePreset get() = mode.preset(merge)
     var shot by mutableStateOf<ShotPipeline.Shot?>(null)
         private set
     var note by mutableStateOf<String?>(null)
@@ -46,9 +55,15 @@ class ShotControls(
         }
     }
 
-    fun select(chosen: ScenePreset, key: CalibrationKey) {
-        preset = chosen
-        launchSafely { deps.controller.select(chosen, key) }
+    fun select(chosen: ShootingMode, key: CalibrationKey) {
+        mode = chosen
+        launchSafely { deps.controller.select(preset, key) }
+    }
+
+    fun toggleMerge(key: CalibrationKey) {
+        merge = !merge
+        deps.merge.on = merge
+        launchSafely { deps.controller.select(preset, key) }
     }
 
     fun shoot() = launchSafely {
@@ -57,6 +72,15 @@ class ShotControls(
         shot = taken
         actions.session()?.capture(stillRecord(taken, deps.conditions.current))
         if (taken.capture.spec.exposure?.isoClamped == true) note = context.getString(R.string.iso_clamped)
+        taken.merging?.let { merging ->
+            note = context.getString(R.string.merge_running)
+            launchSafely {
+                val done = merging.await()
+                // The merged picture replaced the still's file; a later shot may already be the one shown.
+                if (shot === taken) shot = ShotPipeline.Shot(taken.capture, done.saved)
+                note = mergeNote(done.merge)
+            }
+        }
     }
 
     fun burst(release: Deferred<Unit>) = launchSafely {
@@ -71,6 +95,18 @@ class ShotControls(
             val kept = deps.pipeline.keepRaw(stem)?.displayName ?: context.getString(R.string.raw_gone)
             note = context.getString(R.string.raw_note, kept)
         }
+    }
+
+    /** FR-17: how many frames were merged and how long it took from the shutter, or that the still was kept. */
+    private fun mergeNote(merge: ShotPipeline.Merge): String {
+        val totalMs = merge.captureMs + merge.mergeMs + merge.encodeMs
+        Log.i(
+            TAG,
+            "FR-17 merged=${merge.merged} frames=${merge.frames} capture=${merge.captureMs} ms " +
+                "merge=${merge.mergeMs} ms encode=${merge.encodeMs} ms",
+        )
+        if (!merge.merged) return context.getString(R.string.merge_fell_back)
+        return context.getString(R.string.merge_done, merge.frames, totalMs / MS_PER_S)
     }
 
     private fun log(shot: ShotPipeline.Shot) {

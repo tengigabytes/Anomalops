@@ -134,7 +134,7 @@ private fun stillCallback(result: CompletableDeferred<TotalCaptureResult>) =
  * The next image, or null when none is queued or the reader already has maxImages out. The second case is the
  * last guard behind [RawReaders.hasRoom]: throwing here, on the camera thread, would kill the app.
  */
-private fun ImageReader.acquireOrNull(onFull: () -> Unit = {}): Image? = try {
+internal fun ImageReader.acquireOrNull(onFull: () -> Unit = {}): Image? = try {
     acquireNextImage()
 } catch (e: IllegalStateException) {
     Log.w(TAG, "RAW reader full, frame left queued", e)
@@ -143,7 +143,7 @@ private fun ImageReader.acquireOrNull(onFull: () -> Unit = {}): Image? = try {
 }
 
 /** Drops RAW images left queued by an earlier full reader or a late frame, so this still gets its own. */
-private fun ImageReader.drain() {
+internal fun ImageReader.drain() {
     while (true) acquireOrNull()?.close() ?: return
 }
 

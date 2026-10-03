@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.core.store.media
 
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.SystemClock
+import android.provider.MediaStore
 import io.github.tengigabytes.anomalops.core.camera.session.BurstFrame
 import io.github.tengigabytes.anomalops.core.camera.session.StillCapture
 import kotlinx.coroutines.Dispatchers
@@ -57,14 +59,41 @@ class StillStore(context: Context, private val clock: () -> ZonedDateTime = Zone
         SavedStill(uri, name, stem, takenAtMs, frame.bytes.size.toLong(), SystemClock.elapsedRealtime() - started)
     }
 
-    suspend fun save(capture: StillCapture): SavedStill = withContext(Dispatchers.IO) {
+    /**
+     * The still of [capture], named and dated by its exposure. [bytes] is the encoded picture to store: the
+     * camera's own by default, or one the app rendered from the same moment (FR-17), also a JPEG.
+     */
+    suspend fun save(capture: StillCapture, bytes: ByteArray = capture.bytes): SavedStill =
+        withContext(Dispatchers.IO) {
+            val started = SystemClock.elapsedRealtime()
+            val takenAt = takenAt(capture.sensorTimestampNs)
+            val stem = StillNames.stem(takenAt)
+            val name = StillNames.stillName(stem)
+            val takenAtMs = takenAt.toInstant().toEpochMilli()
+            val uri = resolver.writePending(name, StillNames.MIME_TYPE, takenAtMs) { it.write(bytes) }
+            SavedStill(uri, name, stem, takenAtMs, bytes.size.toLong(), SystemClock.elapsedRealtime() - started)
+        }
+
+    /**
+     * FR-17: [bytes], a picture rendered after [saved] was stored, takes its place under the same name and date.
+     * It is written as a file of its own first ([StillNames.mergedName]), then the old one is deleted and the new
+     * one renamed, so a process killed on the way leaves one whole picture or both, never a broken one. When the
+     * rename is refused the picture keeps its own name.
+     */
+    suspend fun replace(saved: SavedStill, bytes: ByteArray): SavedStill = withContext(Dispatchers.IO) {
         val started = SystemClock.elapsedRealtime()
-        val takenAt = takenAt(capture.sensorTimestampNs)
-        val stem = StillNames.stem(takenAt)
-        val name = StillNames.stillName(stem)
-        val takenAtMs = takenAt.toInstant().toEpochMilli()
-        val uri = resolver.writePending(name, StillNames.MIME_TYPE, takenAtMs) { it.write(capture.bytes) }
-        SavedStill(uri, name, stem, takenAtMs, capture.bytes.size.toLong(), SystemClock.elapsedRealtime() - started)
+        val name = StillNames.mergedName(saved.stem)
+        val uri = resolver.writePending(name, StillNames.MIME_TYPE, saved.takenAtMs) { it.write(bytes) }
+        resolver.delete(saved.uri, null, null)
+        val renamed = ContentValues().apply { put(MediaStore.Images.Media.DISPLAY_NAME, saved.displayName) }
+        // UNVERIFIED(G0): renaming an own MediaStore item works on the Pixel 10 Pro (Android 17); other models unknown.
+        val done = resolver.update(uri, renamed, null, null) > 0
+        saved.copy(
+            uri = uri,
+            displayName = if (done) saved.displayName else name,
+            sizeBytes = bytes.size.toLong(),
+            writeMs = SystemClock.elapsedRealtime() - started,
+        )
     }
 
     private companion object {

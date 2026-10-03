@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.layout
 
-import io.github.tengigabytes.anomalops.core.profile.ScenePreset
+import io.github.tengigabytes.anomalops.capture.ShootingMode
 
 /** FR-55: nothing clickable within this distance of any screen edge. */
 const val SAFE_MARGIN_MM = 12f
@@ -23,9 +23,11 @@ private const val PREVIEW_TO_ZOOM_MM = 2f
 private const val ROW_GAP_MM = 3f
 private const val EPSILON_MM = 0.001f
 
-// Left-column rows, level with the presets; row 2 stays free.
+// Both long edges share five rows. Left: row 2 stays free. Right: the modes from the top, the merge switch last.
+private const val ROWS = 5
 private const val DEPTH_ROW = 3
 private const val LIGHT_ROW = 4
+private const val MERGE_ROW = 4
 
 /** Which release shows a control; v1.1 slots stay empty in v1.0 so nothing moves later. */
 enum class Release { V1_0, V1_1 }
@@ -35,7 +37,8 @@ enum class Control(val since: Release) {
     SETTINGS(Release.V1_0),
     DEPTH(Release.V1_0),
     LIGHT(Release.V1_0),
-    PRESET(Release.V1_0),
+    MODE(Release.V1_0),
+    MERGE(Release.V1_0),
     ZOOM(Release.V1_1),
     THUMBNAIL(Release.V1_0),
     HALF_PRESS(Release.V1_1),
@@ -51,12 +54,12 @@ data class MmRect(val x: Float, val y: Float, val width: Float, val height: Floa
     fun overlaps(other: MmRect): Boolean = x < other.right && other.x < right && y < other.bottom && other.y < bottom
 }
 
-data class Slot(val control: Control, val rect: MmRect, val preset: ScenePreset? = null)
+data class Slot(val control: Control, val rect: MmRect, val mode: ShootingMode? = null)
 
 /**
  * docs/product/dive-lock-layout.md, section 3, derived from the screen size so FR-55 holds on any display:
- * a 4:3 preview across the short edge, presets down the right long edge, lock / settings / depth / light down
- * the left, then the zoom bar, the thumbnail row and the shutter strip below the preview. Screen size comes
+ * a 4:3 preview across the short edge, the modes and the merge switch down the right long edge, lock / settings /
+ * depth / light down the left, then the zoom bar, the thumbnail row and the shutter strip below the preview. Screen size comes
  * from pixels over xdpi / ydpi at run time (FR-55).
  */
 class DiveLockLayout(val screenWidthMm: Float, val screenHeightMm: Float) {
@@ -87,23 +90,24 @@ class DiveLockLayout(val screenWidthMm: Float, val screenHeightMm: Float) {
         }
     }
 
-    private fun Slot.name(): String = preset?.let { "$control $it" } ?: control.toString()
+    private fun Slot.name(): String = mode?.let { "$control $it" } ?: control.toString()
 
     private fun buildSlots(): List<Slot> {
         val left = SAFE_MARGIN_MM
         val right = screenWidthMm - SAFE_MARGIN_MM - KEY_MM
         val middle = (screenWidthMm - KEY_MM) / 2
         val inner = screenWidthMm - 2 * SAFE_MARGIN_MM
-        val presets = ScenePreset.entries
+        val modes = ShootingMode.entries
         val top = SAFE_MARGIN_MM + PRESET_TOP_GAP_MM
-        val step = (preview.bottom - PRESET_BOTTOM_GAP_MM - top - KEY_MM) / (presets.size - 1)
+        val step = (preview.bottom - PRESET_BOTTOM_GAP_MM - top - KEY_MM) / (ROWS - 1)
         fun row(i: Int) = top + i * step
         fun key(control: Control, x: Float, y: Float) = Slot(control, MmRect(x, y, KEY_MM, KEY_MM))
         val zoomY = preview.bottom + PREVIEW_TO_ZOOM_MM
         val rowY = zoomY + KEY_MM + ROW_GAP_MM
         val shutterY = rowY + KEY_MM + ROW_GAP_MM
-        return presets.mapIndexed { i, p -> Slot(Control.PRESET, MmRect(right, row(i), KEY_MM, KEY_MM), p) } +
+        return modes.mapIndexed { i, m -> Slot(Control.MODE, MmRect(right, row(i), KEY_MM, KEY_MM), m) } +
             listOf(
+                key(Control.MERGE, right, row(MERGE_ROW)),
                 key(Control.LOCK, left, row(0)),
                 key(Control.SETTINGS, left, row(1)),
                 key(Control.DEPTH, left, row(DEPTH_ROW)),

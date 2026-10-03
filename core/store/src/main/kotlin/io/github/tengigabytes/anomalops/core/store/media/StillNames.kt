@@ -24,6 +24,9 @@ object StillNames {
 
     fun stillName(stem: String): String = "$stem.jpg"
 
+    /** FR-17: the merged picture while it takes the place of its still, e.g. `ANM_20260928_170241_051_M.jpg`. */
+    fun mergedName(stem: String): String = "${stem}_M.jpg"
+
     /** FR-68: burst frames share the burst's stem and count from 1, e.g. `ANM_20260928_170241_051_B001.jpg`. */
     fun burstName(stem: String, index: Int): String = "%s_B%03d.jpg".format(Locale.ROOT, stem, index + 1)
 
