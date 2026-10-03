@@ -1,0 +1,113 @@
+// SPDX-FileCopyrightText: 2026 Terry Wang and Anomalops contributors
+// SPDX-License-Identifier: GPL-3.0-or-later
+package io.github.tengigabytes.anomalops.core.imaging.develop
+
+/**
+ * How bright and how sharp [AutoLook] makes a picture. All proposed, from the maintainer's side-by-side choices of
+ * 2026-10-03 on two indoor scenes (too few to be more than a starting point):
+ *
+ * - [targetMedian]: the picture's median luminance (display-linear) after the gain; 0.15, 0.19 and 0.24 were
+ *   tried, with no steady preference between them.
+ * - [maxGain]: the most the exposure is raised when the camera's own gain is not known; a dark subject (a black
+ *   keyboard filling the frame) would otherwise be pulled up 16 times.
+ * - [brightSceneMaxGain]: when the camera's gain is known, the median may raise the exposure above it only up to
+ *   this much: a well-lit scene (camera gain 1) was preferred at about 2.3, while in dim scenes the camera's gain
+ *   (5 to 7) was as good as anything brighter.
+ * - [sharpen]: [Sharpen]'s amount in good light; 0.5 was chosen over 1.0 every time.
+ * - [sharpenFullGain], [sharpenZeroGain]: the amount fades linearly to nothing between these gains, since
+ *   sharpening a picture that was raised a lot sharpens its noise (at a gain of 11 it was not preferred). The two
+ *   ends are guesses.
+ */
+data class LookOptions(
+    val targetMedian: Float = 0.19f,
+    val maxGain: Float = 8f,
+    val brightSceneMaxGain: Float = 2.5f,
+    val sharpen: Float = 0.5f,
+    val sharpenFullGain: Float = 3f,
+    val sharpenZeroGain: Float = 8f,
+) {
+    init {
+        require(targetMedian > 0f && maxGain >= 1f && brightSceneMaxGain >= 1f) { "target $targetMedian, gains" }
+        require(sharpen in 0f..Sharpen.MAX_AMOUNT && sharpenZeroGain > sharpenFullGain) { "sharpen $sharpen" }
+    }
+}
+
+/**
+ * The exposure gain and sharpening for one burst, measured on its reference RAW frame: on the CPU for the CPU and
+ * the GPU pipelines alike, so both render with the same numbers. The gain never darkens (FR-17's frames are
+ * under-exposed on purpose).
+ *
+ * Above the sensor's highest analog sensitivity (`SENSOR_MAX_ANALOG_SENSITIVITY`, ISO 333 on the Pixel 10 Pro's
+ * main lens) the camera's auto-exposure asks for the rest as a gain applied after the RAW, reported as
+ * `CONTROL_POST_RAW_SENSITIVITY_BOOST` (hundredths): a RAW frame lacks exactly that much. Seen 2026-10-03: ISO 333
+ * with a boost of 711 where the stock camera's JPEG of the scene said ISO 2300. That gain is the exposure the
+ * camera metered, so it is the floor here; the median only adds to it in bright scenes.
+ */
+object AutoLook {
+    private const val CHANNELS = 3
+    private const val STEP = 8
+    private const val HALF = 0.5f
+    private val lumaWeights = floatArrayOf(0.2126f, 0.7152f, 0.0722f)
+
+    /**
+     * [base] with its exposure and sharpening set for [raw]; [gains], [matrix] and [shading] as for [Render].
+     * [postRawGain] is the capture's post-RAW boost as a factor (boost / 100), null when it is not known.
+     */
+    @Suppress("LongParameterList") // Render's inputs, the capture's gain and the two option sets.
+    fun options(
+        raw: RawFrame,
+        gains: FloatArray,
+        matrix: FloatArray,
+        shading: ShadingMap? = null,
+        look: LookOptions = LookOptions(),
+        base: RenderOptions = RenderOptions(),
+        postRawGain: Float? = null,
+    ): RenderOptions {
+        val median = medianLuminance(raw, gains, matrix, shading)
+        val floor = postRawGain?.coerceAtLeast(1f) ?: 1f
+        val ceiling = if (postRawGain == null) look.maxGain else maxOf(floor, look.brightSceneMaxGain)
+        val gain = if (median > 0f) (look.targetMedian / median).coerceIn(floor, ceiling) else ceiling
+        val fade = (look.sharpenZeroGain - gain) / (look.sharpenZeroGain - look.sharpenFullGain)
+        return base.copy(exposure = gain, sharpen = look.sharpen * fade.coerceIn(0f, 1f))
+    }
+
+    /**
+     * The median, over every [STEP]th 2 x 2 cell each way, of the luminance [Render] would give that cell at
+     * exposure 1 before its highlight blend and tone curve.
+     */
+    fun medianLuminance(raw: RawFrame, gains: FloatArray, matrix: FloatArray, shading: ShadingMap? = null): Float {
+        require(gains.size == CHANNELS && matrix.size == CHANNELS * CHANNELS) { "gains, matrix" }
+        val columns = (raw.width / 2 + STEP - 1) / STEP
+        val rows = (raw.height / 2 + STEP - 1) / STEP
+        val values = FloatArray(columns * rows)
+        val shade = FloatArray(CHANNELS) { 1f }
+        val v = FloatArray(CHANNELS)
+        for (row in 0 until rows) {
+            for (column in 0 until columns) {
+                val x = 2 * column * STEP
+                val y = 2 * row * STEP
+                cell(raw, x, y, v)
+                shading?.gainsAt(x + HALF, y + HALF, raw.width, raw.height, shade)
+                for (c in 0 until CHANNELS) v[c] *= shade[c] * gains[c]
+                var luminance = 0f
+                for (r in 0 until CHANNELS) {
+                    var sum = 0f
+                    for (c in 0 until CHANNELS) sum += matrix[r * CHANNELS + c] * v[c]
+                    luminance += lumaWeights[r] * sum
+                }
+                values[row * columns + column] = luminance
+            }
+        }
+        values.sort()
+        return values[values.size / 2]
+    }
+
+    /** `Demosaic.halfSize` of the cell whose top-left photosite is ([x], [y]). */
+    private fun cell(raw: RawFrame, x: Int, y: Int, out: FloatArray) {
+        out.fill(0f)
+        for (dy in 0..1) {
+            for (dx in 0..1) out[raw.layout.colourAt(x + dx, y + dy)] += raw.linear(x + dx, y + dy)
+        }
+        out[CfaLayout.GREEN] /= 2
+    }
+}

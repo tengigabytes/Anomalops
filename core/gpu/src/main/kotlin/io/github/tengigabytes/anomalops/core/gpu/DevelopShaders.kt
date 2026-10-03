@@ -4,7 +4,7 @@ package io.github.tengigabytes.anomalops.core.gpu
 
 /**
  * The kernels of [GpuDevelop]: RAW to camera RGB planes (`Demosaic.halfSize` and `Rgb.luma` of `:core:imaging`)
- * and camera RGB to 8-bit sRGB ARGB (`Render.toArgb`), with the same order of operations.
+ * and camera RGB to 8-bit sRGB ARGB (`Render.toArgb`, then `Sharpen.apply`), with the same order of operations.
  */
 internal object DevelopShaders {
     /**
@@ -137,6 +137,39 @@ internal object DevelopShaders {
                 }
             }
             argb[p.y * size.x + p.x] = 0xFF000000u | (encode(o[0]) << 16) | (encode(o[1]) << 8) | encode(o[2]);
+        }
+    """
+
+    /**
+     * `Sharpen.apply` on packed ARGB: buffer 0 the rendered picture, buffer 1 the result; `amount` is
+     * `Sharpen.quantise`'s integer. Integers throughout, in the CPU's order, so the codes are the same.
+     */
+    val SHARPEN = """
+        ${Glsl.LOCAL_2D}
+        layout(std430, binding = 0) readonly buffer In { highp uint src[]; };
+        layout(std430, binding = 1) writeonly buffer Out { highp uint dst[]; };
+        uniform ivec2 size;
+        uniform int amount;
+        const int KERNEL[5] = int[5](1, 4, 6, 4, 1);
+        int lumaAt(int x, int y) {
+            uint c = src[clamp(y, 0, size.y - 1) * size.x + clamp(x, 0, size.x - 1)];
+            return 54 * int((c >> 16) & 0xFFu) + 183 * int((c >> 8) & 0xFFu) + 19 * int(c & 0xFFu);
+        }
+        void main() {
+            ivec2 p = ivec2(gl_GlobalInvocationID.xy);
+            if (any(greaterThanEqual(p, size))) return;
+            int blur = 0;
+            for (int dy = -2; dy <= 2; dy++) {
+                int row = 0;
+                for (int dx = -2; dx <= 2; dx++) row += KERNEL[dx + 2] * lumaAt(p.x + dx, p.y + dy);
+                blur += KERNEL[dy + 2] * row;
+            }
+            uint c = src[p.y * size.x + p.x];
+            int delta = (amount * (((lumaAt(p.x, p.y) << 8) - blur) >> 8) + 32768) >> 16;
+            int r = clamp(int((c >> 16) & 0xFFu) + delta, 0, 255);
+            int g = clamp(int((c >> 8) & 0xFFu) + delta, 0, 255);
+            int b = clamp(int(c & 0xFFu) + delta, 0, 255);
+            dst[p.y * size.x + p.x] = (c & 0xFF000000u) | (uint(r) << 16) | (uint(g) << 8) | uint(b);
         }
     """
 }

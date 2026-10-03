@@ -14,16 +14,19 @@ import kotlin.math.pow
  *   otherwise turn clipped highlights pink or cyan.
  * - [shoulder], [white]: output levels up to [shoulder] pass unchanged; above it the curve rolls off smoothly and
  *   reaches 1 at scene level [white]. White balance gains push saturated colours above 1, so [white] > 1.
+ * - [sharpen]: [Sharpen]'s amount on the finished picture; 0 leaves it as rendered.
  */
 data class RenderOptions(
     val exposure: Float = 1f,
     val highlightKnee: Float = 0.9f,
     val shoulder: Float = 0.9f,
     val white: Float = 2f,
+    val sharpen: Float = 0f,
 ) {
     init {
         require(exposure > 0f && highlightKnee in 0f..<1f) { "exposure $exposure, knee $highlightKnee" }
         require(shoulder in 0f..<1f && white > 1f) { "shoulder $shoulder, white $white" }
+        require(sharpen in 0f..Sharpen.MAX_AMOUNT) { "sharpen $sharpen" }
     }
 }
 
@@ -32,7 +35,8 @@ data class RenderOptions(
  * as ARGB (`Bitmap.setPixels`, `BufferedImage.TYPE_INT_ARGB`). In order, per pixel: how close to clipping the RAW
  * was, lens shading gains ([ShadingMap], optional), white-balance gains, colour matrix (camera to linear sRGB,
  * ADR-0002), exposure, highlight blend toward neutral, tone curve on the brightest channel (keeps the hue), sRGB
- * encoding. Shading comes after the clipping check because it lifts clipped corners above RAW white.
+ * encoding, and [Sharpen] over the whole picture when asked. Shading comes after the clipping check because it
+ * lifts clipped corners above RAW white.
  */
 object Render {
     private const val CHANNELS = 3
@@ -81,7 +85,11 @@ object Render {
                 out[i] = OPAQUE or (encode(o[0]) shl RED_SHIFT) or (encode(o[1]) shl GREEN_SHIFT) or encode(o[2])
             }
         }
-        return out
+        return if (Sharpen.quantise(options.sharpen) > 0) {
+            Sharpen.apply(out, rgb.width, rgb.height, options.sharpen)
+        } else {
+            out
+        }
     }
 
     /** One pixel, camera RGB [v] to display-linear sRGB in [o], 0..1. */
