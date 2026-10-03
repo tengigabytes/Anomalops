@@ -34,7 +34,8 @@ import java.util.concurrent.ConcurrentHashMap
  * repo). Two modes, chosen with `-e mode`:
  *
  * - `lowlight`: [frames] RAW frames of one exposure in one `captureBurst`, as fast as the lens gives them, for FR-17
- *   (hand-held, the hand's shake is what alignment must undo). Focus at `-e focusCm` (default the hyperfocal).
+ *   (hand-held, the hand's shake is what alignment must undo). Focus at `-e focusCm`; without it one AF scan
+ *   decides, and the hyperfocal distance when that fails.
  * - `focus`: a focus bracket for FR-33, [frames] steps evenly in diopters from `-e nearCm` to `-e farCm`; at each
  *   step the preview holds the focus until the lens reports it stationary at the request, then one RAW is taken.
  *
@@ -80,8 +81,16 @@ class BracketDngExperiment {
     }
 
     private suspend fun lowLight() {
-        val focus = args.getString("focusCm")?.let { CM_PER_M / it.toFloat() } ?: rig.lens(lens).hyperfocalDiopters
+        val asked = args.getString("focusCm")?.let { CM_PER_M / it.toFloat() }
         rig.withLens(lens, frames + 1) { session ->
+            val found = if (asked == null) autoFocus(session) else null
+            val focus = asked ?: found ?: rig.lens(lens).hyperfocalDiopters
+            val source = when {
+                asked != null -> "asked"
+                found != null -> "autofocus"
+                else -> "hyperfocal, AF failed"
+            }
+            note("BRACKET lowlight focus %.3f D ($source)".format(focus))
             settle(session, focus)
             val images = ConcurrentHashMap<Long, Image>()
             session.raw.setOnImageAvailableListener(
@@ -158,6 +167,27 @@ class BracketDngExperiment {
         delay(LOCK_SETTLE_MS)
     }
 
+    /** One AF scan on the preview: the distance it locks at, or null when it fails or does not finish in time. */
+    private suspend fun autoFocus(session: RawRig.Session): Float? {
+        val locked = CompletableDeferred<Float?>()
+        val callback = session.frames { f ->
+            when (f.afState) {
+                CaptureResult.CONTROL_AF_STATE_FOCUSED_LOCKED -> locked.complete(f.diopters)
+                CaptureResult.CONTROL_AF_STATE_NOT_FOCUSED_LOCKED -> locked.complete(null)
+            }
+        }
+        session.capture.setRepeatingRequest(session.autoFocus(trigger = false), callback, handler)
+        delay(AE_SETTLE_MS)
+        session.capture.capture(session.autoFocus(trigger = true), callback, handler)
+        return runCatching { withTimeout(AF_TIMEOUT_MS) { locked.await() } }.getOrNull()
+    }
+
+    /** Logs [line] and keeps it beside the DNGs (`frames.txt`): `DngCreator` stores no exposure data here. */
+    private fun note(line: String) {
+        Log.i(TAG, line)
+        File(dir, "frames.txt").appendText(line + "\n")
+    }
+
     /** Preview at [diopters] until a frame reports the lens stationary within [FOCUS_TOLERANCE] of it. */
     private suspend fun holdFocus(session: RawRig.Session, diopters: Float) {
         val reached = CompletableDeferred<Unit>()
@@ -188,14 +218,15 @@ class BracketDngExperiment {
             file.outputStream().use { out ->
                 DngCreator(manager.getCameraCharacteristics(lens), result).use { dng -> dng.writeImage(out, it) }
             }
-            Log.i(
-                TAG,
+            // The boost is the gain (in hundredths) the HAL applies after the RAW: what a RAW frame still lacks.
+            val boost = result.get(CaptureResult.CONTROL_POST_RAW_SENSITIVITY_BOOST)
+            note(
                 "BRACKET frame $k: asked %.3f D, reported ${result.get(
                     CaptureResult.LENS_FOCUS_DISTANCE,
                 )} D, ".format(asked) +
                     "lensState=${result.get(
                         CaptureResult.LENS_STATE,
-                    )} iso=${result.get(CaptureResult.SENSOR_SENSITIVITY)} " +
+                    )} iso=${result.get(CaptureResult.SENSOR_SENSITIVITY)} postRawBoost=$boost " +
                     "exposureNs=${result.get(CaptureResult.SENSOR_EXPOSURE_TIME)} t=${it.timestamp} " +
                     "-> ${file.name} ${file.length()} bytes",
             )
@@ -212,6 +243,7 @@ class BracketDngExperiment {
         const val IMAGE_WAIT_MS = 1_000L
         const val TIMEOUT_MS = 5_000L
         const val FOCUS_TIMEOUT_MS = 2_000L
+        const val AF_TIMEOUT_MS = 5_000L
         const val FOCUS_TOLERANCE = 0.05f
     }
 }
