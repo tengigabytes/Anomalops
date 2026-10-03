@@ -3,14 +3,17 @@
 package io.github.tengigabytes.anomalops.capture
 
 import android.os.SystemClock
+import android.util.Log
 import io.github.tengigabytes.anomalops.core.camera.request.RequestSpec
 import io.github.tengigabytes.anomalops.core.camera.session.BurstFrame
 import io.github.tengigabytes.anomalops.core.camera.session.CameraController
+import io.github.tengigabytes.anomalops.core.camera.session.MultiFrameCapture
 import io.github.tengigabytes.anomalops.core.camera.session.StillCapture
 import io.github.tengigabytes.anomalops.core.store.media.SavedStill
 import io.github.tengigabytes.anomalops.core.store.media.StillStore
 import io.github.tengigabytes.anomalops.core.store.raw.RawKeeper
 import io.github.tengigabytes.anomalops.core.store.stack.BurstStacks
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
@@ -22,26 +25,75 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
-/** Shutter to storage: the still goes to MediaStore (ADR-0004), its RAW frame to the FR-62 buffer (ADR-0005). */
+/**
+ * Shutter to storage: the still goes to MediaStore (ADR-0004), its RAW frame to the FR-62 buffer (ADR-0005).
+ *
+ * FR-17, by the dive screen's merge switch ([multiFrame], off at first): with [lowLight] given and the switch on,
+ * the still of any mode is followed by [EXTRA_FRAMES] RAW frames and the merged picture is stored in place of the
+ * camera's. When the burst or the merge fails or takes too long, the camera's own still is stored, so a shot
+ * always leaves a picture.
+ */
 class ShotPipeline(
     private val controller: CameraController,
     private val store: StillStore,
     private val keeper: RawKeeper,
     private val stacks: BurstStacks,
+    private val lowLight: LowLightRenderer? = null,
+    private val multiFrame: () -> Boolean = { false },
 ) {
-    class Shot(val capture: StillCapture, val saved: SavedStill)
+    /**
+     * How FR-17 went for one shot; null on [Shot] when it was not tried. [gain] is the exposure gain the merged
+     * picture was rendered with (`AutoLook`), 0 when it fell back to the camera's still.
+     */
+    class Merge(
+        val merged: Boolean,
+        val frames: Int,
+        val captureMs: Long,
+        val mergeMs: Long,
+        val encodeMs: Long,
+        val gain: Float,
+    )
+
+    class Shot(val capture: StillCapture, val saved: SavedStill, val merge: Merge? = null)
 
     suspend fun shoot(): Shot {
-        val capture = controller.capture()
+        val renderer = lowLight?.takeIf { multiFrame() }
+        val started = SystemClock.elapsedRealtime()
+        val multi = renderer?.let { controller.captureMultiFrame(EXTRA_FRAMES) }
+        val capture = multi?.still ?: controller.capture()
         var handedOver = false
         try {
-            val saved = store.save(capture)
+            val captureMs = SystemClock.elapsedRealtime() - started
+            val rendered = if (renderer != null && multi != null) merged(renderer, multi) else null
+            val saved = store.save(capture, rendered?.jpeg ?: capture.bytes)
             capture.raw?.let { keeper.offer(saved, it) }
             handedOver = true
-            return Shot(capture, saved)
+            val merge = multi?.let {
+                val gain = rendered?.picture?.options?.exposure ?: 0f
+                val mergeMs = rendered?.mergeMs ?: 0
+                Merge(rendered != null, it.frames.size, captureMs, mergeMs, rendered?.encodeMs ?: 0, gain)
+            }
+            return Shot(capture, saved, merge)
         } finally {
             // A still that could not be saved has no stem for its DNG; give the camera buffer back.
             if (!handedOver) capture.raw?.close()
+        }
+    }
+
+    /** The merged JPEG, or null when the burst cannot be merged, the merge fails or it overruns. */
+    @Suppress("TooGenericExceptionCaught") // Whatever goes wrong on the GPU, the camera's still is stored instead.
+    private suspend fun merged(renderer: LowLightRenderer, multi: MultiFrameCapture): LowLightRenderer.Rendered? {
+        val burst = LowLightFrames.burst(multi) ?: return null
+        val rotation = multi.still.raw?.sensorOrientation ?: 0
+        return try {
+            val rendered = withTimeoutOrNull(MERGE_TIMEOUT_MS) { renderer.render(burst, rotation) }
+            if (rendered == null) Log.w(TAG, "FR-17 merge overran $MERGE_TIMEOUT_MS ms; storing the camera's still")
+            rendered
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "FR-17 merge failed; storing the camera's still", e)
+            null
         }
     }
 
@@ -117,5 +169,12 @@ class ShotPipeline(
         const val WRITERS = 3
         const val NS_PER_MS = 1_000_000L
         const val RESUME_TIMEOUT_MS = 3_000L
+        const val TAG = "ShotPipeline"
+
+        /** FR-17 asks for 4 to 6 frames; with the still's own frame this makes 5. */
+        const val EXTRA_FRAMES = 4
+
+        /** FR-17's limit is 3 s; beyond this the shot is not worth waiting for. Proposed. */
+        const val MERGE_TIMEOUT_MS = 10_000L
     }
 }

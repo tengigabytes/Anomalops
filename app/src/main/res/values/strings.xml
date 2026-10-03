@@ -5,11 +5,8 @@
     <string name="app_name" translatable="false">Anomalops</string>
     <string name="unsupported_device">No device profile for %1$s yet.</string>
     <string name="camera_permission_needed">Camera permission is needed to shoot.</string>
-    <string name="preset_snapshot">Snapshot</string>
     <string name="preset_wide">Wide</string>
-    <string name="preset_fish_school">Fish school</string>
     <string name="preset_macro">Macro</string>
-    <string name="preset_low_light">Low light</string>
     <string name="shutter">Shoot</string>
     <string name="wb_approximate">WB approximate</string>
     <string name="camera_failed">Camera error: %1$s</string>
@@ -34,6 +31,10 @@
     <string name="filter_none">None</string>
     <string name="filter_red">Red</string>
     <string name="filter_magenta">Magenta</string>
+    <string name="mode_auto">Auto</string>
+    <string name="merge_label">Merge</string>
+    <string name="merge_done">Merged %1$d frames (%2$.1f s)</string>
+    <string name="merge_fell_back">Merge not completed; single frame stored</string>
     <string name="filter_note">Sets the white-balance starting point so the filter is not corrected twice. Not available in dive lock.</string>
     <string name="status_battery">Battery %1$d%% · %2$.0f°C</string>
     <string name="status_hot">Hot</string>

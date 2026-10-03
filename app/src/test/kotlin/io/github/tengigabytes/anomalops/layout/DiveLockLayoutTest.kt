@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.tengigabytes.anomalops.layout
 
-import io.github.tengigabytes.anomalops.core.profile.ScenePreset
+import io.github.tengigabytes.anomalops.capture.ShootingMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -22,12 +22,15 @@ class DiveLockLayoutTest {
     }
 
     @Test
-    fun fr12_presetsRunDownTheRightLongEdgeInOrderWithoutScrolling() {
-        val presets = layout.slots.filter { it.control == Control.PRESET }
-        assertEquals(ScenePreset.entries.toList(), presets.map { it.preset })
-        assertTrue(presets.all { it.rect.x == presets.first().rect.x })
-        assertTrue(presets.zipWithNext().all { (a, b) -> b.rect.y > a.rect.bottom })
-        assertTrue(presets.last().rect.bottom <= layout.preview.bottom)
+    fun fr12_modesAndTheMergeSwitchRunDownTheRightLongEdgeInOrderWithoutScrolling() {
+        val modes = layout.slots.filter { it.control == Control.MODE }
+        assertEquals(ShootingMode.entries.toList(), modes.map { it.mode })
+        val column = modes + layout.slot(Control.MERGE)
+        assertTrue(column.all { it.rect.x == column.first().rect.x })
+        assertTrue(column.zipWithNext().all { (a, b) -> b.rect.y > a.rect.bottom })
+        assertTrue(column.last().rect.bottom <= layout.preview.bottom)
+        // The switch sits on the last of the five rows, level with the dive-light key, a free row above it.
+        assertEquals(layout.slot(Control.LIGHT).rect.y, layout.slot(Control.MERGE).rect.y, 0f)
     }
 
     @Test
@@ -43,7 +46,7 @@ class DiveLockLayoutTest {
     fun layoutMatchesTheDocumentedCoordinates() {
         // docs/product/dive-lock-layout.md, section 3.
         assertEquals(87.57f, layout.preview.height, 0.01f)
-        assertEquals(42.68f, layout.slot(Control.PRESET).rect.x, 0.01f)
+        assertEquals(42.68f, layout.slot(Control.MODE).rect.x, 0.01f)
         assertEquals(89.57f, layout.slot(Control.ZOOM).rect.y, 0.01f)
         assertEquals(27.34f, layout.slot(Control.HALF_PRESS).rect.x, 0.01f)
         assertEquals(117.57f, layout.slot(Control.SHUTTER).rect.y, 0.01f)

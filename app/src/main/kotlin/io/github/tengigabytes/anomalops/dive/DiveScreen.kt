@@ -20,6 +20,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.tengigabytes.anomalops.R
 import io.github.tengigabytes.anomalops.capture.CameraPreview
+import io.github.tengigabytes.anomalops.capture.MergeSwitch
 import io.github.tengigabytes.anomalops.capture.ShotPipeline
 import io.github.tengigabytes.anomalops.conditions.ConditionsFollower
 import io.github.tengigabytes.anomalops.conditions.ShootingConditions
@@ -46,6 +47,7 @@ class DiveDeps(
     val pipeline: ShotPipeline,
     val conditions: ShootingConditions,
     val depth: ManualDepthSource,
+    val merge: MergeSwitch,
 )
 
 /** What the dive screen asks of the activity. [session] is the open FR-45 session, if any. */
@@ -108,7 +110,7 @@ private fun DiveContent(deps: DiveDeps, actions: DiveActions, locked: Boolean, l
             modifier = Modifier.place(layout.preview, scale),
         )
         LeftKeys(layout, scale, locked, key, actions, deps)
-        PresetKeys(layout, scale, shots.preset) { chosen -> shots.select(chosen, follower.send()) }
+        ModeKeys(layout, scale, shots) { follower.send() }
         LowerKeys(layout, scale, shots)
         val failed = camera.status == CameraStatus.FAILED
         StatusBand(
