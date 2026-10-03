@@ -28,6 +28,7 @@
 | [0015](0015-focus-stacking-algorithm.md) | 景深合成演算法 | 提議（演算法待定） | FR-33、FR-63、NFR-8 |
 | [0016](0016-imaging-module.md) | 多幀影像處理放在新模組 `:core:imaging` | 已採納 | FR-17、FR-33 |
 | [0017](0017-gpu-multiframe.md) | 多幀運算在手機上走 GPU：OpenGL ES 運算著色器、逐張累加 | 已採納 | FR-17、FR-33、NFR-9 |
+| [0018](0018-bayer-merge-full-size.md) | 低光多幀合成在 Bayer 上合併，輸出全尺寸 | 提議（草稿） | FR-17、FR-18、FR-19 |
 
 ## 範本
 
