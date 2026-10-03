@@ -5,6 +5,7 @@ package io.github.tengigabytes.anomalops.acceptance
 import android.Manifest
 import android.graphics.BitmapFactory
 import android.hardware.camera2.CaptureResult
+import android.os.SystemClock
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -26,7 +27,7 @@ import java.io.File
 
 /**
  * FR-17 through the app's shot pipeline on the real camera, merge switch on: in each of the dive screen's modes a
- * shot is a still plus four RAW frames, merged on the GPU and stored as a JPEG of half the lens's RAW size cropped
+ * shot is a still plus four RAW frames, merged in the background on the GPU and stored in the still's place as a JPEG of half the lens's RAW size cropped
  * to the camera's field of view, upright. Logs the times, and what the camera reported for the frames, under [TAG]. With the switch off the
  * camera's own still is stored. The files are deleted afterwards; with `-e keep true` each merged picture and the
  * camera's still of the same moment are also written to the app's external files directory, under `fr17/`.
@@ -68,19 +69,46 @@ class LowLightMergeTest {
         delay(SETTLE_MS)
         val off = pipeline.shoot()
         rig.track(off.saved.stem)
-        assertNull("switch off must not merge", off.merge)
+        assertNull("switch off must not merge", off.merging)
         assertEquals(off.capture.bytes.size.toLong(), off.saved.sizeBytes)
+    }
+
+    @Test
+    fun theShutterDoesNotWaitAndAShotDuringAMergeIsASingleStill() = runBlocking<Unit> {
+        rig.start(ShootingMode.AUTO.preset(merge = true))
+        delay(SETTLE_MS)
+        val started = SystemClock.elapsedRealtime()
+        val first = pipeline.shoot()
+        val shutterMs = SystemClock.elapsedRealtime() - started
+        rig.track(first.saved.stem)
+        // The camera's still is there as soon as the shutter returns.
+        assertEquals(first.capture.bytes.size.toLong(), rig.read(first.saved.uri).size.toLong())
+        val merging = checkNotNull(first.merging) { "FR-17 was not started" }
+        val second = pipeline.shoot()
+        rig.track(second.saved.stem)
+        val stillMerging = merging.isActive
+        val done = merging.await()
+        val totalMs = SystemClock.elapsedRealtime() - started
+        Log.i(TAG, "FR-17 background: shutter $shutterMs ms, merged picture in place after $totalMs ms")
+        assertTrue("fell back to the camera's still", done.merge.merged)
+        assertEquals("the merged picture keeps the still's name", first.saved.displayName, done.saved.displayName)
+        assertEquals(done.saved.sizeBytes, rig.read(done.saved.uri).size.toLong())
+        // The second shot came while the first was merging (when the merge was still running): no second merge.
+        if (stillMerging) assertNull("a shot during a merge must not start another", second.merging)
+        second.merging?.await()
+        assertTrue("one merge at a time", stillMerging || second.merging != null)
     }
 
     private suspend fun mergedShot(name: String, halfWidth: Int, halfHeight: Int) {
         val shot = pipeline.shoot()
         rig.track(shot.saved.stem)
-        val merge = checkNotNull(shot.merge) { "$name: FR-17 was not tried" }
+        val done = checkNotNull(shot.merging) { "$name: FR-17 was not tried" }.await()
+        val merge = done.merge
         val result = shot.capture.raw?.result
         Log.i(
             TAG,
             "FR-17 $name: merged=${merge.merged} frames=${merge.frames} capture=${merge.captureMs} ms " +
-                "merge=${merge.mergeMs} ms encode=${merge.encodeMs} ms write=${shot.saved.writeMs} ms; asked " +
+                "merge=${merge.mergeMs} ms encode=${merge.encodeMs} ms write=${done.saved.writeMs} ms; asked " +
                 "${shot.capture.spec.exposure?.exposure}, reported iso=" +
                 "${result?.get(CaptureResult.SENSOR_SENSITIVITY)} postRawBoost=" +
                 "${result?.get(CaptureResult.CONTROL_POST_RAW_SENSITIVITY_BOOST)}",
@@ -96,7 +124,7 @@ class LowLightMergeTest {
         assertTrue("$name fell back to the camera's still", merge.merged)
         assertEquals("$name frames", FRAMES, merge.frames)
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-        val bytes = rig.read(shot.saved.uri)
+        val bytes = rig.read(done.saved.uri)
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
         Log.i(
             TAG,

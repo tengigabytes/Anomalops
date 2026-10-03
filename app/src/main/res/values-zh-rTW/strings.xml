@@ -33,6 +33,7 @@
     <string name="mode_auto">自動</string>
     <string name="merge_label">合成</string>
     <string name="merge_done">已合成 %1$d 張（%2$.1f 秒）</string>
+    <string name="merge_running">合成中…</string>
     <string name="merge_fell_back">合成未完成，已存單張</string>
     <string name="filter_note">設定白平衡起點，避免與濾鏡重複校正。潛水鎖定中無法開啟本頁。</string>
     <string name="status_battery">電量 %1$d%% · %2$.0f°C</string>

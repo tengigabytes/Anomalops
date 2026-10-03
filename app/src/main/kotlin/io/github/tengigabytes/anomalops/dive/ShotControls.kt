@@ -72,7 +72,15 @@ class ShotControls(
         shot = taken
         actions.session()?.capture(stillRecord(taken, deps.conditions.current))
         if (taken.capture.spec.exposure?.isoClamped == true) note = context.getString(R.string.iso_clamped)
-        taken.merge?.let { note = mergeNote(it) }
+        taken.merging?.let { merging ->
+            note = context.getString(R.string.merge_running)
+            launchSafely {
+                val done = merging.await()
+                // The merged picture replaced the still's file; a later shot may already be the one shown.
+                if (shot === taken) shot = ShotPipeline.Shot(taken.capture, done.saved)
+                note = mergeNote(done.merge)
+            }
+        }
     }
 
     fun burst(release: Deferred<Unit>) = launchSafely {
@@ -89,7 +97,7 @@ class ShotControls(
         }
     }
 
-    /** FR-17 (developer switch): how many frames were merged and how long the shot took, or that it fell back. */
+    /** FR-17: how many frames were merged and how long it took from the shutter, or that the still was kept. */
     private fun mergeNote(merge: ShotPipeline.Merge): String {
         val totalMs = merge.captureMs + merge.mergeMs + merge.encodeMs
         Log.i(

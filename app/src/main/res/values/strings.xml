@@ -34,6 +34,7 @@
     <string name="mode_auto">Auto</string>
     <string name="merge_label">Merge</string>
     <string name="merge_done">Merged %1$d frames (%2$.1f s)</string>
+    <string name="merge_running">Merging…</string>
     <string name="merge_fell_back">Merge not completed; single frame stored</string>
     <string name="filter_note">Sets the white-balance starting point so the filter is not corrected twice. Not available in dive lock.</string>
     <string name="status_battery">Battery %1$d%% · %2$.0f°C</string>
